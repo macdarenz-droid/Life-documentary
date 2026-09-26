@@ -61,7 +61,7 @@ Text: `tasks/p7/T-005.md`.
 
 ## P3 + P11 — Stored shapes and the pure story engine
 
-### T-004a · P3.1 · Domain contracts v1 · todo · needs: T-005a
+### T-004a · P3.1 · Domain contracts v1 · done · needs: T-005a
 Text: `tasks/p3/T-004.md`.
 
 ### T-006a · P11.1 · Episode contracts · todo · needs: T-004a
