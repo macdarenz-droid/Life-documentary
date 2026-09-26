@@ -7,4 +7,5 @@ export {
   type SpatialSpring,
 } from './motionPreference';
 export { Surface } from './Surface';
+export { Tray, type TrayProps } from './Tray';
 export { Text, isDisplayVariant, type TextProps, type TextTone, type TextVariant } from './Text';

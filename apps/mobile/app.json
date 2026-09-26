@@ -22,7 +22,38 @@
       "expo-splash-screen",
       "expo-image",
       "expo-sqlite",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Life Documentary uses the camera to record your ten-second answers.",
+          "microphonePermission": "Life Documentary uses the microphone to record your voice in your answers.",
+          "recordAudioAndroid": true
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Life Documentary uses the microphone to record your voice in your answers."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Life Documentary opens your photo library so you can add a photo or clip you choose.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Life Documentary uses your location only to name the place of a moment, when you turn this on.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false
+        }
+      ],
+      "expo-video"
     ]
   }
 }

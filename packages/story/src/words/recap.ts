@@ -28,7 +28,7 @@ const WEEKDAYS = [
 ] as const;
 
 /** "14 September" for a LocalDate. */
-function dayAndMonth(date: string): string {
+export function dayAndMonth(date: string): string {
   const [, m, d] = date.split('-').map(Number);
   return `${d ?? ''} ${MONTHS[(m ?? 1) - 1] ?? ''}`;
 }
