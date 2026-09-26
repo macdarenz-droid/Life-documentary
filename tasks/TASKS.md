@@ -84,6 +84,20 @@ Text: `tasks/p3/T-004.md`.
 ### T-004d · P3.4 · The encrypted file store · todo · needs: T-004c
 Text: `tasks/p3/T-004.md`.
 
+## P5 — Capture (the daily answer on the device)
+
+### T-007a · P5.1 · The local documentary, today's question and `captureMoment` · todo · needs: T-004d, T-005b
+Text: `tasks/p5/T-007.md`.
+
+### T-007b · P5.2 · Device services and the composition root · todo · needs: T-007a
+Text: `tasks/p5/T-007.md`.
+
+### T-007c · P5.3 · The Today screen and the Record transition · todo · needs: T-007b, T-003c
+Text: `tasks/p5/T-007.md`.
+
+### T-007d · P5.4 · Photo, library, note, mood, place and "keep on this phone" · todo · needs: T-007c
+Text: `tasks/p5/T-007.md`.
+
 ## Blocked on the owner
 
 ### P-B · Capture and upload proof on real devices · blocked · needs: P3, P5, P6 tasks (not yet written)
