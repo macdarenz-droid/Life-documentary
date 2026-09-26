@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+/** A slow zoom on a still photo; shared by the render manifest and the episode plan. */
+export const KenBurns = z.object({
+  fromScale: z.number().min(1).max(1.5),
+  toScale: z.number().min(1).max(1.5),
+});
+export type KenBurns = z.infer<typeof KenBurns>;
+
 const VideoShot = z.object({
   kind: z.literal('video'),
   src: z.string().min(1),
@@ -11,9 +18,7 @@ const PhotoShot = z.object({
   kind: z.literal('photo'),
   src: z.string().min(1),
   durationMs: z.number().int().min(500).max(10000),
-  kenBurns: z
-    .object({ fromScale: z.number().min(1).max(1.5), toScale: z.number().min(1).max(1.5) })
-    .optional(),
+  kenBurns: KenBurns.optional(),
 });
 
 /**
