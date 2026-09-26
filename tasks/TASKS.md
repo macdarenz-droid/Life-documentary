@@ -35,5 +35,23 @@ Text: `tasks/pa/T-002.md`.
 ### T-002b · P-A.2 · The render package, fixtures and the CI render job · todo · needs: T-002a, T-001d
 Text: `tasks/pa/T-002.md`.
 
+## P2 — Design system and motion (release R0)
+Built to `docs/design/DESIGN.md` (owner request 2026-09-26: premium, smooth, not template).
+
+### T-003a · P2.1 · Tokens and words · todo · needs: T-001a
+Text: `tasks/p2/T-003.md`.
+
+### T-003b · P2.2 · Fonts, primitives and the motion preference · todo · needs: T-003a, T-001c
+Text: `tasks/p2/T-003.md`.
+
+### T-003c · P2.3 · Signature motion components (P2 set) · todo · needs: T-003b
+Text: `tasks/p2/T-003.md`.
+
+### T-003d · P2.4 · Design Lab and a recorded web preview in CI · todo · needs: T-003c, T-001d
+Text: `tasks/p2/T-003.md`.
+
+### T-003e · P2.5 · Episodes share the tokens and the type · todo · needs: T-003a, T-002b
+Text: `tasks/p2/T-003.md`.
+
 ### P-B · Capture and upload proof on real devices · blocked · needs: P3, P5, P6 tasks (not yet written)
 Waiting on the owner: a Cloudflare account (Workers Paid, R2), an Expo/EAS account, an Apple Developer account, and a real iPhone and Android phone for the check. Task text is written when P3 is next.

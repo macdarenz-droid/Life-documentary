@@ -85,3 +85,12 @@ The Relay project has no coder link yet. The coder reports on its own draft PR (
 
 ## D28 · 2026-09-26 · supervisor · Coder model and loop
 The coder runs as its own cloud session on Opus 5.5 at medium effort (the owner's standing rule for coders in the Kairos project), started from `tasks/CODER_PROMPT.md`, with a self-paced `send_later` loop. It is replaced in a new session when its context passes about 250,000 tokens, only between tasks. The supervisor stays on the strongest available model for design and review.
+
+## D29 · 2026-09-26 · owner request, supervisor design · Premium cinematic design direction
+Owner: "I want use premium websites for the design. Smooth transitions rather than generic Figma templates." Decided: `docs/design/DESIGN.md`. Cinema references (Apple TV, Severance titles, A24, MUBI, Linear, Family, Retro), springs for spatial motion with Material 3 spatial stiffness at damping ratio 0.9 (no bounce, documentary tone), curves only for opacity and colour, interruptible gesture-driven transitions, restraint by frequency, nine named signature transitions each with a reduced-motion path. Why: these are the techniques that separate premium motion from template motion (Apple WWDC23, Material 3, Rauno Freiberg, Emil Kowalski, Family); evidence in `docs/research/DESIGN_RESEARCH.md`.
+
+## D30 · 2026-09-26 · supervisor · Motion libraries at Expo SDK 57 pins
+Reanimated 4.5.1 (CSS-style transitions and springs), Gesture Handler ~2.32 (not v3: a major upgrade), Skia 2.6.2 (grain, blur, masks on hero surfaces only), expo-image, expo-haptics, FlashList 2.0.2. No Moti (unmaintained since January 2025), no Lottie or Rive mascots. The premiere zoom uses expo-router `Link.AppleZoom` (alpha, iOS 18+) behind one `PremiereLink` component with a fade-through fallback, because shared-element transitions are still experimental.
+
+## D31 · 2026-09-26 · supervisor · Typography: Instrument Serif and Inter now, GT Sectra and Söhne as a paid upgrade
+Both open fonts are OFL and free in apps; Instrument Serif is a condensed display serif made for large sizes, which carries the "huge and quiet" title style; Inter at 400/600 only for UI (MUBI's two-weight discipline). The paid pairing needs app licences priced per foundry and is an owner decision.
