@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm -r --if-present test",
-    "build": "pnpm -r --if-present build"
+    "build": "pnpm -r --if-present build",
+    "types:api": "pnpm --filter @life/api exec wrangler types"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
