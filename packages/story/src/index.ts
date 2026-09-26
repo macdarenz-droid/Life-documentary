@@ -4,4 +4,5 @@ export * from './render/fixtureManifest';
 export * from './dates';
 export * from './words';
 export * from './words/questions';
+export * from './questionEngine';
 export * from './motion/titleCardPlan';
