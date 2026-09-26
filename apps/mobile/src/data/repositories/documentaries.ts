@@ -1,6 +1,6 @@
 import { Documentary } from '@life/contracts';
 import type { SqlDriver } from '../sqlite/driver';
-import { fromRow, selectRow, upsert, type TableSpec } from './table';
+import { fromRow, selectRow, upsert, type Row, type TableSpec } from './table';
 
 export const documentarySpec: TableSpec<Documentary> = {
   table: 'documentaries',
@@ -26,4 +26,10 @@ export async function put(driver: SqlDriver, documentary: Documentary): Promise<
 export async function get(driver: SqlDriver, id: string): Promise<Documentary | undefined> {
   const row = await selectRow(driver, documentarySpec, id);
   return row ? fromRow(documentarySpec, row) : undefined;
+}
+
+/** Every documentary on this device, oldest first. */
+export async function listAll(driver: SqlDriver): Promise<Documentary[]> {
+  const rows = await driver.all<Row>('SELECT * FROM documentaries ORDER BY created_at, id');
+  return rows.map((r) => fromRow(documentarySpec, r));
 }

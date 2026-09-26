@@ -1,5 +1,8 @@
 /** Every user-facing string. Plain and warm; never game words or exclamation marks (CLAUDE.md rule 11). */
 export const words = {
+  documentary: {
+    defaultTitle: 'My documentary',
+  },
   today: {
     placeholderTitle: 'Life Documentary',
     placeholderLine: 'Your first question arrives soon.',

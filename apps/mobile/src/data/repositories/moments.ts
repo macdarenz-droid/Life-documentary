@@ -102,3 +102,73 @@ export async function softDelete(
     return put(tx, { ...moment, deletedAt: now, updatedAt: now });
   });
 }
+
+export type DaySummary = {
+  date: LocalDate;
+  momentCount: number;
+  placeNames: string[];
+  castNames: string[];
+};
+
+/** Per local day in [fromDay, toDay] that has moments: count, distinct places and cast names. */
+export async function recentDaySummaries(
+  driver: SqlDriver,
+  documentaryId: string,
+  fromDay: LocalDate,
+  toDay: LocalDate,
+): Promise<DaySummary[]> {
+  const counts = await driver.all<{ day: LocalDate; n: number }>(
+    `SELECT local_day AS day, count(*) AS n FROM moments
+     WHERE documentary_id = ? AND local_day BETWEEN ? AND ? AND deleted_at IS NULL
+     GROUP BY local_day ORDER BY local_day`,
+    [documentaryId, fromDay, toDay],
+  );
+  const places = await driver.all<{ day: LocalDate; name: string }>(
+    `SELECT DISTINCT local_day AS day, place_name AS name FROM moments
+     WHERE documentary_id = ? AND local_day BETWEEN ? AND ? AND deleted_at IS NULL AND place_name IS NOT NULL
+     ORDER BY local_day, place_name`,
+    [documentaryId, fromDay, toDay],
+  );
+  const cast = await driver.all<{ day: LocalDate; name: string }>(
+    `SELECT DISTINCT m.local_day AS day, c.name AS name FROM moments m
+     JOIN moment_cast mc ON mc.moment_id = m.id
+     JOIN cast_members c ON c.id = mc.cast_id
+     WHERE m.documentary_id = ? AND m.local_day BETWEEN ? AND ? AND m.deleted_at IS NULL AND c.deleted_at IS NULL
+     ORDER BY m.local_day, c.name`,
+    [documentaryId, fromDay, toDay],
+  );
+  return counts.map(({ day, n }) => ({
+    date: day,
+    momentCount: n,
+    placeNames: places.filter((p) => p.day === day).map((p) => p.name),
+    castNames: cast.filter((c) => c.day === day).map((c) => c.name),
+  }));
+}
+
+/** Distinct place names of moments before `day` (not deleted). */
+export async function placesBefore(
+  driver: SqlDriver,
+  documentaryId: string,
+  day: LocalDate,
+): Promise<string[]> {
+  const rows = await driver.all<{ name: string }>(
+    `SELECT DISTINCT place_name AS name FROM moments
+     WHERE documentary_id = ? AND local_day < ? AND deleted_at IS NULL AND place_name IS NOT NULL
+     ORDER BY place_name`,
+    [documentaryId, day],
+  );
+  return rows.map((r) => r.name);
+}
+
+/** Moments (not deleted) on one local day. */
+export async function momentCountOn(
+  driver: SqlDriver,
+  documentaryId: string,
+  day: LocalDate,
+): Promise<number> {
+  const row = await driver.first<{ n: number }>(
+    'SELECT count(*) AS n FROM moments WHERE documentary_id = ? AND local_day = ? AND deleted_at IS NULL',
+    [documentaryId, day],
+  );
+  return row?.n ?? 0;
+}
