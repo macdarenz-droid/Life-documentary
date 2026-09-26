@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "Life Documentary",
+    "slug": "life-documentary",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "scheme": "lifedocumentary",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.macdarenz.lifedocumentary"
+    },
+    "android": {
+      "package": "com.macdarenz.lifedocumentary"
+    },
+    "plugins": ["expo-router"]
+  }
+}
