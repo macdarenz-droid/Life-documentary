@@ -23,7 +23,7 @@ If P-A fails, the render moves to plain FFmpeg templates on Containers. If P-B f
 | **P3 Local store** | SQLite schema v1 on expo-sqlite (D32); append-only migrations with a harness; repositories for Moment, MediaAsset, Question, Storyline, CastMember, Episode (view), UploadJob; integrity check; encrypted file store (AES-256-GCM via expo-crypto, per-file keys wrapped by a Keychain master key, D33). | P1 |
 | **P4 Account** | Better Auth on Workers + D1; Sign in with Apple, Google, email magic link; session in secure store; device registration; account deletion request (in-app and web page); the `User` and `Documentary` rows; the first sync handshake. | P1, P3 |
 | **P5 Capture** | Today screen with a placeholder question; hold-to-record 10 s video or voice; photo; clip or photo from the library; text note; mood; place name (opt-in); originals kept as recorded (D35); `captureMoment` writes file and row atomically; `localOnly` flag. | P2, P3 |
-| **P6 Upload queue and sync** | Multipart resumable upload to R2 with parts streamed through the Worker (D34); background drain; Wi-Fi rule; `POST /sync` with cursor, last-write-wins, tombstones, change log; `leavesDevice` shared rule; the Footage screen lists moments by day and plays them. | P4, P5 |
+| **P6 Upload queue and sync** | Multipart resumable upload to R2 with parts streamed through the Worker (D34); background drain; Wi-Fi rule; `POST /sync` with cursor, last-write-wins, tombstones, change log; `leavesDevice` shared rule. (The local Footage screen moved to P10, which needs no server.) | P4, P5 |
 
 ### Block B — The interview (P7–P10)
 | Phase | Scope | Needs |
@@ -31,7 +31,7 @@ If P-A fails, the render moves to plain FFmpeg templates on Containers. If P-B f
 | **P7 Question engine** | Template bank (≥ 120, tagged); deterministic selection; 60-day no-repeat; storyline follow-ups; anniversaries; tests over a simulated year. P7.2 (later): model-personalised wording that never changes the chosen template. | P3 |
 | **P8 Storylines and cast** | Create, name, open, close storylines; tag moments; cast members with names and relations; screens; the question engine reads open storylines. | P5, P7 |
 | **P9 Daily loop** | Expo push registration; server push for the daily question and the finished episode; local scheduled fallback; notification settings; quiet days handled without shame words. | P4, P7 |
-| **P10 Footage** | Archive by day and by storyline; playback; edit note, mood, tags; delete a moment (tombstone, file removed); "one year ago today" surface. | P6, P8 |
+| **P10 Footage** | Local archive by day (Filmstrip) and by storyline; encrypted posters; playback from temporary plain copies; edit note, mood, tags; delete a moment (tombstone, files removed); "One year ago today" on Today. | P5, P8 |
 
 ### Block C — The story engine (P11–P16)
 | Phase | Scope | Needs |
