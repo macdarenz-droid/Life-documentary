@@ -1,5 +1,7 @@
 // A health check for the device database: SQLite's own integrity check, dangling foreign keys, and a
 // contract parse of every stored row. Problems are reported, never thrown.
+import type { FileIO, KeyStore } from '../domain/ports';
+import { MASTER_KEY_NAME } from './fileStore/masterKey';
 import * as castMembers from './repositories/castMembers';
 import * as documentaries from './repositories/documentaries';
 import * as episodes from './repositories/episodes';
@@ -12,7 +14,7 @@ import * as uploadJobs from './repositories/uploadJobs';
 import type { SqlDriver } from './sqlite/driver';
 
 export type IntegrityProblem = {
-  kind: 'sqlite' | 'foreignKey' | 'corruptRow';
+  kind: 'sqlite' | 'foreignKey' | 'corruptRow' | 'missingFile' | 'orphanFile' | 'missingMasterKey';
   table?: string;
   id?: string;
   detail: string;
@@ -80,6 +82,47 @@ export async function checkDatabase(driver: SqlDriver): Promise<IntegrityReport>
         });
       }
     }
+  }
+
+  return { ok: problems.length === 0, problems };
+}
+
+/**
+ * Compares the encrypted file store with the database: assets whose file is gone, files no asset owns,
+ * and assets without the master key that unwraps them (iOS keeps Keychain items after an uninstall,
+ * Android does not).
+ */
+export async function checkFiles(input: {
+  driver: SqlDriver;
+  io: FileIO;
+  keyStore: KeyStore;
+  storeDir: string;
+}): Promise<IntegrityReport> {
+  const { driver, io, keyStore, storeDir } = input;
+  const problems: IntegrityProblem[] = [];
+  const assets = await mediaAssets.listAll(driver);
+
+  for (const asset of assets) {
+    if (!(await io.exists(asset.localPath))) {
+      problems.push({
+        kind: 'missingFile',
+        table: 'media_assets',
+        id: asset.id,
+        detail: `${asset.localPath} is missing`,
+      });
+    }
+  }
+
+  const owned = new Set(assets.map((a) => a.localPath));
+  for (const path of await io.list(storeDir)) {
+    if (!owned.has(path)) problems.push({ kind: 'orphanFile', detail: `${path} has no asset` });
+  }
+
+  if (assets.length > 0 && (await keyStore.get(MASTER_KEY_NAME)) === null) {
+    problems.push({
+      kind: 'missingMasterKey',
+      detail: `${assets.length} assets but no master key`,
+    });
   }
 
   return { ok: problems.length === 0, problems };

@@ -1,6 +1,10 @@
-import { checkDatabase } from './integrity';
-import { CorruptRowError, moments } from './repositories';
-import { NOW, freshDb, id, note } from './repositories/testing/rows';
+import { MASTER_KEY_NAME, loadOrCreateMasterKey } from './fileStore/masterKey';
+import { memoryFileIO } from './fileStore/testing/memoryFileIO';
+import { memoryKeyStore } from './fileStore/testing/memoryKeyStore';
+import { nodeCipher } from './fileStore/testing/nodeCipher';
+import { checkDatabase, checkFiles } from './integrity';
+import { CorruptRowError, mediaAssets, moments } from './repositories';
+import { NOW, asset, freshDb, id, note } from './repositories/testing/rows';
 
 describe('checkDatabase', () => {
   it('reports a healthy database as ok', async () => {
@@ -36,5 +40,50 @@ describe('checkDatabase', () => {
     expect(report.problems).toContainEqual(
       expect.objectContaining({ kind: 'foreignKey', table: 'moments', id: id(50) }),
     );
+  });
+});
+
+describe('checkFiles', () => {
+  async function store() {
+    const db = await freshDb();
+    const io = memoryFileIO();
+    const keyStore = memoryKeyStore();
+    await loadOrCreateMasterKey(keyStore, nodeCipher);
+    const a = { ...asset(10), localPath: 'store/10.enc' };
+    await mediaAssets.put(db, a);
+    io.files.set('store/10.enc', new Uint8Array([1]));
+    return { db, io, keyStore };
+  }
+
+  it('is ok on a consistent store', async () => {
+    const { db, io, keyStore } = await store();
+    expect(await checkFiles({ driver: db, io, keyStore, storeDir: 'store' })).toEqual({
+      ok: true,
+      problems: [],
+    });
+  });
+
+  it('reports an asset whose file is missing', async () => {
+    const { db, io, keyStore } = await store();
+    io.files.delete('store/10.enc');
+    expect((await checkFiles({ driver: db, io, keyStore, storeDir: 'store' })).problems).toEqual([
+      expect.objectContaining({ kind: 'missingFile', table: 'media_assets', id: id(10) }),
+    ]);
+  });
+
+  it('reports a file with no asset', async () => {
+    const { db, io, keyStore } = await store();
+    io.files.set('store/stray.enc', new Uint8Array([2]));
+    expect((await checkFiles({ driver: db, io, keyStore, storeDir: 'store' })).problems).toEqual([
+      expect.objectContaining({ kind: 'orphanFile', detail: 'store/stray.enc has no asset' }),
+    ]);
+  });
+
+  it('reports assets without a master key', async () => {
+    const { db, io, keyStore } = await store();
+    await keyStore.remove(MASTER_KEY_NAME);
+    expect((await checkFiles({ driver: db, io, keyStore, storeDir: 'store' })).problems).toEqual([
+      expect.objectContaining({ kind: 'missingMasterKey' }),
+    ]);
   });
 });
