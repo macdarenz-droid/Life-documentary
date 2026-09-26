@@ -1,6 +1,6 @@
 // Today (P5): today's question as a Title Card and one amber "Hold to answer" button. Holding records up
 // to ten seconds of video or voice with the Record transition; releasing saves the answer.
-import type { LocalDate, MomentMood, Question } from '@life/contracts';
+import type { MomentMood, Question } from '@life/contracts';
 import { tokens } from '@life/design';
 import { capture, dayLabel, secondsLeft, words } from '@life/story';
 import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react';
@@ -21,7 +21,6 @@ import type {
 import { AddRow, MoodChips, NoteTray, PlaceToggle, Toggle, type AddAction } from './extras';
 
 export type TodayScreenProps = {
-  today: LocalDate;
   loadQuestion: () => Promise<Question>;
   /** Saves one capture (captureMoment). */
   save: (input: CaptureInput) => Promise<unknown>;
@@ -55,11 +54,13 @@ const NOTICE_WORDS = {
   saved: words.extras.saved,
 } as const;
 
+/** How long a freshly mounted camera view may take to hand out its recorder. */
+const CAMERA_READY_MS = 3000;
+
 /** Questions whose Title Card already played in this app session: the reveal plays once per day. */
 const revealed = new Set<string>();
 
 export function TodayScreen({
-  today,
   loadQuestion,
   save,
   discard,
@@ -74,8 +75,11 @@ export function TodayScreen({
   const [mode, setMode] = useState<Mode>('video');
   const [notice, setNotice] = useState<Notice>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
-  const [cameraAllowed, setCameraAllowed] = useState(false);
+  // The camera view is mounted only while the person can see it.
+  const [cameraOn, setCameraOn] = useState(false);
   const camera = useRef<VideoRecorder | null>(null);
+  /** Ends a wait for the camera's recorder: the recorder, or null when released or out of time. */
+  const waiting = useRef<((recorder: VideoRecorder | null) => void) | null>(null);
   const session = useRef<Session | null>(null);
   const holding = useRef(false);
   const [mood, setMood] = useState<MomentMood | null>(null);
@@ -109,10 +113,6 @@ export function TodayScreen({
     };
   }, [loadQuestion, reloadKey]);
 
-  useEffect(() => {
-    void services.permissions.camera.get().then((s) => setCameraAllowed(s === 'granted'));
-  }, [services]);
-
   useEffect(
     () => () => {
       const s = session.current;
@@ -126,6 +126,27 @@ export function TodayScreen({
 
   const onRecorder = useCallback((recorder: VideoRecorder | null) => {
     camera.current = recorder;
+    if (recorder) waiting.current?.(recorder);
+  }, []);
+
+  /** Mounts the camera view and waits at most CAMERA_READY_MS for its recorder. */
+  const openCamera = useCallback((): Promise<VideoRecorder | null> => {
+    setCameraOn(true);
+    if (camera.current) return Promise.resolve(camera.current);
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => settle(null), CAMERA_READY_MS);
+      const settle = (recorder: VideoRecorder | null) => {
+        clearTimeout(timer);
+        waiting.current = null;
+        resolve(recorder);
+      };
+      waiting.current = settle;
+    });
+  }, []);
+
+  const closeCamera = useCallback(() => {
+    camera.current = null;
+    setCameraOn(false);
   }, []);
 
   const finish = useCallback(async () => {
@@ -140,6 +161,7 @@ export function TodayScreen({
       const result: { uri: string; durationMs: number; width?: number; height?: number } | null =
         await s.recorder.stop();
       services.haptics.impactLight();
+      if (s.mode === 'video') closeCamera();
       if (!result) {
         setPhase('idle');
         setNotice({ kind: 'couldNotSave' });
@@ -166,9 +188,11 @@ export function TodayScreen({
       setPhase('saved');
     } catch (error) {
       console.error('The answer could not be saved.', error);
+      if (s.mode === 'video') closeCamera();
       setPhase('idle');
+      setNotice({ kind: 'couldNotSave' });
     }
-  }, [question, services, plan.minMs, discard, save, mood, placeName, keepOnPhone]);
+  }, [question, services, plan.minMs, discard, save, closeCamera, mood, placeName, keepOnPhone]);
 
   /** Checks the permissions this mode needs; asks once for any not yet decided. */
   const allowed = useCallback(async (): Promise<boolean> => {
@@ -180,7 +204,6 @@ export function TodayScreen({
       if (state === 'undetermined') {
         asked = true;
         state = await services.permissions[which].request();
-        if (which === 'camera') setCameraAllowed(state === 'granted');
       }
       if (state !== 'granted') {
         setNotice({ kind: 'denied', which });
@@ -195,8 +218,17 @@ export function TodayScreen({
     if (!question || phase !== 'idle' || session.current) return;
     setNotice(null);
     if (!(await allowed())) return;
-    const recorder = mode === 'video' ? camera.current : services.voice;
-    if (!recorder) return;
+    let recorder: VideoRecorder | VoiceRecorder = services.voice;
+    if (mode === 'video') {
+      const video = holding.current ? await openCamera() : null;
+      if (!video) {
+        closeCamera();
+        // Still holding: the camera never got ready. Released first: nothing was recorded.
+        setNotice({ kind: holding.current ? 'couldNotSave' : 'holdLonger' });
+        return;
+      }
+      recorder = video;
+    }
     services.haptics.impactLight();
     await recorder.start(plan.maxMs);
     const startedAt = performance.now();
@@ -210,7 +242,7 @@ export function TodayScreen({
     setElapsedMs(0);
     setPhase('recording');
     if (!holding.current) void finish();
-  }, [question, phase, allowed, mode, services, plan.maxMs, finish]);
+  }, [question, phase, allowed, mode, services, plan.maxMs, finish, openCamera, closeCamera]);
 
   /** Saves a photo, clip or note with the chosen extras; any failure shows a plain line. */
   const saveExtra = async (input: CaptureInput) => {
@@ -229,14 +261,15 @@ export function TodayScreen({
     if (action === 'note') return setNoteOpen(true);
     if (action === 'place') return setPlaceShown((shown) => !shown);
     if (action === 'photo') {
-      let state = await services.permissions.camera.get();
+      const state = await services.permissions.camera.get();
       if (state === 'undetermined') {
-        state = await services.permissions.camera.request();
-        setCameraAllowed(state === 'granted');
+        await services.permissions.camera.request();
         return;
       }
       if (state !== 'granted') return setNotice({ kind: 'denied', which: 'camera' });
-      const photo = await camera.current?.takePhoto();
+      const still = await openCamera();
+      const photo = still ? await still.takePhoto() : null;
+      closeCamera();
       if (!photo) return setNotice({ kind: 'couldNotSave' });
       services.haptics.impactLight();
       const media: MediaInput = {
@@ -276,12 +309,15 @@ export function TodayScreen({
   };
   const onPressOut = () => {
     holding.current = false;
+    // Released while the camera is still getting ready: cancel without recording.
+    waiting.current?.(null);
     void finish();
   };
   const onAccessibilityAction = (event: AccessibilityActionEvent) => {
     if (event.nativeEvent.actionName !== 'activate') return;
-    if (session.current) {
+    if (session.current || waiting.current) {
       holding.current = false;
+      waiting.current?.(null);
       void finish();
     } else {
       // A screen reader starts with one double tap and stops with the next.
@@ -302,7 +338,7 @@ export function TodayScreen({
   const questionView = question ? (
     <View style={styles.questionBlock}>
       <Text variant="label" tone="secondary">
-        {dayLabel(today)}
+        {dayLabel(question.askedOn)}
       </Text>
       {revealed.has(question.id) ? (
         <Text variant="question">{question.text}</Text>
@@ -428,11 +464,8 @@ export function TodayScreen({
 
   return (
     <View style={styles.screen}>
-      {cameraAllowed ? (
-        <View
-          style={[StyleSheet.absoluteFill, { opacity: recording ? 1 : 0 }]}
-          pointerEvents="none"
-        >
+      {cameraOn ? (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
           <CameraView onRecorder={onRecorder} style={StyleSheet.absoluteFill} />
         </View>
       ) : null}

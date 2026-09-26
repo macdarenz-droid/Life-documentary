@@ -1,6 +1,8 @@
 import { words } from '@life/story';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
+import type { fixedClock } from '../../application/testing/memory';
 import { todayHarness } from '../../application/testing/todayHarness';
 import { todayQuestion } from '../../application/todayQuestion';
 import { TodayScreen } from './TodayScreen';
@@ -159,5 +161,115 @@ describe('TodayScreen', () => {
       await jest.advanceTimersByTimeAsync(3000);
     });
     expect(screen.getByText('0:07')).toBeOnTheScreen();
+  });
+
+  it('runs the camera only during a video hold', async () => {
+    await setup();
+    expect(screen.queryByTestId('camera-preview')).toBeNull();
+    const button = screen.getByRole('button', { name: words.button.holdToAnswer });
+    await act(async () => {
+      fireEvent(button, 'pressIn');
+    });
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(2000);
+    });
+    expect(screen.getByTestId('camera-preview')).toBeOnTheScreen();
+    await act(async () => {
+      fireEvent(button, 'pressOut');
+    });
+    expect(await screen.findByRole('button', { name: words.button.saved })).toBeOnTheScreen();
+    expect(screen.queryByTestId('camera-preview')).toBeNull();
+  });
+
+  it('never mounts the camera in voice mode', async () => {
+    await setup();
+    await act(async () => {
+      fireEvent.press(screen.getByRole('radio', { name: words.today.modeVoice }));
+    });
+    const button = screen.getByRole('button', { name: words.button.holdToAnswer });
+    await act(async () => {
+      fireEvent(button, 'pressIn');
+    });
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(2000);
+    });
+    expect(screen.queryByTestId('camera-preview')).toBeNull();
+    await act(async () => {
+      fireEvent(button, 'pressOut');
+    });
+    expect(await screen.findByRole('button', { name: words.button.saved })).toBeOnTheScreen();
+    expect(screen.queryByTestId('camera-preview')).toBeNull();
+  });
+
+  it('gives up after three seconds when the camera never hands out a recorder', async () => {
+    const h = await todayHarness();
+    function SilentCamera() {
+      return <View testID="camera-preview" />;
+    }
+    const question = await todayQuestion(h.store, h.ctx.documentary, h.ctx.clock, h.ctx.ids);
+    await render(<TodayScreen {...todayScreenProps(h.ctx)} CameraView={SilentCamera} />);
+    await findQuestion(question.text);
+    const button = screen.getByRole('button', { name: words.button.holdToAnswer });
+    await act(async () => {
+      fireEvent(button, 'pressIn');
+    });
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(2999);
+    });
+    expect(screen.queryByText(words.today.couldNotSave)).toBeNull();
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(1);
+    });
+    expect(screen.getByText(words.today.couldNotSave)).toBeOnTheScreen();
+    expect(screen.queryByTestId('camera-preview')).toBeNull();
+    await act(async () => {
+      fireEvent(button, 'pressOut');
+    });
+    expect(await answers(h.store)).toEqual([]);
+  });
+
+  it('cancels without saving when released before the camera is ready', async () => {
+    const h = await todayHarness();
+    function SilentCamera() {
+      return <View testID="camera-preview" />;
+    }
+    const question = await todayQuestion(h.store, h.ctx.documentary, h.ctx.clock, h.ctx.ids);
+    await render(<TodayScreen {...todayScreenProps(h.ctx)} CameraView={SilentCamera} />);
+    await findQuestion(question.text);
+    await hold(1500);
+    expect(await screen.findByText(words.today.holdLonger)).toBeOnTheScreen();
+    expect(screen.queryByTestId('camera-preview')).toBeNull();
+    expect(await answers(h.store)).toEqual([]);
+  });
+
+  it("shows the new day's date and question after midnight", async () => {
+    const h = await todayHarness('2027-03-15T22:30:00Z');
+    const first = await todayQuestion(h.store, h.ctx.documentary, h.ctx.clock, h.ctx.ids);
+    const props = todayScreenProps(h.ctx);
+    const view = await render(<TodayScreen {...props} reloadKey={0} />);
+    await findQuestion(first.text);
+    expect(screen.getByText('Monday 15 March')).toBeOnTheScreen();
+    (h.ctx.clock as ReturnType<typeof fixedClock>).set('2027-03-15T23:30:00Z');
+    await view.rerender(<TodayScreen {...props} reloadKey={1} />);
+    expect(await screen.findByText('Tuesday 16 March')).toBeOnTheScreen();
+    const next = await todayQuestion(h.store, h.ctx.documentary, h.ctx.clock, h.ctx.ids);
+    expect(next.askedOn).toBe('2027-03-16');
+    await findQuestion(next.text);
+    expect(screen.queryByText('Monday 15 March')).toBeNull();
+  });
+
+  it('says the answer could not be saved when saving fails', async () => {
+    const h = await todayHarness();
+    const error = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const question = await todayQuestion(h.store, h.ctx.documentary, h.ctx.clock, h.ctx.ids);
+    const save = jest.fn(async () => {
+      throw new Error('disk full');
+    });
+    await render(<TodayScreen {...todayScreenProps(h.ctx)} save={save} />);
+    await findQuestion(question.text);
+    await hold(2000);
+    expect(await screen.findByText(words.today.couldNotSave)).toBeOnTheScreen();
+    expect(save).toHaveBeenCalledTimes(1);
+    error.mockRestore();
   });
 });

@@ -57,7 +57,6 @@ function labTodayProps(): TodayScreenProps {
     text: pick.text,
   });
   return {
-    today: LAB_DAY,
     loadQuestion: async () => question,
     save: async () => undefined,
     discard: async () => undefined,

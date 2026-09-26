@@ -12,7 +12,6 @@ import { TodayScreen, type TodayScreenProps } from './TodayScreen';
 export function todayScreenProps(ctx: CaptureContextValue): Omit<TodayScreenProps, 'reloadKey'> {
   const { store, clock, ids, documentary, services, CameraView } = ctx;
   return {
-    today: clock.today(documentary.timeZone),
     loadQuestion: () => todayQuestion(store, documentary, clock, ids),
     save: (input) => captureMoment(store, clock, ids, input),
     discard: async (path) => {
