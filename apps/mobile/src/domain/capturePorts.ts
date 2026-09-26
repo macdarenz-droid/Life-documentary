@@ -57,6 +57,10 @@ export interface SettingsOpener {
 export type CameraViewProps = {
   onRecorder: (recorder: VideoRecorder | null) => void;
   style?: unknown;
+  /** Which camera to use; each view has its own default. */
+  facing?: 'front' | 'back';
+  /** 'picture' for stills, 'video' (the default) for recordings. */
+  mode?: 'picture' | 'video';
 };
 
 /** The services a capture screen uses, except the video recorder that comes from a mounted camera view. */

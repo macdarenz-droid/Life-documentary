@@ -2,6 +2,7 @@ import { words } from '@life/story';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { RECORDING_BYTES, todayHarness } from '../../application/testing/todayHarness';
 import { todayQuestion } from '../../application/todayQuestion';
+import type { CameraViewProps } from '../../domain/capturePorts';
 import { TodayScreen } from './TodayScreen';
 import { todayScreenProps } from './TodayRoute';
 
@@ -50,6 +51,7 @@ describe('Today extras', () => {
   it('stores a photo moment with its asset', async () => {
     const { rows } = await setup();
     await press(words.extras.photo);
+    await press(words.extras.takePhoto);
     await waitFor(async () => expect(await rows()).toHaveLength(1));
     expect(await rows()).toEqual([
       { kind: 'photo', text: null, mood: null, place_name: null, local_only: 0, media: 'photo' },
@@ -119,8 +121,10 @@ describe('Today extras', () => {
     expect(await screen.findByText('The harbour')).toBeOnTheScreen();
     await press(words.extras.placeUse);
     await press(words.extras.photo);
+    await press(words.extras.takePhoto);
     await waitFor(async () => expect(await rows()).toHaveLength(1));
     await press(words.extras.photo);
+    await press(words.extras.takePhoto);
     await waitFor(async () => expect(await rows()).toHaveLength(2));
     const [first, second] = await rows();
     expect(first).toMatchObject({ mood: 'calm', place_name: 'The harbour' });
@@ -132,6 +136,7 @@ describe('Today extras', () => {
     await press(words.extras.place);
     expect(screen.queryByText('The harbour')).toBeNull();
     await press(words.extras.photo);
+    await press(words.extras.takePhoto);
     await waitFor(async () => expect(await rows()).toHaveLength(1));
     expect((await rows())[0]?.place_name).toBeNull();
   });
@@ -146,8 +151,55 @@ describe('Today extras', () => {
       );
     });
     await press(words.extras.photo);
+    await press(words.extras.takePhoto);
     await waitFor(async () => expect(await rows()).toHaveLength(1));
     expect((await rows())[0]?.local_only).toBe(1);
     expect(await jobs()).toBe(0);
+  });
+
+  it('opens a camera view for "Photo" and stores nothing until "Take photo"', async () => {
+    const { rows } = await setup();
+    expect(screen.queryByTestId('camera-preview')).toBeNull();
+    await press(words.extras.photo);
+    expect(screen.getByTestId('camera-preview')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: words.button.holdToAnswer })).toBeNull();
+    expect(await rows()).toEqual([]);
+    await press(words.extras.takePhoto);
+    await waitFor(async () => expect(await rows()).toHaveLength(1));
+    expect((await rows())[0]).toMatchObject({ kind: 'photo', media: 'photo' });
+    expect(screen.queryByTestId('camera-preview')).toBeNull();
+  });
+
+  it('stores nothing when the photo view is cancelled', async () => {
+    const { rows } = await setup();
+    await press(words.extras.photo);
+    expect(screen.getByTestId('camera-preview')).toBeOnTheScreen();
+    await press(words.extras.cancel);
+    expect(screen.queryByTestId('camera-preview')).toBeNull();
+    expect(screen.getByRole('button', { name: words.button.holdToAnswer })).toBeOnTheScreen();
+    expect(await rows()).toEqual([]);
+  });
+
+  it('flips the photo view between the back and the front camera', async () => {
+    const h = await todayHarness();
+    const Fake = h.ctx.CameraView;
+    const given: (string | undefined)[] = [];
+    function SpyCamera(props: CameraViewProps) {
+      given.push(props.facing);
+      return <Fake {...props} />;
+    }
+    const question = await todayQuestion(h.store, h.ctx.documentary, h.ctx.clock, h.ctx.ids);
+    await render(<TodayScreen {...todayScreenProps(h.ctx)} CameraView={SpyCamera} />);
+    await waitFor(() =>
+      expect(
+        screen.queryByLabelText(question.text) ?? screen.queryByText(question.text),
+      ).not.toBeNull(),
+    );
+    await press(words.extras.photo);
+    expect(given.at(-1)).toBe('back');
+    await press(words.extras.flip);
+    expect(given.at(-1)).toBe('front');
+    await press(words.extras.flip);
+    expect(given.at(-1)).toBe('back');
   });
 });

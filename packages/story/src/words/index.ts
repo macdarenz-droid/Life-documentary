@@ -36,6 +36,9 @@ export const words = {
     keepOnPhone: 'Keep on this phone',
     keepOnPhoneHelp: 'This moment stays on this phone and is never used in episodes.',
     saved: 'Saved',
+    takePhoto: 'Take photo',
+    flip: 'Flip',
+    cancel: 'Cancel',
   },
   moods: {
     bright: 'Bright',

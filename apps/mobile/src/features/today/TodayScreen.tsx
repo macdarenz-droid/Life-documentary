@@ -87,6 +87,10 @@ export function TodayScreen({
   const [placeShown, setPlaceShown] = useState(false);
   const [keepOnPhone, setKeepOnPhone] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
+  // "Photo" opens a full-screen camera; the still is taken from what the person sees.
+  const [photoOpen, setPhotoOpen] = useState(false);
+  const [facing, setFacing] = useState<'back' | 'front'>('back');
+  const [photoReady, setPhotoReady] = useState(false);
 
   /** Mood, place and keep-on-phone apply to the next capture only. */
   const extras = () => ({
@@ -126,6 +130,7 @@ export function TodayScreen({
 
   const onRecorder = useCallback((recorder: VideoRecorder | null) => {
     camera.current = recorder;
+    setPhotoReady(recorder !== null);
     if (recorder) waiting.current?.(recorder);
   }, []);
 
@@ -267,18 +272,8 @@ export function TodayScreen({
         return;
       }
       if (state !== 'granted') return setNotice({ kind: 'denied', which: 'camera' });
-      const still = await openCamera();
-      const photo = still ? await still.takePhoto() : null;
-      closeCamera();
-      if (!photo) return setNotice({ kind: 'couldNotSave' });
-      services.haptics.impactLight();
-      const media: MediaInput = {
-        sourcePath: photo.uri,
-        mediaKind: 'photo',
-        width: photo.width,
-        height: photo.height,
-      };
-      return saveExtra({ kind: 'photo', media, localOnly: false });
+      setFacing('back');
+      return setPhotoOpen(true);
     }
     const picked = await services.picker.pick();
     if (!picked) return;
@@ -301,6 +296,27 @@ export function TodayScreen({
       height: picked.height,
     };
     return saveExtra({ kind: 'clip', media, localOnly: false });
+  };
+
+  const closePhoto = () => {
+    camera.current = null;
+    setPhotoReady(false);
+    setPhotoOpen(false);
+  };
+
+  const takePhoto = async () => {
+    const still = camera.current;
+    const photo = still ? await still.takePhoto() : null;
+    closePhoto();
+    if (!photo) return setNotice({ kind: 'couldNotSave' });
+    services.haptics.impactLight();
+    const media: MediaInput = {
+      sourcePath: photo.uri,
+      mediaKind: 'photo',
+      width: photo.width,
+      height: photo.height,
+    };
+    return saveExtra({ kind: 'photo', media, localOnly: false });
   };
 
   const onPressIn = () => {
@@ -462,6 +478,37 @@ export function TodayScreen({
     </View>
   );
 
+  if (photoOpen) {
+    return (
+      <View style={styles.screen}>
+        <CameraView
+          onRecorder={onRecorder}
+          facing={facing}
+          mode="picture"
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.photoControls}>
+          <Button
+            label={words.extras.takePhoto}
+            disabled={!photoReady}
+            onPress={() => void takePhoto()}
+          />
+          <View style={styles.photoLinks}>
+            <Button
+              label={words.extras.flip}
+              variant="quiet"
+              onPress={() => {
+                services.haptics.selection();
+                setFacing((f) => (f === 'back' ? 'front' : 'back'));
+              }}
+            />
+            <Button label={words.extras.cancel} variant="quiet" onPress={closePhoto} />
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.screen}>
       {cameraOn ? (
@@ -510,4 +557,14 @@ const styles = StyleSheet.create({
   modes: { flexDirection: 'row', alignItems: 'center' },
   modeItem: { flexDirection: 'row', alignItems: 'center' },
   extras: { alignSelf: 'stretch', gap: tokens.space[4] },
+  photoControls: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: tokens.space[7],
+    alignItems: 'center',
+    gap: tokens.space[3],
+    paddingHorizontal: tokens.space[5],
+  },
+  photoLinks: { flexDirection: 'row', gap: tokens.space[4] },
 });

@@ -7,11 +7,12 @@ import type { CameraViewProps } from '../../domain/capturePorts';
 import { createCameraRecorder } from './cameraRecorder';
 import { readVideoMetadata, type ReadVideoMetadata } from './videoMetadata';
 
-type Props = CameraViewProps & { facing?: 'front' | 'back'; readMetadata?: ReadVideoMetadata };
+type Props = CameraViewProps & { readMetadata?: ReadVideoMetadata };
 
 /** Hands out a VideoRecorder once the camera is ready, and null when the view goes away. */
 export function CameraRecorderView({
   facing = 'front',
+  mode = 'video',
   style,
   onRecorder,
   readMetadata = readVideoMetadata,
@@ -27,7 +28,7 @@ export function CameraRecorderView({
     <CameraView
       ref={camera}
       style={style as StyleProp<ViewStyle>}
-      mode="video"
+      mode={mode}
       facing={facing}
       mute={false}
       videoQuality="1080p"
