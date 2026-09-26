@@ -108,17 +108,9 @@ Rules: nothing that was free becomes paid later (1SE and Snapchat backlash). Sto
 
 ## 10. Look and feel
 
-Cinema, not social. Dark theatre interface by default; the footage is the colour. Quiet typography, film-style title cards, a documentary tone in every string (warm, specific, never cute or gamified). No confetti, no badges, no streak flames. Accessibility: WCAG 2.2 AA, captions on every episode by default, reduced-motion respected.
+A film, not an app. The references are title sequences and cinema brands (Apple TV, Severance's titles, A24, MUBI), not app templates. The footage is the only colour; the interface is black, near-black and warm white with one amber action per screen. Type is huge and quiet (Instrument Serif) or small and confident (Inter), never medium. Everything that moves in space moves on an interruptible spring and follows the finger; objects travel between screens instead of cutting; frequent actions do not animate; rare moments (a new episode, the premiere) get the full treatment. Documentary tone in every string. No confetti, badges, streak flames, bouncy overshoot or template transitions. WCAG 2.2 AA, captions on every episode, reduced motion respected (gentler, not dead).
 
-Working palette (design system to confirm in P2):
-
-| Token | Hex |
-|---|---|
-| Theatre Black | `#0A0A0C` |
-| Velvet | `#1A1418` |
-| Screen White | `#F4F1EC` |
-| Film Amber | `#E0A458` |
-| Projector Cyan | `#7FD1E6` |
+Full direction, tokens and the nine signature transitions: `docs/design/DESIGN.md` (owner request 2026-09-26: "premium websites for the design, smooth transitions rather than generic Figma templates").
 
 ## 11. Risks the vision accepts
 
@@ -130,4 +122,5 @@ Working palette (design system to confirm in P2):
 ## Owner clarifications
 
 - 2026-09-26 · "I'm using the repo as fresh, we will use this repo for this product." The repository `macdarenz-droid/Life-documentary` is the product's home.
+- 2026-09-26 · "I want use premium websites for the design. Smooth transitions rather than generic Figma templates." See §10 and `docs/design/DESIGN.md`.
 - 2026-09-26 · The product definition in this file is the supervisor's working definition from research. The owner has not yet confirmed or corrected it. Until then it is the authority for architecture and tasks.

@@ -48,7 +48,8 @@ packages/
   story/             pure engine: question engine, week brief, plan validation, edit ops, recap plan, words
   render/            Remotion project: compositions (TitleCard, Scene, LowerThird, Closing, Captions),
                      fixtures, local render CLI, Lambda deploy scripts
-  design/            design tokens (JSON + TS): colours, type, spacing, motion; consumed by mobile and render
+  design/            design tokens (TS): colour, type, spacing, motion springs and curves, haptics, texture;
+                     consumed by mobile and render (docs/design/DESIGN.md)
 tooling/             tsconfig base, eslint, prettier, dependency-cruiser boundary config, scripts
 docs/                VISION, architecture, decisions, research (this repo is the single source)
 tasks/               TASKS.md queue and task text files (mirrored to the Relay)
@@ -66,7 +67,7 @@ CLAUDE.md            golden rules for coding agents
 | `domain/` | pure types and rules specific to the device (re-exports from `packages/contracts` and `packages/story`) | `packages/*`, `shared/lib` |
 | `data/` | SQLite via `expo-sqlite` + Drizzle: schema, append-only migrations, repositories, integrity; encrypted file store; upload queue table | `domain`, `shared` |
 | `services/` | adapters: API client (typed by contracts), camera, audio recorder, video player, notifications, secure store, background tasks, share, location (place name only), purchases | `domain`, `shared` |
-| `design-system/` | tokens (from `packages/design`), primitives (Button, Field, Card, Sheet, TitleCard, Player) | `shared` |
+| `design-system/` | tokens (from `packages/design`), fonts, primitives (Text, Button, Field, Surface, Tray), `motion/` signature transitions (DESIGN §3) and the reduced-motion hook | `shared`, `packages/design` |
 | `shared/` | config (build info), small helpers | nothing |
 
 Nothing imports from `app/`. Only `data/` imports the SQLite driver. Only `services/` imports Expo device modules and the API client. Enforced by `tooling/dependency-cruiser` in CI (task T-001c).
