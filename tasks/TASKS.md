@@ -41,12 +41,8 @@ Built to `docs/design/DESIGN.md` (owner request 2026-09-26: premium, smooth, not
 ### T-003a · P2.1 · Tokens and words · done · needs: T-001a
 Text: `tasks/p2/T-003.md`.
 
-### T-003b · P2.2 · Fonts, primitives and the motion preference · changes r1 · needs: T-003a, T-001c
-Text: `tasks/p2/T-003.md`.
-**Fix list r1** (review of 08efbc2; everything else approved):
-1. The P2 rule "every animated component has a test for its reduced-motion path" is not met for `Button`. Add a test in `Button.test.tsx`: with reduced motion on (mock `useReducedMotion` to return `true`), pressing in changes opacity and never sets a scale transform; with it off, pressing in scales and leaves opacity alone. Check the animated style through Reanimated's Jest support (`setUpTests` matchers or the rendered style after advancing timers), not the source.
-2. No size literal in `src/design-system`: add `border = { outline: 1, ring: 2 } as const` to `packages/design` (export it by name and as `tokens.border`), use it in `Button` and `Field`, and delete `src/design-system/borders.ts`. This fix may edit `packages/design/src/tokens.ts` and `index.ts`.
-Checks: mobile tests (the new test fails on a Button that always scales), typecheck, lint, format, boundaries.
+### T-003b · P2.2 · Fonts, primitives and the motion preference · done · needs: T-003a, T-001c
+Text: `tasks/p2/T-003.md`. Fix r1 approved (`f144454`).
 
 ### T-003c · P2.3 · Signature motion components (P2 set) · todo · needs: T-003b
 Text: `tasks/p2/T-003.md`.

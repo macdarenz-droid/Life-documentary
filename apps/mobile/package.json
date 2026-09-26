@@ -10,17 +10,26 @@
     "build": "expo export --platform ios --output-dir dist/ios --dump-sourcemap false"
   },
   "dependencies": {
+    "@expo-google-fonts/instrument-serif": "^0.4.1",
+    "@expo-google-fonts/inter": "^0.4.2",
     "@life/contracts": "workspace:*",
     "@life/design": "workspace:*",
+    "@life/story": "workspace:*",
     "expo": "~57.0.25",
     "expo-constants": "~57.0.19",
+    "expo-font": "~57.0.4",
+    "expo-haptics": "~57.0.3",
     "expo-linking": "~57.0.11",
     "expo-router": "~57.0.23",
+    "expo-splash-screen": "~57.0.9",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-native": "0.86.3",
+    "react-native-gesture-handler": "~2.32.0",
+    "react-native-reanimated": "4.5.1",
     "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "~4.26.0"
+    "react-native-screens": "~4.26.0",
+    "react-native-worklets": "0.10.1"
   },
   "devDependencies": {
     "@testing-library/react-native": "^14.0.1",
