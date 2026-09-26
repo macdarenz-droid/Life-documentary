@@ -2,7 +2,7 @@
 
 The supervisor keeps this file current and starts every coder session from it. Model `claude-opus-5-5` at medium effort, a new session whenever the previous one grows past about 250,000 tokens (replaced only between tasks).
 
-**How a coder session is started** (by the supervisor, `create_session`): `model` `claude-opus-5-5`; `source_url` `https://github.com/macdarenz-droid/Life-documentary`; `source_revision` = the base branch; `outcome_branch` = the coder branch; `append_system_prompt` = the Rulebook block; `prompt` = the Loop block.
+**How a coder session is started** (by the supervisor, `create_session`): `model` `claude-opus-5-5`; `source_url` `https://github.com/macdarenz-droid/Life-documentary`; `source_revision` = the base branch; `outcome_branch` = the coder branch; `append_system_prompt` = the Rulebook block; `prompt` = the Loop block. Then `create_trigger` an hourly routine into the new session (name "Life Documentary coder hourly backstop", prompt = the Loop block plus one Supervisor note line) so the loop restarts even after a failed turn, and delete the previous coder's backstop.
 
 ## Rulebook (appended to the coder's system prompt)
 
