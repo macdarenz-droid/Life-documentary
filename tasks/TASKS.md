@@ -64,10 +64,10 @@ Text: `tasks/p7/T-005.md`.
 ### T-004a · P3.1 · Domain contracts v1 · done · needs: T-005a
 Text: `tasks/p3/T-004.md`.
 
-### T-006a · P11.1 · Episode contracts · todo · needs: T-004a
+### T-006a · P11.1 · Episode contracts · done · needs: T-004a
 Text: `tasks/p11/T-006.md`.
 
-### T-006b · P11.2 · The shareable rule, the week brief and 20 synthetic weeks · todo · needs: T-006a
+### T-006b · P11.2 · The shareable rule, the week brief and 20 synthetic weeks · done · needs: T-006a
 Text: `tasks/p11/T-006.md`.
 
 ### T-006c · P11.3 · Plan validation and the recap plan · todo · needs: T-006b
