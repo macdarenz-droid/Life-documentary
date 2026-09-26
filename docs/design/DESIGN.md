@@ -58,6 +58,7 @@ export const ease = {
 export const duration = { press: 120, micro: 180, ui: 260, dissolve: 320, scene: 520, title: 900, titleHold: 2200 } as const;
 export const stagger  = { list: 40, listCap: 6, word: 60, char: 22 } as const;
 export const scale    = { press: 0.97, enterFrom: 0.96, cardLift: 1.02 } as const;
+export const textMorph = { shift: 0.3 } as const;                 // Text Morph slide, share of the line height
 export const texture  = { grainOpacity: 0.035, grainFps: 24, crossfadeBlurPx: 3, kenBurns: { from: 1.0, to: 1.06, ms: 12000 } } as const;
 export const letterboxAspect = 2.39;
 ```

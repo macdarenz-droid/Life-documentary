@@ -44,11 +44,22 @@ Text: `tasks/p2/T-003.md`.
 ### T-003b · P2.2 · Fonts, primitives and the motion preference · done · needs: T-003a, T-001c
 Text: `tasks/p2/T-003.md`. Fix r1 approved (`f144454`).
 
-### T-003c · P2.3 · Signature motion components (P2 set) · todo · needs: T-003b
+### T-003c · P2.3 · Signature motion components (P2 set) · changes r1 · needs: T-003b
 Text: `tasks/p2/T-003.md`.
+**Fix list r1** (review of 48ef1bd; the plans, Text Morph, Grain and Breath and the tests are approved):
+1. Reduced-motion Dissolve dims halfway: with no blurred copy underneath, the outgoing layer fades 1 → 0 while the incoming fades 0 → 1 on top, so at the midpoint only 75 % of the frame is covered (`Dissolve.tsx` 97–100). When `reduced`, keep the outgoing image at opacity 1 (no `FadingLayer`) until `clearPrev` removes it. Test: halfway through a reduced dissolve the outgoing image's animated opacity is 1.
+2. Dissolve accessibility: the current image is always `accessible` with no role (`Dissolve.tsx` 110). Give it `accessibilityRole="image"` and make it accessible only when `accessibilityLabel` is given. Test: `getByRole('image', { name })` with a label; nothing exposed without one.
+3. TitleCard restarts if the parent re-renders with a new inline `onDone`: `onDone` is in both effects' dependencies (`TitleCard.tsx` 63 and 108). Keep `onDone` in a ref and drop it from the dependencies. Test: re-render with a new `onDone` 300 ms in; `onDone` still fires once, at the original end.
+Checks: mobile tests, typecheck, lint, format, boundaries.
 
-### T-003d · P2.4 · Design Lab and a recorded web preview in CI · todo · needs: T-003c, T-001d
+### T-003d · P2.4 · Design Lab and a recorded web preview in CI · changes r1 · needs: T-003c, T-001d
 Text: `tasks/p2/T-003.md`.
+**Fix list r1** (review of 9f3468e; the lab, web export, Playwright spec and `lab` job are approved):
+1. Do 1 asks for Field "empty, focused, error"; the second field is filled, never focused, so the ring never shows. Give the three fields distinct labels, and in the spec's Field step focus the second one and assert it is focused before the dwell.
+2. The recording never shows the Title Card motion: it plays on mount and ends before the section scrolls into view. In the spec's Title Card step press "Play again" (`getByRole('button', { name: words.lab.replay })`) before the dwell.
+3. `frame: { height: tokens.space[8] * 3 }` (`design-lab.tsx` 173) is an inline size; use `aspectRatio: tokens.motion.letterboxAspect` (or another token) instead.
+4. The disabled `Switch` always says "Reduced motion is on" to a screen reader, even when it is off (`design-lab.tsx` 86). Hide the Switch from accessibility and let the text line carry the state.
+Checks: Playwright 2/2 locally, CI `lab` job green with the video artifact.
 
 ### T-003e · P2.5 · Episodes share the tokens and the type · changes r1 · needs: T-003a, T-002b
 Text: `tasks/p2/T-003.md`.
