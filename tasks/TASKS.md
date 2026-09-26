@@ -56,12 +56,12 @@ Text: `tasks/p2/T-003.md`. Fix r1 approved (`4902739`).
 ### T-005a · P7 · Question contracts, dates and the template bank · done · needs: T-001a
 Text: `tasks/p7/T-005.md`.
 
-### T-005b · P7 · The engine and a simulated year · todo · needs: T-005a
+### T-005b · P7 · The engine and a simulated year · done · needs: T-005a
 Text: `tasks/p7/T-005.md`.
 
 ## P3 + P11 — Stored shapes and the pure story engine
 
-### T-004a · P3.1 · Domain contracts v1 · todo · needs: T-005a
+### T-004a · P3.1 · Domain contracts v1 · done · needs: T-005a
 Text: `tasks/p3/T-004.md`.
 
 ### T-006a · P11.1 · Episode contracts · todo · needs: T-004a
