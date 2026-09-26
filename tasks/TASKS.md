@@ -50,8 +50,12 @@ Text: `tasks/p2/T-003.md`.
 ### T-003d · P2.4 · Design Lab and a recorded web preview in CI · todo · needs: T-003c, T-001d
 Text: `tasks/p2/T-003.md`.
 
-### T-003e · P2.5 · Episodes share the tokens and the type · todo · needs: T-003a, T-002b
+### T-003e · P2.5 · Episodes share the tokens and the type · changes r1 · needs: T-003a, T-002b
 Text: `tasks/p2/T-003.md`.
+**Fix list r1** (review of ce7ae3d; the title card, fonts, label and moved `titleCardPlan` are approved):
+1. The caption scrim cuts in and out: `Captions.tsx` draws the gradient only while a caption is on screen, so the lower half of the frame darkens in one frame at 5,000 ms and brightens in one frame at 7,500 ms (checked on the rendered fixture). Add a pure helper `captionScrimOpacity(ms, captions, fadeMs)` in `packages/render/src/episode/captionScrim.ts`: for each run of touching or overlapping captions it rises linearly from 0 at `fromMs − fadeMs` to 1 at the run's first `fromMs`, stays 1 through the run, and falls to 0 at the run's last `toMs + fadeMs`; 0 elsewhere. Render the scrim as its own layer with that opacity (`fadeMs = duration.micro`); the caption text keeps appearing at `fromMs`. Tests (`packages/render/test/captionScrim.test.ts`): 0 before and after a run, 0.5 halfway through the fade-in, 1 at `fromMs`, 1 at the joint of two touching captions, two separate runs fade separately.
+2. The grain makes the render much slower: the fixture render took 103.9 s locally against 62.8 s before this task (CI step 87 s against 62 s), because `Grain.tsx` computes `noise3D` for every grain pixel on every grain frame. Keep the look but compute at most 8 distinct grain frames per render and cycle them (`grainFrame % 8`), or use an SVG `feTurbulence` filter with a per-frame `seed`, whichever keeps `texture.grainOpacity` and `texture.grainFps`. Acceptance: the CI "Render fixture episode" step takes at most 72 s; report the old and new numbers.
+Checks: render tests, typecheck, lint, format, boundaries; CI `render` job green with the artifact.
 
 ## P7 — Question engine
 Pure, deterministic, in `packages/story`; wired to storage in P8/P9.
