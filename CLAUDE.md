@@ -20,9 +20,10 @@ Read this before every task. The product is described in `docs/VISION.md`, the s
 15. **Versions.** Use the pins in DECISIONS D25. Never upgrade a major version unless the task says so.
 
 ## Commands (repo root; run `pnpm install` first)
-Filled in by task T-001a and kept current by the tasks that change them:
-- `pnpm typecheck` · `pnpm lint` · `pnpm boundaries` · `pnpm test` · `pnpm build`
-- Per workspace: `pnpm --filter <name> <script>`
+Kept current by the tasks that change them:
+- `pnpm typecheck` · `pnpm lint` · `pnpm format:check` (`pnpm format` rewrites) · `pnpm boundaries` (dependency-cruiser + banned identifiers) · `pnpm test` (workspaces, then tooling) · `pnpm build`
+- `pnpm types:api` regenerates `apps/api/worker-configuration.d.ts`; run `pnpm format` after it.
+- Per workspace: `pnpm --filter <name> <script>`, e.g. `pnpm --filter @life/api deploy:dry`
 
 ## Git
 - Work only on your own branch. Never push to another branch, never force-push, never rebase or amend a pushed commit, never merge a PR.
