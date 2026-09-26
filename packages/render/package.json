@@ -1,0 +1,31 @@
+{
+  "name": "@life/render",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio",
+    "fixtures": "tsx scripts/make-fixtures.mts",
+    "render:fixture": "pnpm fixtures && tsx scripts/render-fixture.mts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@life/contracts": "workspace:*",
+    "@life/design": "workspace:*",
+    "@life/story": "workspace:*",
+    "@remotion/bundler": "4.0.529",
+    "@remotion/cli": "4.0.529",
+    "@remotion/renderer": "4.0.529",
+    "@remotion/zod-types": "4.0.529",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.529"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "~19.2.2",
+    "tsx": "^4.23.15",
+    "vitest": "~4.1.11"
+  }
+}

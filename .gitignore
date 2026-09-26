@@ -9,3 +9,5 @@ apps/mobile/ios
 apps/mobile/android
 coverage
 .DS_Store
+packages/render/public/fixtures/
+packages/render/out/
