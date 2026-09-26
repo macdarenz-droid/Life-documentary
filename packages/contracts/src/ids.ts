@@ -16,6 +16,10 @@ export const LocalDate = z
   .refine(isRealDate, { message: 'Date does not exist' });
 export type LocalDate = z.infer<typeof LocalDate>;
 
+/** An instant in UTC, ISO 8601 with a time and a trailing `Z` (no offsets). */
+export const Timestamp = z.iso.datetime();
+export type Timestamp = z.infer<typeof Timestamp>;
+
 function isKnownTimeZone(timeZone: string): boolean {
   if (typeof Intl.supportedValuesOf === 'function') {
     if (Intl.supportedValuesOf('timeZone').includes(timeZone)) return true;

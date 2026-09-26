@@ -4,3 +4,4 @@ export * from './errors';
 export * from './health';
 export * from './render/renderManifest';
 export * from './question';
+export * from './domain';
