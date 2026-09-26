@@ -8,7 +8,7 @@ The one current picture of how Life Documentary is built and how work flows. The
 ┌──────────────────────────── device (Expo, TypeScript) ────────────────────────────┐
 │ Today (question → 10 s answer) · Footage (archive) · Episode (watch, 5 edits)      │
 │ Storylines · Cast · Crew · Settings                                                 │
-│ SQLite (Drizzle) = the moments, questions, storylines, cast, episodes (views)       │
+│ SQLite (expo-sqlite) = the moments, questions, storylines, cast, episodes (views)   │
 │ Encrypted file store = originals · Upload queue (multipart, resumable)              │
 │ Question engine (pure, deterministic) · Sync (pull/push, LWW)                       │
 └───────────────┬───────────────────────────────────────────────────┬───────────────┘
@@ -65,7 +65,7 @@ CLAUDE.md            golden rules for coding agents
 | `features/<surface>/` | screens and components: `today`, `footage`, `episode`, `storylines`, `cast`, `crew`, `season`, `settings`, `onboarding` | `application`, `domain`, `design-system`, `shared` |
 | `application/` | use cases and projections: `captureMoment`, `answerQuestion`, `todayQuestion`, `storylines`, `cast`, `episodes` (views and edit requests), `sync`, `uploads`, `account`, `export` | `data`, `domain`, `shared`, port **types** from `services` |
 | `domain/` | pure types and rules specific to the device (re-exports from `packages/contracts` and `packages/story`) | `packages/*`, `shared/lib` |
-| `data/` | SQLite via `expo-sqlite` + Drizzle: schema, append-only migrations, repositories, integrity; encrypted file store; upload queue table | `domain`, `shared` |
+| `data/` | SQLite via `expo-sqlite` behind a `SqlDriver` port (D32): schema, append-only migrations, repositories, integrity; encrypted file store over port types (D33); upload queue table | `domain`, `shared` |
 | `services/` | adapters: API client (typed by contracts), camera, audio recorder, video player, notifications, secure store, background tasks, share, location (place name only), purchases | `domain`, `shared` |
 | `design-system/` | tokens (from `packages/design`), fonts, primitives (Text, Button, Field, Surface, Tray), `motion/` signature transitions (DESIGN §3) and the reduced-motion hook | `shared`, `packages/design` |
 | `shared/` | config (build info), small helpers | nothing |
