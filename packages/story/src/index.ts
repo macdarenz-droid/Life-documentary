@@ -7,4 +7,6 @@ export * from './words/questions';
 export * from './questionEngine';
 export * from './shareable';
 export * from './weekBrief';
+export * from './planValidation';
+export * from './recapPlan';
 export * from './motion/titleCardPlan';

@@ -17,3 +17,4 @@ export const words = {
 } as const;
 
 export const bannedWords = ['streak', 'badge', 'level up', 'leaderboard', 'points', 'xp'] as const;
+export * from './recap';
