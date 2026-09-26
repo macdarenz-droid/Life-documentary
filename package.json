@@ -11,15 +11,20 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "pnpm -r --if-present test",
-    "build": "pnpm -r --if-present build"
+    "test": "pnpm -r --if-present test && vitest run --config tooling/vitest.config.ts",
+    "build": "pnpm -r --if-present build",
+    "types:api": "pnpm --filter @life/api exec wrangler types",
+    "boundaries": "depcruise apps packages --config tooling/dependency-cruiser.cjs && pnpm banned",
+    "banned": "node tooling/scripts/check-banned-identifiers.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "dependency-cruiser": "^18.4.0",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.9",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.70.1"
+    "typescript-eslint": "^8.70.1",
+    "vitest": "~4.1.11"
   }
 }

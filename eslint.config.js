@@ -16,6 +16,7 @@ export default tseslint.config(
       '**/node_modules',
       '**/out',
       '**/.wrangler',
+      'apps/api/worker-configuration.d.ts',
       'apps/mobile/android',
       'apps/mobile/ios',
     ],
