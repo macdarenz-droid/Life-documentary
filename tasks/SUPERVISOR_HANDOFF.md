@@ -63,6 +63,9 @@ Then the coder continues with T-001d, T-002a, T-003a and onward; it reads TASKS 
 - Coder session control: `get_session`, `send_message`/`create_trigger` (to nudge), `create_session` (to replace it, from `tasks/CODER_PROMPT.md`), `archive_session` for the old one.
 - Wake yourself with `subscribe_pr_activity` on PR #1 (coder comments arrive as events) plus a self-scheduled check-in (`send_later` or `/loop`) every 25–30 minutes while the coder is active.
 
+## Continuity (owner rule, 2026-09-26)
+Every loop is continuous. Keep two hourly backstop routines alive (`list_triggers`): "Life Documentary supervisor hourly backstop" into the supervisor session and "Life Documentary coder hourly backstop" into the coder session. When you replace the coder, `update_trigger` the coder backstop's target by deleting it and creating it again for the new session. Watchdog the coder on every tick (`get_session`): a failed or idle coder with a takeable task gets a wake (`create_trigger`, run once in 1 minute, the Loop block); a coder past ~250k tokens is replaced between tasks. Owner decisions made in chat are recorded in `docs/COACHING-DECISIONS.md` (standing merge permission included).
+
 ## Acceptance criteria for the handover
 - The new supervisor reviews T-001b fix r1 and T-001c within its first hour, and the coder is never left more than 3 hours without a review.
 - TASKS, PROJECT_STATE, the Relay dashboard and LOG agree after every review.
