@@ -1,0 +1,11 @@
+**/dist
+**/.expo
+**/node_modules
+**/out
+**/.wrangler
+apps/mobile/android
+apps/mobile/ios
+pnpm-lock.yaml
+CLAUDE.md
+docs
+tasks
