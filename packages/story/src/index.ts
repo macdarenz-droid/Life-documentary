@@ -1,5 +1,7 @@
 export const STORY_ENGINE_VERSION = 1 as const;
 export * from './render/timeline';
 export * from './render/fixtureManifest';
+export * from './dates';
 export * from './words';
+export * from './words/questions';
 export * from './motion/titleCardPlan';
