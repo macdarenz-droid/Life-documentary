@@ -8,7 +8,6 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { OUTLINE_WIDTH } from './borders';
 import { pickMotion, useMotionPreference } from './motionPreference';
 import { Text } from './Text';
 
@@ -96,7 +95,7 @@ const styles = StyleSheet.create({
   primary: { backgroundColor: tokens.color.accent },
   quiet: {
     backgroundColor: 'transparent',
-    borderWidth: OUTLINE_WIDTH,
+    borderWidth: tokens.border.outline,
     borderColor: rgba(tokens.color.ash.hex, tokens.color.ash.alpha),
   },
 });

@@ -1,6 +1,12 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import * as Haptics from 'expo-haptics';
+import { getAnimatedStyle, useReducedMotion } from 'react-native-reanimated';
 import { Button } from './Button';
+
+jest.mock('react-native-reanimated', () => ({
+  ...jest.requireActual('react-native-reanimated'),
+  useReducedMotion: jest.fn(() => false),
+}));
 
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(() => Promise.resolve()),
@@ -8,7 +14,26 @@ jest.mock('expo-haptics', () => ({
   ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
 }));
 
-beforeEach(() => jest.clearAllMocks());
+const mockedReducedMotion = jest.mocked(useReducedMotion);
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockedReducedMotion.mockReturnValue(false);
+});
+
+afterEach(() => jest.useRealTimers());
+
+async function pressInAndSettle(name: string) {
+  jest.useFakeTimers();
+  await render(<Button label={name} onPress={jest.fn()} />);
+  const button = screen.getByRole('button', { name });
+  const before = getAnimatedStyle(button);
+  await fireEvent(button, 'pressIn');
+  await act(async () => {
+    jest.advanceTimersByTime(1000);
+  });
+  return { before, after: getAnimatedStyle(button) };
+}
 
 describe('Button', () => {
   it('calls onPress once per tap', async () => {
@@ -40,5 +65,21 @@ describe('Button', () => {
     await fireEvent.press(button);
     expect(Haptics.impactAsync).not.toHaveBeenCalled();
     expect(Haptics.selectionAsync).not.toHaveBeenCalled();
+  });
+
+  it('with reduced motion on, pressing in dims the opacity and never scales', async () => {
+    mockedReducedMotion.mockReturnValue(true);
+    const { before, after } = await pressInAndSettle('Keep this');
+    expect(before).not.toHaveProperty('transform');
+    expect(after).not.toHaveProperty('transform');
+    expect(after.opacity).toBeLessThan(1);
+  });
+
+  it('with reduced motion off, pressing in scales and leaves opacity alone', async () => {
+    const { before, after } = await pressInAndSettle('Keep this');
+    expect(before).toMatchObject({ transform: [{ scale: 1 }] });
+    expect(after.transform).toEqual([{ scale: expect.any(Number) }]);
+    expect((after.transform as { scale: number }[])[0]?.scale).toBeLessThan(1);
+    expect(after).not.toHaveProperty('opacity');
   });
 });

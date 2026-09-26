@@ -8,7 +8,6 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { FOCUS_RING_WIDTH } from './borders';
 import { Text } from './Text';
 
 export type FieldProps = {
@@ -73,7 +72,7 @@ export function Field({
 const styles = StyleSheet.create({
   container: { gap: tokens.space[2] },
   ring: {
-    borderWidth: FOCUS_RING_WIDTH,
+    borderWidth: tokens.border.ring,
     borderRadius: tokens.radius.md,
     backgroundColor: tokens.color.surface,
   },
