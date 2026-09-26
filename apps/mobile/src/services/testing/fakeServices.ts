@@ -27,6 +27,7 @@ export function fakeServices(
 ): FakeServices {
   const videoPath = options.videoPath ?? 'tmp/fake-video.mp4';
   const voicePath = options.voicePath ?? 'tmp/fake-voice.m4a';
+  const photoPath = 'tmp/fake-photo.jpg';
   const states: Record<keyof Permissions, PermissionState> = {
     camera: 'granted',
     microphone: 'granted',
@@ -55,6 +56,10 @@ export function fakeServices(
             width: 1080,
             height: 1920,
           };
+        },
+        takePhoto: async () => {
+          services.onRecordingFile?.(photoPath);
+          return { uri: photoPath, width: 3024, height: 4032 };
         },
       };
     })(),

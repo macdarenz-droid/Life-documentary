@@ -14,8 +14,7 @@ export function todayScreenProps(ctx: CaptureContextValue): Omit<TodayScreenProp
   return {
     today: clock.today(documentary.timeZone),
     loadQuestion: () => todayQuestion(store, documentary, clock, ids),
-    saveAnswer: ({ questionId, media }) =>
-      captureMoment(store, clock, ids, { kind: 'answer', questionId, media, localOnly: false }),
+    save: (input) => captureMoment(store, clock, ids, input),
     discard: async (path) => {
       if (await store.io.exists(path)) await store.io.remove(path);
     },

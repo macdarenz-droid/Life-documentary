@@ -12,6 +12,7 @@ function fakeView() {
       view.stopped += 1;
       finish({ uri: 'file:///rec.mov' });
     },
+    takePictureAsync: async () => ({ uri: 'file:///still.jpg', width: 3024, height: 4032 }),
   };
   return { view, capAt: () => finish({ uri: 'file:///rec.mov' }) };
 }
@@ -47,6 +48,19 @@ describe('createCameraRecorder', () => {
     await recorder.start(10_000);
     expect(await recorder.stop()).toBeNull();
     expect(view.stopped).toBe(1);
+  });
+
+  it('takes a still with the size the camera reports', async () => {
+    const { view } = fakeView();
+    const recorder = createCameraRecorder(
+      () => view,
+      async () => null,
+    );
+    expect(await recorder.takePhoto()).toEqual({
+      uri: 'file:///still.jpg',
+      width: 3024,
+      height: 4032,
+    });
   });
 
   it('gives null when nothing was recorded', async () => {

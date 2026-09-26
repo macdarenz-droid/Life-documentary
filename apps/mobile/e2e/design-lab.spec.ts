@@ -32,8 +32,10 @@ test('the Design Lab shows every section without console errors', async ({ page 
   await page.goto('/design-lab');
   await expect(page.getByRole('heading', { name: 'Design lab' })).toBeVisible();
   await expect(page.getByText(REDUCED_LABEL)).toHaveCount(0);
-  // The state Switch is decoration; screen readers get the text line only.
-  await expect(page.getByRole('switch')).toHaveCount(0);
+  // The state Switch is decoration; screen readers get the text line only. The one switch they get is the
+  // Today section's labelled "Keep on this phone" toggle.
+  await expect(page.getByRole('switch')).toHaveCount(1);
+  await expect(page.getByRole('switch', { name: words.extras.keepOnPhone })).toHaveCount(1);
 
   for (const name of SECTIONS) {
     const heading = page.getByRole('heading', { name, exact: true });
@@ -57,6 +59,11 @@ test('the Design Lab shows every section without console errors', async ({ page 
       await page.mouse.up();
       await expect(page.getByRole('button', { name: words.button.saved }).last()).toBeVisible();
       await expect(page.getByRole('button', { name: words.button.holdToAnswer })).toHaveCount(1);
+      // The quiet row opens the note tray.
+      await page.getByRole('button', { name: words.extras.note, exact: true }).click();
+      await expect(page.getByLabel(words.extras.noteLabel)).toBeVisible();
+      await page.waitForTimeout(1000);
+      await page.getByRole('button', { name: words.extras.close }).click();
     }
     if (name === 'Title Card') {
       await page.getByRole('button', { name: REPLAY }).click();

@@ -4,6 +4,8 @@
 export interface VideoRecorder {
   start(maxMs: number): Promise<void>;
   stop(): Promise<{ uri: string; durationMs: number; width: number; height: number } | null>;
+  /** A still from the same camera; null when nothing was taken. */
+  takePhoto(): Promise<{ uri: string; width: number; height: number } | null>;
 }
 
 export interface VoiceRecorder {

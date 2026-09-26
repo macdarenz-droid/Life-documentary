@@ -7,6 +7,7 @@ import type { ReadVideoMetadata } from './videoMetadata';
 export type RecordingView = {
   recordAsync(options: { maxDuration: number }): Promise<{ uri: string } | undefined>;
   stopRecording(): void;
+  takePictureAsync(): Promise<{ uri: string; width: number; height: number }>;
 };
 
 export function createCameraRecorder(
@@ -29,6 +30,12 @@ export function createCameraRecorder(
       if (!video) return null;
       const meta = await readMetadata(video.uri);
       return meta ? { uri: video.uri, ...meta } : null;
+    },
+    takePhoto: async () => {
+      const current = view();
+      if (!current) return null;
+      const photo = await current.takePictureAsync();
+      return { uri: photo.uri, width: photo.width, height: photo.height };
     },
   };
 }

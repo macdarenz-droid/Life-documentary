@@ -59,7 +59,7 @@ function labTodayProps(): TodayScreenProps {
   return {
     today: LAB_DAY,
     loadQuestion: async () => question,
-    saveAnswer: async () => undefined,
+    save: async () => undefined,
     discard: async () => undefined,
     services,
     CameraView: fakeCameraView(services.video),
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: tokens.color.background },
   content: { padding: tokens.space[5], gap: tokens.space[6] },
   section: { gap: tokens.space[3] },
-  today: { height: 640, overflow: 'hidden', borderRadius: tokens.radius.md },
+  today: { height: 1040, overflow: 'hidden', borderRadius: tokens.radius.md },
   sectionBody: { gap: tokens.space[3] },
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space[3] },
   swatch: {

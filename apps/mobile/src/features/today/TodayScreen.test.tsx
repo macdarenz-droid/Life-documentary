@@ -101,8 +101,9 @@ describe('TodayScreen', () => {
   it('stops at ten seconds and saves', async () => {
     const { store, services } = await setup();
     const stop = jest.spyOn(services.video, 'stop');
+    const button = screen.getByRole('button', { name: words.button.holdToAnswer });
     await act(async () => {
-      fireEvent(screen.getByRole('button', { name: words.button.holdToAnswer }), 'pressIn');
+      fireEvent(button, 'pressIn');
     });
     await act(async () => {
       await jest.advanceTimersByTimeAsync(9999);
@@ -113,7 +114,7 @@ describe('TodayScreen', () => {
     });
     expect(stop).toHaveBeenCalledTimes(1);
     await act(async () => {
-      fireEvent(screen.getByRole('button'), 'pressOut');
+      fireEvent(button, 'pressOut');
     });
     expect(await screen.findByRole('button', { name: words.button.saved })).toBeOnTheScreen();
     expect(await answers(store)).toHaveLength(1);
