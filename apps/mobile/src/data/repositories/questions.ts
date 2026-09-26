@@ -25,10 +25,12 @@ export async function put(driver: SqlDriver, question: Question): Promise<Questi
   try {
     return await upsert(driver, questionSpec, question);
   } catch (error) {
-    if (
-      error instanceof Error &&
-      /UNIQUE constraint failed: questions\.documentary_id, questions\.asked_on/.test(error.message)
-    ) {
+    // Not `instanceof Error`: a native driver's error class can come from another JS realm (Jest workers).
+    const message =
+      typeof error === 'object' && error !== null && 'message' in error
+        ? String(error.message)
+        : '';
+    if (/UNIQUE constraint failed: questions\.documentary_id, questions\.asked_on/.test(message)) {
       throw new ConflictError(`A question was already asked on ${question.askedOn}`);
     }
     throw error;
