@@ -70,27 +70,31 @@ Text: `tasks/p11/T-006.md`.
 ### T-006b · P11.2 · The shareable rule, the week brief and 20 synthetic weeks · done · needs: T-006a
 Text: `tasks/p11/T-006.md`.
 
-### T-006c · P11.3 · Plan validation and the recap plan · todo · needs: T-006b
+### T-006c · P11.3 · Plan validation and the recap plan · done · needs: T-006b
 Text: `tasks/p11/T-006.md`.
 
 ## P3 — Local store on the device (D32, D33)
 
-### T-004b · P3.2 · SQLite driver port, schema v1 and the migration harness · todo · needs: T-004a
+### T-004b · P3.2 · SQLite driver port, schema v1 and the migration harness · done · needs: T-004a
 Text: `tasks/p3/T-004.md`.
 
-### T-004c · P3.3 · Repositories and the integrity check · todo · needs: T-004b, T-006b
+### T-004c · P3.3 · Repositories and the integrity check · done · needs: T-004b, T-006b
 Text: `tasks/p3/T-004.md`.
 
-### T-004d · P3.4 · The encrypted file store · todo · needs: T-004c
+### T-004d · P3.4 · The encrypted file store · done · needs: T-004c
 Text: `tasks/p3/T-004.md`.
 
 ## P5 — Capture (the daily answer on the device)
 
-### T-007a · P5.1 · The local documentary, today's question and `captureMoment` · todo · needs: T-004d, T-005b
+### T-007a · P5.1 · The local documentary, today's question and `captureMoment` · done · needs: T-004d, T-005b
 Text: `tasks/p5/T-007.md`.
 
-### T-007b · P5.2 · Device services and the composition root · todo · needs: T-007a
+### T-007b · P5.2 · Device services and the composition root · changes r1 · needs: T-007a
 Text: `tasks/p5/T-007.md`.
+**Fix list r1** (review of 2adbc1c; everything else approved):
+1. `CameraRecorderView` invents the video's size (a fixed 1080×1920) and estimates its length with `performance.now()` around the recording, so a clip that ends at the 10 s cap before the finger lifts is stored longer than it is (CLAUDE.md rule 10: missing is not a value). Read `durationMs`, `width` and `height` from the recorded file instead, with an Expo API checked in the installed `.d.ts` (for example `expo-video`'s `createVideoPlayer(uri)` and its source-load event, which carries the duration and the video track size, then `release()`; `npx expo install expo-video` if needed). If the file's metadata cannot be read, `stop()` returns `null` and nothing is saved (the screen will show a `words` line in T-007c); never fall back to a guess.
+2. Test: with a mocked metadata reader, `stop()` returns the file's duration and size, not the time between `start` and `stop` (a recording capped at 10 s and stopped at 12 s reports 10 s); an unreadable file gives `null`.
+Checks: mobile tests, typecheck, lint, format, boundaries; `npx expo-doctor` no new failures.
 
 ### T-007c · P5.3 · The Today screen and the Record transition · todo · needs: T-007b, T-003c
 Text: `tasks/p5/T-007.md`.
