@@ -98,6 +98,17 @@ Text: `tasks/p5/T-007.md`.
 ### T-007d · P5.4 · Photo, library, note, mood, place and "keep on this phone" · todo · needs: T-007c
 Text: `tasks/p5/T-007.md`.
 
+## P8 — Storylines and cast · P9 — local daily reminder
+
+### T-008a · P8.1 · Storyline, cast and tagging use cases · todo · needs: T-007d
+Text: `tasks/p8/T-008.md`.
+
+### T-008b · P8.2 · Storylines and Cast screens · todo · needs: T-008a
+Text: `tasks/p8/T-008.md`.
+
+### T-008c · P9.1 · Settings and the local daily reminder · todo · needs: T-008b
+Text: `tasks/p8/T-008.md`.
+
 ## Blocked on the owner
 
 ### P-B · Capture and upload proof on real devices · blocked · needs: P3, P5, P6 tasks (not yet written)
