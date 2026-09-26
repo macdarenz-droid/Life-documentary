@@ -53,5 +53,41 @@ Text: `tasks/p2/T-003.md`.
 ### T-003e · P2.5 · Episodes share the tokens and the type · todo · needs: T-003a, T-002b
 Text: `tasks/p2/T-003.md`.
 
+## P7 — Question engine
+Pure, deterministic, in `packages/story`; wired to storage in P8/P9.
+
+### T-005a · P7 · Question contracts, dates and the template bank · todo · needs: T-001a
+Text: `tasks/p7/T-005.md`.
+
+### T-005b · P7 · The engine and a simulated year · todo · needs: T-005a
+Text: `tasks/p7/T-005.md`.
+
+## P3 + P11 — Stored shapes and the pure story engine
+
+### T-004a · P3.1 · Domain contracts v1 · todo · needs: T-005a
+Text: `tasks/p3/T-004.md`.
+
+### T-006a · P11.1 · Episode contracts · todo · needs: T-004a
+Text: `tasks/p11/T-006.md`.
+
+### T-006b · P11.2 · The shareable rule, the week brief and 20 synthetic weeks · todo · needs: T-006a
+Text: `tasks/p11/T-006.md`.
+
+### T-006c · P11.3 · Plan validation and the recap plan · todo · needs: T-006b
+Text: `tasks/p11/T-006.md`.
+
+## P3 — Local store on the device (D32, D33)
+
+### T-004b · P3.2 · SQLite driver port, schema v1 and the migration harness · todo · needs: T-004a
+Text: `tasks/p3/T-004.md`.
+
+### T-004c · P3.3 · Repositories and the integrity check · todo · needs: T-004b, T-006b
+Text: `tasks/p3/T-004.md`.
+
+### T-004d · P3.4 · The encrypted file store · todo · needs: T-004c
+Text: `tasks/p3/T-004.md`.
+
+## Blocked on the owner
+
 ### P-B · Capture and upload proof on real devices · blocked · needs: P3, P5, P6 tasks (not yet written)
-Waiting on the owner: a Cloudflare account (Workers Paid, R2), an Expo/EAS account, an Apple Developer account, and a real iPhone and Android phone for the check. Task text is written when P3 is next.
+Waiting on the owner: a Cloudflare account (Workers Paid, R2), an Expo/EAS account, an Apple Developer account, and a real iPhone and Android phone for the check. P3 task text is written (T-004); P5 and P6 text is written once the owner has the accounts.
