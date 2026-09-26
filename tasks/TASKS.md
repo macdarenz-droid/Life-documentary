@@ -53,7 +53,7 @@ Text: `tasks/p2/T-003.md`. Fix r1 approved (`fece073`).
 ### T-003e · P2.5 · Episodes share the tokens and the type · done · needs: T-003a, T-002b
 Text: `tasks/p2/T-003.md`. Fix r1 approved (`4902739`).
 
-### T-005a · P7 · Question contracts, dates and the template bank · todo · needs: T-001a
+### T-005a · P7 · Question contracts, dates and the template bank · done · needs: T-001a
 Text: `tasks/p7/T-005.md`.
 
 ### T-005b · P7 · The engine and a simulated year · todo · needs: T-005a
