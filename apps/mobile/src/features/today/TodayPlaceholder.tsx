@@ -21,13 +21,13 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.color.background,
   },
   heading: {
-    fontSize: tokens.font.size.display,
+    fontSize: tokens.type.display34.size,
     color: tokens.color.text,
     textAlign: 'center',
   },
   line: {
     marginTop: tokens.space[3],
-    fontSize: tokens.font.size.body,
+    fontSize: tokens.type.body.size,
     color: tokens.color.accent,
     textAlign: 'center',
   },

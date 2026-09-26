@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contrastRatio, tokens } from '../src';
+import { blendOver, contrastRatio, tokens } from '../src';
 
 describe('contrastRatio', () => {
   it('is 21 for black on white', () => {
@@ -11,6 +11,8 @@ describe('contrastRatio', () => {
   it('meets the targets for the theme colours on the background', () => {
     const bg = tokens.color.background;
     expect(contrastRatio(tokens.color.text, bg)).toBeGreaterThanOrEqual(7);
+    const { hex, alpha } = tokens.color.textSecondary;
+    expect(contrastRatio(blendOver(hex, alpha, bg), bg)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(tokens.color.accent, bg)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(tokens.color.focus, bg)).toBeGreaterThanOrEqual(3);
   });
