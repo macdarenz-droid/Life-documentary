@@ -64,10 +64,10 @@ Text: `tasks/p7/T-005.md`.
 ### T-004a · P3.1 · Domain contracts v1 · done · needs: T-005a
 Text: `tasks/p3/T-004.md`.
 
-### T-006a · P11.1 · Episode contracts · todo · needs: T-004a
+### T-006a · P11.1 · Episode contracts · done · needs: T-004a
 Text: `tasks/p11/T-006.md`.
 
-### T-006b · P11.2 · The shareable rule, the week brief and 20 synthetic weeks · todo · needs: T-006a
+### T-006b · P11.2 · The shareable rule, the week brief and 20 synthetic weeks · done · needs: T-006a
 Text: `tasks/p11/T-006.md`.
 
 ### T-006c · P11.3 · Plan validation and the recap plan · todo · needs: T-006b
@@ -83,6 +83,31 @@ Text: `tasks/p3/T-004.md`.
 
 ### T-004d · P3.4 · The encrypted file store · todo · needs: T-004c
 Text: `tasks/p3/T-004.md`.
+
+## P5 — Capture (the daily answer on the device)
+
+### T-007a · P5.1 · The local documentary, today's question and `captureMoment` · todo · needs: T-004d, T-005b
+Text: `tasks/p5/T-007.md`.
+
+### T-007b · P5.2 · Device services and the composition root · todo · needs: T-007a
+Text: `tasks/p5/T-007.md`.
+
+### T-007c · P5.3 · The Today screen and the Record transition · todo · needs: T-007b, T-003c
+Text: `tasks/p5/T-007.md`.
+
+### T-007d · P5.4 · Photo, library, note, mood, place and "keep on this phone" · todo · needs: T-007c
+Text: `tasks/p5/T-007.md`.
+
+## P8 — Storylines and cast · P9 — local daily reminder
+
+### T-008a · P8.1 · Storyline, cast and tagging use cases · todo · needs: T-007d
+Text: `tasks/p8/T-008.md`.
+
+### T-008b · P8.2 · Storylines and Cast screens · todo · needs: T-008a
+Text: `tasks/p8/T-008.md`.
+
+### T-008c · P9.1 · Settings and the local daily reminder · todo · needs: T-008b
+Text: `tasks/p8/T-008.md`.
 
 ## Blocked on the owner
 
