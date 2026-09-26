@@ -9,7 +9,7 @@ type Item = RenderManifestV1['lowerThirds'][number];
 export function LowerThird({ item, reducedMotion }: { item: Item; reducedMotion: boolean }) {
   const frame = useCurrentFrame();
   const { fps, durationInFrames, width } = useVideoConfig();
-  const slide = Math.max(1, msToFrames(tokens.motion.durationMs.base, fps));
+  const slide = Math.max(1, msToFrames(tokens.motion.duration.ui, fps));
   const offset = reducedMotion
     ? 0
     : interpolate(
@@ -33,11 +33,11 @@ export function LowerThird({ item, reducedMotion }: { item: Item; reducedMotion:
           fontFamily: 'sans-serif',
         }}
       >
-        <span style={{ color: tokens.color.text, fontSize: px(tokens.font.size.title) }}>
+        <span style={{ color: tokens.color.text, fontSize: px(tokens.type.body.size) }}>
           {item.name}
         </span>
         {item.relation ? (
-          <span style={{ color: tokens.color.accent, fontSize: px(tokens.font.size.body) }}>
+          <span style={{ color: tokens.color.accent, fontSize: px(tokens.type.body.size) }}>
             {' · '}
             {item.relation}
           </span>

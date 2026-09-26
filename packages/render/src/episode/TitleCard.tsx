@@ -15,14 +15,14 @@ export function TitleCard({ title }: { title: RenderManifestV1['title'] }) {
         textAlign: 'center',
       }}
     >
-      <div style={{ color: tokens.color.text, fontSize: px(tokens.font.size.display) }}>
+      <div style={{ color: tokens.color.text, fontSize: px(tokens.type.display34.size) }}>
         {title.text}
       </div>
       {title.subtitle ? (
         <div
           style={{
             color: tokens.color.accent,
-            fontSize: px(tokens.font.size.title),
+            fontSize: px(tokens.type.body.size),
             marginTop: px(tokens.space[4]),
           }}
         >

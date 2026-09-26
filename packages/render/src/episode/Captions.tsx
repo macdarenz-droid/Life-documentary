@@ -13,7 +13,7 @@ export function Captions({ captions }: { captions: RenderManifestV1['captions'] 
   const current = captions.find((c) => ms >= c.fromMs && ms < c.toMs);
   if (!current) return null;
 
-  const fontSize = px(tokens.font.size.body);
+  const fontSize = px(tokens.type.body.size);
   const lineHeight = 1.3;
   return (
     <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center' }}>

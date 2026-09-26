@@ -23,7 +23,7 @@ export function FixtureClip() {
           width: '100%',
           textAlign: 'center',
           fontFamily: 'sans-serif',
-          fontSize: px(tokens.font.size.display) * 3,
+          fontSize: px(tokens.type.display34.size) * 3,
           color: screenWhite,
         }}
       >

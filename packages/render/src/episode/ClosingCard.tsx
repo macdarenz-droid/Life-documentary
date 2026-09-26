@@ -20,7 +20,7 @@ export function ClosingCard({
         textAlign: 'center',
       }}
     >
-      <div style={{ color: tokens.color.text, fontSize: px(tokens.font.size.title) }}>
+      <div style={{ color: tokens.color.text, fontSize: px(tokens.type.body.size) }}>
         {closing.text}
       </div>
       <div
@@ -28,7 +28,7 @@ export function ClosingCard({
           position: 'absolute',
           bottom: px(tokens.space[8]),
           color: tokens.color.text,
-          fontSize: px(tokens.font.size.caption),
+          fontSize: px(tokens.type.caption.size),
         }}
       >
         {credit}

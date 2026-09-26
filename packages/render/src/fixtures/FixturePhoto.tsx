@@ -33,7 +33,7 @@ export function FixturePhoto() {
         <div
           style={{
             fontFamily: 'sans-serif',
-            fontSize: px(tokens.font.size.display),
+            fontSize: px(tokens.type.display34.size),
             color: screenWhite,
           }}
         >
