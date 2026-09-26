@@ -176,6 +176,12 @@ importers:
 
   packages/render:
     dependencies:
+      '@expo-google-fonts/instrument-serif':
+        specifier: ^0.4.1
+        version: 0.4.1
+      '@expo-google-fonts/inter':
+        specifier: ^0.4.2
+        version: 0.4.2
       '@life/contracts':
         specifier: workspace:*
         version: link:../contracts
@@ -191,6 +197,9 @@ importers:
       '@remotion/cli':
         specifier: 4.0.529
         version: 4.0.529(postcss@8.5.28)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
+      '@remotion/noise':
+        specifier: 4.0.529
+        version: 4.0.529(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@remotion/renderer':
         specifier: 4.0.529
         version: 4.0.529(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -2092,6 +2101,9 @@ packages:
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
+
+  '@remotion/noise@4.0.529':
+    resolution: {integrity: sha512-pNMygRwof82dk9pkSDdS7SyYAeSZIyiEFhnuQ8EWbAbUjHaGkhDM9Te9uzj0Ik9O13uU3jwmQ7oHpxRl6x4yBg==}
 
   '@remotion/paths@4.0.529':
     resolution: {integrity: sha512-kTm3lehZkjpqLi+e1rdgsMoRulDVUTkZMOUFPu9tCZDDh+gVFqQcsuOnhYZlgxnSun8f8zvy9aP2khS3Oooq3Q==}
@@ -5317,6 +5329,9 @@ packages:
   simple-swizzle@0.2.4:
     resolution: {integrity: sha512-nAu1WFPQSMNr2Zn9PGSZK9AGn4t/y97lEm+MXTtUDwfP0ksAIX4nO+6ruD9Jwut4C49SB1Ws+fbXsm/yScWOHw==}
 
+  simplex-noise@4.0.1:
+    resolution: {integrity: sha512-zl/+bdSqW7HJOQ0oDbxrNYaF4F5ik0i7M6YOYmEoIJNtg16NpvWaTTM1Y7oV/7T0jFljawLgYPS81Uu2rsfo1A==}
+
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
 
@@ -8059,7 +8074,9 @@ snapshots:
       metro-runtime: 0.84.6
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 
@@ -8210,6 +8227,14 @@ snapshots:
       react-dom: 19.2.3(react@19.2.3)
       remotion: 4.0.529(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       zod: 4.5.4
+
+  '@remotion/noise@4.0.529(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      remotion: 4.0.529(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      simplex-noise: 4.0.1
+    transitivePeerDependencies:
+      - react
+      - react-dom
 
   '@remotion/paths@4.0.529(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
@@ -12125,6 +12150,8 @@ snapshots:
   simple-swizzle@0.2.4:
     dependencies:
       is-arrayish: 0.3.4
+
+  simplex-noise@4.0.1: {}
 
   sisteransi@1.0.5: {}
 

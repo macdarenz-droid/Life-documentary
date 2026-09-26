@@ -1,33 +1,6 @@
-import { titleCardPlan } from './titleCardPlan';
 import { textMorphPlan } from './textMorphPlan';
 
 const range = (n: number) => Array.from({ length: n }, (_, i) => i);
-
-describe('titleCardPlan', () => {
-  it('staggers words across lines 60 ms apart and ends one title duration after the last word', () => {
-    const plan = titleCardPlan(['The Week', 'It Rained']);
-    expect(
-      plan.steps.map(({ line, word, text, delayMs, durationMs }) => [
-        line,
-        word,
-        text,
-        delayMs,
-        durationMs,
-      ]),
-    ).toEqual([
-      [0, 0, 'The', 0, 900],
-      [0, 1, 'Week', 60, 900],
-      [1, 0, 'It', 120, 900],
-      [1, 1, 'Rained', 180, 900],
-    ]);
-    expect(plan.totalMs).toBe(180 + 900);
-  });
-
-  it('has nothing to play for no words', () => {
-    expect(titleCardPlan([])).toEqual({ steps: [], totalMs: 0 });
-    expect(titleCardPlan(['  '])).toEqual({ steps: [], totalMs: 0 });
-  });
-});
 
 describe('textMorphPlan', () => {
   it('"Hold to answer" → "Recording" shares no prefix or suffix: every letter leaves and arrives', () => {

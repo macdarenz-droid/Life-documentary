@@ -1,4 +1,5 @@
 import { tokens } from '@life/design';
+import { titleCardPlan, type TitleCardStep } from '@life/story';
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
@@ -12,7 +13,6 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 import { useMotionPreference } from '../motionPreference';
 import { Text } from '../Text';
-import { titleCardPlan, type TitleCardStep } from './titleCardPlan';
 
 export type TitleCardVariant = 'display64' | 'display48' | 'display34' | 'question';
 
@@ -24,6 +24,10 @@ export type TitleCardProps = {
 };
 
 const easeOut = Easing.bezier(...tokens.motion.ease.out);
+const TIMING = {
+  wordStaggerMs: tokens.motion.stagger.word,
+  wordDurationMs: tokens.motion.duration.title,
+};
 
 function Word({
   step,
@@ -86,7 +90,7 @@ function Line({ children }: { children: ReactNode }) {
  */
 export function TitleCard({ lines, variant, play, onDone }: TitleCardProps) {
   const { reduced } = useMotionPreference();
-  const plan = useMemo(() => titleCardPlan(lines), [lines]);
+  const plan = useMemo(() => titleCardPlan(lines, TIMING), [lines]);
   const fade: SharedValue<number> = useSharedValue(reduced ? 0 : 1);
 
   useEffect(() => {

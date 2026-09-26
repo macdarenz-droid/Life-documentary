@@ -2,8 +2,10 @@ import type { RenderManifestV1 } from '@life/contracts';
 import { tokens } from '@life/design';
 import { msToFrames, shotStartsMs } from '@life/story';
 import { AbsoluteFill, Sequence, useVideoConfig } from 'remotion';
+import { loadFonts } from '../fonts';
 import { Captions } from './Captions';
 import { ClosingCard } from './ClosingCard';
+import { Grain } from './Grain';
 import { LowerThird } from './LowerThird';
 import { Music } from './Music';
 import { Narration } from './Narration';
@@ -12,6 +14,8 @@ import { TitleCard } from './TitleCard';
 import { VideoShot } from './VideoShot';
 
 export type EpisodeProps = RenderManifestV1 & { reducedMotion?: boolean };
+
+loadFonts();
 
 export function Episode(props: EpisodeProps) {
   const { fps } = useVideoConfig();
@@ -25,7 +29,7 @@ export function Episode(props: EpisodeProps) {
   return (
     <AbsoluteFill style={{ backgroundColor: tokens.color.background }}>
       <Sequence durationInFrames={frames(manifest.title.durationMs)} name="Title">
-        <TitleCard title={manifest.title} />
+        <TitleCard title={manifest.title} reducedMotion={props.reducedMotion ?? false} />
       </Sequence>
       {manifest.shots.map((shot, i) => (
         <Sequence
@@ -55,6 +59,7 @@ export function Episode(props: EpisodeProps) {
         </Sequence>
       ))}
       <Captions captions={manifest.captions} />
+      <Grain reducedMotion={props.reducedMotion ?? false} />
       <Narration narration={manifest.narration} />
       <Music manifest={manifest} />
     </AbsoluteFill>

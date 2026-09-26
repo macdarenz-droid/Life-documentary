@@ -1,10 +1,10 @@
 import type { RenderManifestV1 } from '@life/contracts';
-import { tokens } from '@life/design';
+import { rgba, tokens } from '@life/design';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { px } from '../scale';
 
-// Translucent band: the background colour at 75 % opacity (hex alpha BF).
-const BAND_ALPHA = 'BF';
+const { scrim } = tokens.color;
+const caption = tokens.type.bodyStrong;
 
 export function Captions({ captions }: { captions: RenderManifestV1['captions'] }) {
   const frame = useCurrentFrame();
@@ -13,10 +13,16 @@ export function Captions({ captions }: { captions: RenderManifestV1['captions'] 
   const current = captions.find((c) => ms >= c.fromMs && ms < c.toMs);
   if (!current) return null;
 
-  const fontSize = px(tokens.type.body.size);
-  const lineHeight = 1.3;
+  const fontSize = px(caption.size);
+  const lineHeight = caption.lineHeight / caption.size;
   return (
-    <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center' }}>
+    <AbsoluteFill
+      style={{
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        backgroundImage: `linear-gradient(to bottom, ${rgba(scrim.hex, scrim.from)} 50%, ${rgba(scrim.hex, scrim.to)} 100%)`,
+      }}
+    >
       <div
         style={{
           marginBottom: px(tokens.space[8]) * 2,
@@ -24,9 +30,8 @@ export function Captions({ captions }: { captions: RenderManifestV1['captions'] 
           marginRight: px(tokens.space[4]),
           padding: `${px(tokens.space[2])}px ${px(tokens.space[4])}px`,
           borderRadius: px(tokens.radius.md),
-          backgroundColor: `${tokens.color.background}${BAND_ALPHA}`,
           color: tokens.color.text,
-          fontFamily: 'sans-serif',
+          fontFamily: caption.family,
           fontSize,
           lineHeight,
           textAlign: 'center',
