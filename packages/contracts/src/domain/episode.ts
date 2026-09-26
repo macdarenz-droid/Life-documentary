@@ -8,6 +8,11 @@ function utcMs(date: string): number {
   return Date.UTC(y ?? NaN, (m ?? NaN) - 1, d ?? NaN);
 }
 
+/** True when `weekEnd` is exactly six days after `weekStart` (both LocalDate strings). */
+export function isWeekSpan(weekStart: string, weekEnd: string): boolean {
+  return utcMs(weekEnd) - utcMs(weekStart) === 6 * MS_PER_DAY;
+}
+
 export const EpisodeState = z.enum([
   'scheduled',
   'understanding',
@@ -38,7 +43,7 @@ export const Episode = z
     deliveredAt: Timestamp.optional(),
     updatedAt: Timestamp,
   })
-  .refine((e) => utcMs(e.weekEnd) - utcMs(e.weekStart) === 6 * MS_PER_DAY, {
+  .refine((e) => isWeekSpan(e.weekStart, e.weekEnd), {
     path: ['weekEnd'],
     message: 'A week ends six days after it starts',
   });

@@ -5,4 +5,6 @@ export * from './dates';
 export * from './words';
 export * from './words/questions';
 export * from './questionEngine';
+export * from './shareable';
+export * from './weekBrief';
 export * from './motion/titleCardPlan';
