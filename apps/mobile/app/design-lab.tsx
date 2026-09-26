@@ -14,9 +14,11 @@ const MORPH_CYCLE_MS = 1500;
 const DISSOLVE_CYCLE_MS = 2500;
 const SAMPLE = {
   title: ['The Week', 'It Rained'],
-  fieldLabel: 'A note',
-  fieldValue: 'Rain on the tram window',
-  fieldError: 'This note is empty',
+  fieldEmpty: 'A note, empty',
+  fieldFocused: 'A note, focused',
+  fieldFocusedValue: 'Rain on the tram window',
+  fieldError: 'A note, with an error',
+  fieldErrorText: 'This note is empty',
 } as const;
 const MORPH_STEPS = [words.button.holdToAnswer, words.button.recording, words.button.saved];
 // Metro bundles static images through require(); there are no image module types in this app.
@@ -80,10 +82,11 @@ export default function DesignLab() {
       <Text variant="display34">{words.lab.title}</Text>
 
       <View style={styles.row}>
+        {/* The Switch only shows the state; the text line below carries it for screen readers. */}
         <Switch
           value={reduced}
           disabled
-          accessibilityLabel={words.lab.reducedMotionOn}
+          aria-hidden
           trackColor={{ false: tokens.color.surface, true: tokens.color.accent }}
         />
         {reduced ? <Text variant="body">{words.lab.reducedMotionOn}</Text> : null}
@@ -117,13 +120,17 @@ export default function DesignLab() {
       </Section>
 
       <Section title="Field">
-        <Field label={SAMPLE.fieldLabel} value={text} onChangeText={setText} />
-        <Field label={SAMPLE.fieldLabel} value={SAMPLE.fieldValue} onChangeText={() => undefined} />
+        <Field label={SAMPLE.fieldEmpty} value={text} onChangeText={setText} />
         <Field
-          label={SAMPLE.fieldLabel}
+          label={SAMPLE.fieldFocused}
+          value={SAMPLE.fieldFocusedValue}
+          onChangeText={() => undefined}
+        />
+        <Field
+          label={SAMPLE.fieldError}
           value=""
           onChangeText={() => undefined}
-          error={SAMPLE.fieldError}
+          error={SAMPLE.fieldErrorText}
         />
       </Section>
 
@@ -170,5 +177,5 @@ const styles = StyleSheet.create({
     borderWidth: tokens.border.outline,
     borderColor: rgba(tokens.color.ash.hex, tokens.color.ash.alpha),
   },
-  frame: { height: tokens.space[8] * 3, borderRadius: tokens.radius.md },
+  frame: { aspectRatio: tokens.motion.letterboxAspect, borderRadius: tokens.radius.md },
 });
