@@ -82,3 +82,6 @@ Node 22 LTS (`.nvmrc` `22`), pnpm 10, Expo SDK 57 (`expo@57`, the current `lates
 
 ## D27 · 2026-09-26 · supervisor · How the coder reports without a Relay link
 The Relay project has no coder link yet. The coder reports on its own draft PR (one PR comment per result, same format as a Relay message) and writes nothing in the Relay. The supervisor reviews on GitHub, updates `tasks/TASKS.md` on the base branch, and mirrors state to the Relay dashboard, PROJECT_STATE and LOG. If the owner creates a coder link later, the coder switches to posting in the Relay `tasks/` folder.
+
+## D28 · 2026-09-26 · supervisor · Coder model and loop
+The coder runs as its own cloud session on Opus 5.5 at medium effort (the owner's standing rule for coders in the Kairos project), started from `tasks/CODER_PROMPT.md`, with a self-paced `send_later` loop. It is replaced in a new session when its context passes about 250,000 tokens, only between tasks. The supervisor stays on the strongest available model for design and review.
