@@ -3,19 +3,15 @@
 import { CameraView } from 'expo-camera';
 import { useCallback, useEffect, useRef } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import type { VideoRecorder } from '../../domain/capturePorts';
+import type { CameraViewProps } from '../../domain/capturePorts';
 
 /** 1080p portrait, as requested with videoQuality; expo-camera does not report the recorded size. */
 const WIDTH = 1080;
 const HEIGHT = 1920;
 
-type Props = {
-  facing?: 'front' | 'back';
-  style?: StyleProp<ViewStyle>;
-  /** Receives the recorder once the camera is ready, and null when the view goes away. */
-  onRecorder: (recorder: VideoRecorder | null) => void;
-};
+type Props = CameraViewProps & { facing?: 'front' | 'back' };
 
+/** Hands out a VideoRecorder once the camera is ready, and null when the view goes away. */
 export function CameraRecorderView({ facing = 'front', style, onRecorder }: Props) {
   const camera = useRef<CameraView>(null);
   const recording = useRef<{
@@ -56,7 +52,7 @@ export function CameraRecorderView({ facing = 'front', style, onRecorder }: Prop
   return (
     <CameraView
       ref={camera}
-      style={style}
+      style={style as StyleProp<ViewStyle>}
       mode="video"
       facing={facing}
       mute={false}

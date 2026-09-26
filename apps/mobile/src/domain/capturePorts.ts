@@ -46,6 +46,17 @@ export interface Permissions {
   location: Permission;
 }
 
+/** Opens the app's page in the system Settings. */
+export interface SettingsOpener {
+  open(): void;
+}
+
+/** The props every camera view (the Expo one or a fake) accepts. */
+export type CameraViewProps = {
+  onRecorder: (recorder: VideoRecorder | null) => void;
+  style?: unknown;
+};
+
 /** The services a capture screen uses, except the video recorder that comes from a mounted camera view. */
 export type CaptureServices = {
   voice: VoiceRecorder;
@@ -53,4 +64,5 @@ export type CaptureServices = {
   place: PlaceFinder;
   haptics: Haptics;
   permissions: Permissions;
+  settings: SettingsOpener;
 };

@@ -26,6 +26,8 @@ import { expoIds } from '../src/services/ids/expoIds';
 import { expoPermissions } from '../src/services/permissions/expoPermissions';
 import { expoLibraryPicker } from '../src/services/picker/expoLibraryPicker';
 import { expoPlaceFinder } from '../src/services/place/expoPlaceFinder';
+import { CameraRecorderView } from '../src/services/camera/CameraRecorderView';
+import { systemSettings } from '../src/services/settings/systemSettings';
 import { expoKeyStore } from '../src/services/secureStore/expoKeyStore';
 
 void SplashScreen.preventAutoHideAsync();
@@ -55,11 +57,12 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       place: expoPlaceFinder,
       haptics: expoHaptics,
       permissions: expoPermissions,
+      settings: systemSettings,
     }),
     [voice],
   );
   return (
-    <CaptureRoot open={openDeviceStore} services={services}>
+    <CaptureRoot open={openDeviceStore} services={services} CameraView={CameraRecorderView}>
       {children}
     </CaptureRoot>
   );

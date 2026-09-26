@@ -7,6 +7,7 @@ import type {
   Permissions,
   PickedMedia,
   PlaceFinder,
+  SettingsOpener,
   VideoRecorder,
 } from '../../domain/capturePorts';
 
@@ -16,6 +17,7 @@ export type FakeServices = CaptureServices & {
   picker: LibraryPicker & { next: PickedMedia | null };
   place: PlaceFinder & { name: string | null };
   permissions: Permissions & { set(which: keyof Permissions, state: PermissionState): void };
+  settings: SettingsOpener & { opened: number };
   /** Called with the source path a recording "writes"; the test puts fixture bytes there. */
   onRecordingFile?: (path: string) => void;
 };
@@ -75,6 +77,12 @@ export function fakeServices(
       calls: [],
       impactLight: () => services.haptics.calls.push('impactLight'),
       selection: () => services.haptics.calls.push('selection'),
+    },
+    settings: {
+      opened: 0,
+      open: () => {
+        services.settings.opened += 1;
+      },
     },
     permissions: {
       camera: permission('camera'),

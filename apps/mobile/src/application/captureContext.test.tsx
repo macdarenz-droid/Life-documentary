@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import { migrate } from '../data/migrations';
 import { openMemoryDriver } from '../data/sqlite/testing/memoryDriver';
+import { fakeCameraView } from '../services/testing/FakeCameraView';
 import { fakeServices } from '../services/testing/fakeServices';
 import { CaptureRoot, useCapture, type OpenedStore } from './captureContext';
 import { fixedClock, memoryStore, sequentialIds } from './testing/memory';
@@ -20,8 +21,9 @@ describe('CaptureRoot', () => {
       ids: sequentialIds(),
       timeZone: 'Europe/Berlin',
     });
+    const services = fakeServices();
     await render(
-      <CaptureRoot open={open} services={fakeServices()}>
+      <CaptureRoot open={open} services={services} CameraView={fakeCameraView(services.video)}>
         <Title />
       </CaptureRoot>,
     );
@@ -36,8 +38,9 @@ describe('CaptureRoot', () => {
       ]);
       throw new Error('unreachable');
     };
+    const services = fakeServices();
     await render(
-      <CaptureRoot open={open} services={fakeServices()}>
+      <CaptureRoot open={open} services={services} CameraView={fakeCameraView(services.video)}>
         <Title />
       </CaptureRoot>,
     );

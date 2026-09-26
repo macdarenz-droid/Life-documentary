@@ -3,10 +3,17 @@
 import type { Documentary } from '@life/contracts';
 import { tokens } from '@life/design';
 import { words } from '@life/story';
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from '../design-system';
-import type { CaptureServices } from '../domain/capturePorts';
+import type { CameraViewProps, CaptureServices } from '../domain/capturePorts';
 import { openLocalDocumentary } from './bootstrap';
 import type { Clock, Ids, Store } from './ports';
 
@@ -16,9 +23,16 @@ export type CaptureContextValue = {
   ids: Ids;
   documentary: Documentary;
   services: CaptureServices;
+  /** The camera view for video answers: the Expo one on a device, a fake in tests and the Design Lab. */
+  CameraView: ComponentType<CameraViewProps>;
 };
 
 const CaptureContext = createContext<CaptureContextValue | null>(null);
+
+/** The capture context, or null outside a CaptureRoot (the web preview). */
+export function useOptionalCapture(): CaptureContextValue | null {
+  return useContext(CaptureContext);
+}
 
 /** The capture context; only inside a CaptureRoot that has finished opening. */
 export function useCapture(): CaptureContextValue {
@@ -33,11 +47,12 @@ type Props = {
   /** Opens the database, runs migrations, loads the master key; injected so tests use the memory store. */
   open: () => Promise<OpenedStore>;
   services: CaptureServices;
+  CameraView: ComponentType<CameraViewProps>;
   children: ReactNode;
 };
 
 /** Opens the store and the local documentary, then renders its children with the capture context. */
-export function CaptureRoot({ open, services, children }: Props) {
+export function CaptureRoot({ open, services, CameraView, children }: Props) {
   const [state, setState] = useState<
     { status: 'opening' } | { status: 'ready'; value: CaptureContextValue } | { status: 'failed' }
   >({ status: 'opening' });
@@ -48,7 +63,10 @@ export function CaptureRoot({ open, services, children }: Props) {
       const { store, clock, ids, timeZone } = await open();
       const documentary = await openLocalDocumentary(store, clock, ids, timeZone);
       if (active)
-        setState({ status: 'ready', value: { store, clock, ids, documentary, services } });
+        setState({
+          status: 'ready',
+          value: { store, clock, ids, documentary, services, CameraView },
+        });
     })().catch((error: unknown) => {
       console.error('The store could not open.', error);
       if (active) setState({ status: 'failed' });
@@ -56,7 +74,7 @@ export function CaptureRoot({ open, services, children }: Props) {
     return () => {
       active = false;
     };
-  }, [open, services]);
+  }, [open, services, CameraView]);
 
   if (state.status === 'opening') return null;
   if (state.status === 'failed') {

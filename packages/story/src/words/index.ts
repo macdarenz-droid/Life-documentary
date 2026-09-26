@@ -9,6 +9,14 @@ export const words = {
   today: {
     placeholderTitle: 'Life Documentary',
     placeholderLine: 'Your first question arrives soon.',
+    modeLabel: 'Record with',
+    modeVideo: 'Video',
+    modeVoice: 'Voice',
+    holdLonger: 'Hold a little longer to keep an answer.',
+    secondsLeft: 'seconds left',
+    startRecording: 'Start recording',
+    stopRecording: 'Stop recording',
+    openSettings: 'Open Settings',
   },
   lab: {
     title: 'Design lab',

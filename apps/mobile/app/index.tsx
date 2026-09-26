@@ -1,5 +1,5 @@
-import { TodayPlaceholder } from '../src/features/today';
+import { TodayRoute } from '../src/features/today';
 
 export default function Index() {
-  return <TodayPlaceholder />;
+  return <TodayRoute />;
 }

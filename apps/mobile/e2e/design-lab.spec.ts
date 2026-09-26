@@ -9,6 +9,7 @@ const SECTIONS = [
   'Title Card',
   'Text Morph',
   'Dissolve',
+  'Today',
   'Grain and Breath',
 ];
 /** Dwell per section so the recording walks the whole lab in about 20 s. */
@@ -42,6 +43,20 @@ test('the Design Lab shows every section without console errors', async ({ page 
       const focused = page.getByLabel(FOCUSED_FIELD, { exact: true });
       await focused.focus();
       await expect(focused).toBeFocused();
+    }
+    if (name === 'Today') {
+      // Hold to answer for two seconds; the fake camera "records" and the answer shows as saved.
+      // The Buttons section shows the same labels; the Today section comes after it.
+      const hold = page.getByRole('button', { name: words.button.holdToAnswer }).last();
+      await hold.scrollIntoViewIfNeeded();
+      const box = await hold.boundingBox();
+      if (!box) throw new Error('The record button has no box');
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      await page.waitForTimeout(2000);
+      await page.mouse.up();
+      await expect(page.getByRole('button', { name: words.button.saved }).last()).toBeVisible();
+      await expect(page.getByRole('button', { name: words.button.holdToAnswer })).toHaveCount(1);
     }
     if (name === 'Title Card') {
       await page.getByRole('button', { name: REPLAY }).click();

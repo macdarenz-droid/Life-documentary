@@ -1,5 +1,6 @@
 import { rgba, tokens } from '@life/design';
-import { words } from '@life/story';
+import { Question, Uuid } from '@life/contracts';
+import { pickQuestion, questionTemplates, words } from '@life/story';
 import { Image } from 'expo-image';
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { Platform, ScrollView, StyleSheet, Switch, View } from 'react-native';
@@ -8,6 +9,9 @@ import { Button, Field, Surface, Text, useMotionPreference } from '../src/design
 import { Dissolve } from '../src/design-system/motion/Dissolve';
 import { TextMorph } from '../src/design-system/motion/TextMorph';
 import { TitleCard } from '../src/design-system/motion/TitleCard';
+import { TodayScreen, type TodayScreenProps } from '../src/features/today';
+import { fakeCameraView } from '../src/services/testing/FakeCameraView';
+import { fakeServices } from '../src/services/testing/fakeServices';
 
 /** Lab-only cadences and sample copy (T-003d); not product timing or product words. */
 const MORPH_CYCLE_MS = 1500;
@@ -28,6 +32,39 @@ const FRAMES = [
   { key: 'dawn', source: require('../assets/lab/dawn.png') as number },
 ] as const;
 /* eslint-enable @typescript-eslint/no-require-imports */
+
+/** The Today screen with fake services and a question from the real engine; saving keeps nothing. */
+const LAB_DAY = '2027-03-15';
+function labTodayProps(): TodayScreenProps {
+  const services = fakeServices();
+  const documentaryId = Uuid.parse('00000000-0000-4000-8000-00000000d0c1');
+  const pick = pickQuestion({
+    today: LAB_DAY,
+    seed: documentaryId,
+    templates: questionTemplates,
+    openStorylines: [],
+    recentDays: [],
+    placesBefore: [],
+    momentsOneYearAgo: 0,
+    history: [],
+  });
+  const question = Question.parse({
+    id: Uuid.parse('00000000-0000-4000-8000-00000000d0c2'),
+    documentaryId,
+    templateId: pick.templateId,
+    reason: pick.reason,
+    askedOn: LAB_DAY,
+    text: pick.text,
+  });
+  return {
+    today: LAB_DAY,
+    loadQuestion: async () => question,
+    saveAnswer: async () => undefined,
+    discard: async () => undefined,
+    services,
+    CameraView: fakeCameraView(services.video),
+  };
+}
 
 const GrainBreath = lazy(async () => {
   if (Platform.OS === 'web') {
@@ -76,6 +113,7 @@ export default function DesignLab() {
   const [titleRun, setTitleRun] = useState(0);
   const morph = useCycle(MORPH_STEPS.length, MORPH_CYCLE_MS);
   const frame = FRAMES[useCycle(FRAMES.length, DISSOLVE_CYCLE_MS)] ?? FRAMES[0];
+  const [todayProps] = useState(labTodayProps);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -153,6 +191,12 @@ export default function DesignLab() {
         <Dissolve source={frame.source} recyclingKey={frame.key} style={styles.frame} />
       </Section>
 
+      <Section title="Today">
+        <View style={styles.today}>
+          <TodayScreen {...todayProps} />
+        </View>
+      </Section>
+
       <Section title="Grain and Breath">
         <Suspense fallback={<View style={styles.frame} />}>
           <GrainBreath style={styles.frame}>
@@ -168,6 +212,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: tokens.color.background },
   content: { padding: tokens.space[5], gap: tokens.space[6] },
   section: { gap: tokens.space[3] },
+  today: { height: 640, overflow: 'hidden', borderRadius: tokens.radius.md },
   sectionBody: { gap: tokens.space[3] },
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space[3] },
   swatch: {
