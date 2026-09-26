@@ -1,6 +1,6 @@
 // Today (P5): today's question as a Title Card and one amber "Hold to answer" button. Holding records up
 // to ten seconds of video or voice with the Record transition; releasing saves the answer.
-import type { MomentMood, Question } from '@life/contracts';
+import type { MomentMood, Question, Uuid } from '@life/contracts';
 import { tokens } from '@life/design';
 import { capture, dayLabel, secondsLeft, words } from '@life/story';
 import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react';
@@ -19,15 +19,18 @@ import type {
   VoiceRecorder,
 } from '../../domain/capturePorts';
 import { AddRow, MoodChips, NoteTray, PlaceToggle, Toggle, type AddAction } from './extras';
+import { TagTray, type TagActions } from './TagTray';
 
 export type TodayScreenProps = {
   loadQuestion: () => Promise<Question>;
-  /** Saves one capture (captureMoment). */
-  save: (input: CaptureInput) => Promise<unknown>;
+  /** Saves one capture (captureMoment); the saved moment's id, when there is a store. */
+  save: (input: CaptureInput) => Promise<{ id: Uuid } | void>;
   /** Removes a recording that was not kept. */
   discard: (path: string) => Promise<void>;
   services: CaptureServices;
   CameraView: ComponentType<CameraViewProps>;
+  /** Storylines and cast for the Tag tray; without them no "Tag" is offered. */
+  tags?: TagActions;
   /** Changes when the screen comes into focus, so the question is loaded again. */
   reloadKey?: number;
 };
@@ -66,6 +69,7 @@ export function TodayScreen({
   discard,
   services,
   CameraView,
+  tags,
   reloadKey = 0,
 }: TodayScreenProps) {
   const { reduced } = useMotionPreference();
@@ -91,6 +95,9 @@ export function TodayScreen({
   const [photoOpen, setPhotoOpen] = useState(false);
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [photoReady, setPhotoReady] = useState(false);
+  /** The last saved moment, which "Tag" applies to. */
+  const [lastMomentId, setLastMomentId] = useState<Uuid | null>(null);
+  const [tagOpen, setTagOpen] = useState(false);
 
   /** Mood, place and keep-on-phone apply to the next capture only. */
   const extras = () => ({
@@ -188,7 +195,8 @@ export function TodayScreen({
               height: result.height,
             }
           : { sourcePath: result.uri, mediaKind: 'audio', durationMs: result.durationMs };
-      await save({ kind: 'answer', questionId: question.id, media, ...extras() });
+      const saved = await save({ kind: 'answer', questionId: question.id, media, ...extras() });
+      if (saved) setLastMomentId(saved.id);
       resetExtras();
       setPhase('saved');
     } catch (error) {
@@ -252,7 +260,8 @@ export function TodayScreen({
   /** Saves a photo, clip or note with the chosen extras; any failure shows a plain line. */
   const saveExtra = async (input: CaptureInput) => {
     try {
-      await save({ ...input, ...extras() } as CaptureInput);
+      const saved = await save({ ...input, ...extras() } as CaptureInput);
+      if (saved) setLastMomentId(saved.id);
       resetExtras();
       setNotice({ kind: 'saved' });
     } catch (error) {
@@ -420,6 +429,10 @@ export function TodayScreen({
         </View>
       ) : null}
 
+      {tags && lastMomentId && !recording ? (
+        <Button label={words.tags.tag} variant="quiet" onPress={() => setTagOpen(true)} />
+      ) : null}
+
       {phase !== 'saved' ? (
         <View
           style={styles.modes}
@@ -531,6 +544,14 @@ export function TodayScreen({
           void saveExtra({ kind: 'note', text, localOnly: false });
         }}
       />
+      {tags && lastMomentId ? (
+        <TagTray
+          open={tagOpen}
+          momentId={lastMomentId}
+          actions={tags}
+          onClose={() => setTagOpen(false)}
+        />
+      ) : null}
     </View>
   );
 }
