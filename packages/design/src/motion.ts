@@ -41,6 +41,8 @@ export const texture = {
   crossfadeBlurPx: 3,
   kenBurns: { from: 1.0, to: 1.06, ms: 12000 },
 } as const;
+/** Text Morph: letters travel this fraction of the line height as they leave or arrive. */
+export const textMorph = { shift: 0.3 } as const;
 export const letterboxAspect = 2.39;
 
 /** Every spatial motion falls back to a fade of this length when reduced motion is on. */
@@ -59,6 +61,7 @@ export const motion = {
   stagger,
   scale,
   texture,
+  textMorph,
   letterboxAspect,
   reducedMotion,
 } as const;
