@@ -11,11 +11,14 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@expo-google-fonts/instrument-serif": "^0.4.1",
+    "@expo-google-fonts/inter": "^0.4.2",
     "@life/contracts": "workspace:*",
     "@life/design": "workspace:*",
     "@life/story": "workspace:*",
     "@remotion/bundler": "4.0.529",
     "@remotion/cli": "4.0.529",
+    "@remotion/noise": "4.0.529",
     "@remotion/renderer": "4.0.529",
     "@remotion/zod-types": "4.0.529",
     "react": "19.2.3",

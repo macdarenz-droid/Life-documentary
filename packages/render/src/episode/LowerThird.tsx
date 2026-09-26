@@ -30,7 +30,7 @@ export function LowerThird({ item, reducedMotion }: { item: Item; reducedMotion:
           padding: `${px(tokens.space[2])}px ${px(tokens.space[4])}px`,
           backgroundColor: tokens.color.surface,
           borderLeft: `${px(tokens.space[1])}px solid ${tokens.color.accent}`,
-          fontFamily: 'sans-serif',
+          fontFamily: tokens.type.body.family,
         }}
       >
         <span style={{ color: tokens.color.text, fontSize: px(tokens.type.body.size) }}>

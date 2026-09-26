@@ -16,7 +16,7 @@ export function ClosingCard({
         backgroundColor: tokens.color.background,
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: 'sans-serif',
+        fontFamily: tokens.type.body.family,
         textAlign: 'center',
       }}
     >

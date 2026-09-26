@@ -27,6 +27,10 @@ Life Documentary is a mobile app that turns a person's days into weekly narrated
 - `packages/design` (`@life/design`) — design tokens.
 - `tooling/` — boundary rules and repo scripts (not a workspace).
 
+## Design Lab recording
+
+- CI job `lab` exports the web build, opens `/design-lab` and uploads the video as the `design-lab-video` artifact of the CI run (kept 7 days): a web preview, not representative of 120 fps on a device. Locally: `pnpm --filter @life/mobile export:web && pnpm exec playwright test`.
+
 ## Docs and tasks
 
 - `docs/` — vision, architecture, roadmap, decisions and research.
