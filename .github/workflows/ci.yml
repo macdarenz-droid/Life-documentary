@@ -57,3 +57,34 @@ jobs:
           path: packages/render/out/fixture.mp4
           retention-days: 7
           if-no-files-found: error
+
+  lab:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Export the web build
+        run: pnpm --filter @life/mobile export:web
+      - name: Record the Design Lab
+        run: pnpm exec playwright test
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: design-lab-video
+          path: test-results/**/video.webm
+          retention-days: 7
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: design-lab-report
+          path: playwright-report/
+          retention-days: 7

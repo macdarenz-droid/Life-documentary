@@ -11,3 +11,7 @@ coverage
 .DS_Store
 packages/render/public/fixtures/
 packages/render/out/
+apps/mobile/dist-web
+apps/mobile/public/canvaskit.wasm
+test-results/
+playwright-report/
