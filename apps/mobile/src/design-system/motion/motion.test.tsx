@@ -53,6 +53,38 @@ function movedNodes(): number {
   });
 }
 
+function flatOpacity(style: unknown): number {
+  if (Array.isArray(style)) return style.reduce((o: number, st) => o * flatOpacity(st), 1);
+  if (style && typeof style === 'object' && 'opacity' in style) return Number(style.opacity);
+  return 1;
+}
+
+/** Opacity of the image frame with this recycling key, multiplied down from every ancestor's current style. */
+function frameOpacity(recyclingKey: string): number | null {
+  const walk = (node: HostNode | string, above: number): number | null => {
+    if (typeof node === 'string') return null;
+    const animated = node.props.jestAnimatedStyle as { value?: { opacity?: number } } | undefined;
+    const own =
+      animated?.value?.opacity !== undefined
+        ? animated.value.opacity
+        : flatOpacity(node.props.style);
+    const here = above * own;
+    if (node.props.recyclingKey === recyclingKey) return here;
+    for (const child of node.children ?? []) {
+      const found = walk(child, here);
+      if (found !== null) return found;
+    }
+    return null;
+  };
+  const root = screen.toJSON() as HostNode | HostNode[] | null;
+  if (root === null) return null;
+  for (const n of Array.isArray(root) ? root : [root]) {
+    const found = walk(n, 1);
+    if (found !== null) return found;
+  }
+  return null;
+}
+
 /** Image frames drawn with a blur in the rendered tree. */
 function blurredFrames(): number {
   return countNodes(
@@ -105,6 +137,37 @@ describe('TitleCard', () => {
     });
     expect(onDone).toHaveBeenCalledTimes(1);
     jest.useRealTimers();
+  });
+});
+
+describe('TitleCard onDone', () => {
+  it('a new inline onDone mid-reveal does not restart it; the latest callback fires once at the original end', async () => {
+    jest.useFakeTimers();
+    const first = jest.fn();
+    const second = jest.fn();
+    const { rerender } = await render(
+      <TitleCard lines={['The Week', 'It Rained']} variant="display48" play onDone={first} />,
+    );
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+    });
+    await rerender(
+      <TitleCard lines={['The Week', 'It Rained']} variant="display48" play onDone={second} />,
+    );
+    await act(async () => {
+      jest.advanceTimersByTime(700);
+    });
+    expect(second).not.toHaveBeenCalled();
+    // the plan ends at 180 + 900 = 1080 ms after the start
+    await act(async () => {
+      jest.advanceTimersByTime(200);
+    });
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(first).not.toHaveBeenCalled();
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+    expect(second).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -182,6 +245,39 @@ describe('Dissolve', () => {
     });
     expect(blurredFrames()).toBe(0);
     jest.useRealTimers();
+  });
+});
+
+describe('Dissolve, more', () => {
+  it('with reduced motion on, the outgoing frame stays fully opaque halfway through', async () => {
+    mockedReducedMotion.mockReturnValue(true);
+    jest.useFakeTimers();
+    const { rerender } = await render(
+      <Dissolve source={{ uri: 'https://example.test/mon.jpg' }} recyclingKey="mon" />,
+    );
+    await rerender(
+      <Dissolve source={{ uri: 'https://example.test/tue.jpg' }} recyclingKey="tue" />,
+    );
+    await act(async () => {
+      jest.advanceTimersByTime(160);
+    });
+    expect(frameOpacity('mon')).toBe(1);
+    const incoming = frameOpacity('tue') ?? 0;
+    expect(incoming).toBeGreaterThan(0);
+    expect(incoming).toBeLessThan(1);
+  });
+
+  it('exposes the image with its label as an image, and nothing without a label', async () => {
+    await render(
+      <Dissolve
+        source={{ uri: 'https://example.test/mon.jpg' }}
+        recyclingKey="mon"
+        accessibilityLabel="Monday"
+      />,
+    );
+    expect(screen.getByRole('image', { name: 'Monday' })).toBeOnTheScreen();
+    await render(<Dissolve source={{ uri: 'https://example.test/mon.jpg' }} recyclingKey="mon" />);
+    expect(screen.queryAllByRole('image')).toHaveLength(0);
   });
 });
 

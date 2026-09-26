@@ -1,6 +1,6 @@
 import { tokens } from '@life/design';
 import { titleCardPlan, type TitleCardStep } from '@life/story';
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
@@ -92,6 +92,12 @@ export function TitleCard({ lines, variant, play, onDone }: TitleCardProps) {
   const { reduced } = useMotionPreference();
   const plan = useMemo(() => titleCardPlan(lines, TIMING), [lines]);
   const fade: SharedValue<number> = useSharedValue(reduced ? 0 : 1);
+  // The latest onDone, read when the reveal ends, so a new inline callback never restarts it.
+  const onDoneRef = useRef(onDone);
+  useLayoutEffect(() => {
+    onDoneRef.current = onDone;
+  });
+  const fireDone = useCallback(() => onDoneRef.current?.(), []);
 
   useEffect(() => {
     if (!reduced) {
@@ -106,10 +112,10 @@ export function TitleCard({ lines, variant, play, onDone }: TitleCardProps) {
       1,
       { duration: tokens.motion.reducedMotion.fadeMs, easing: easeOut },
       (finished) => {
-        if (finished && onDone) scheduleOnRN(onDone);
+        if (finished) scheduleOnRN(fireDone);
       },
     );
-  }, [play, reduced, onDone, fade]);
+  }, [play, reduced, fireDone, fade]);
 
   const fadeStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
   const lastIndex = plan.steps.length - 1;
@@ -133,7 +139,7 @@ export function TitleCard({ lines, variant, play, onDone }: TitleCardProps) {
                 reduced={reduced}
                 last={i === lastIndex}
                 endOfLine={plan.steps[i + 1]?.line !== lineIndex}
-                onDone={reduced ? undefined : onDone}
+                onDone={reduced ? undefined : fireDone}
               />
             ) : null,
           )}

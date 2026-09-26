@@ -95,9 +95,14 @@ export function Dissolve({ source, recyclingKey, accessibilityLabel, style }: Di
           accessibilityElementsHidden
         >
           {reduced ? null : image(prev, { blurRadius: texture.crossfadeBlurPx })}
-          <FadingLayer key={`out-${generation}`} from={1} to={0}>
-            {image(prev)}
-          </FadingLayer>
+          {reduced ? (
+            // Stays fully opaque under the incoming frame, so the crossfade never dims.
+            <View style={StyleSheet.absoluteFill}>{image(prev)}</View>
+          ) : (
+            <FadingLayer key={`out-${generation}`} from={1} to={0}>
+              {image(prev)}
+            </FadingLayer>
+          )}
         </View>
       ) : null}
       <FadingLayer
@@ -106,10 +111,12 @@ export function Dissolve({ source, recyclingKey, accessibilityLabel, style }: Di
         to={1}
         onDone={clearPrev}
       >
-        {image(current, {
-          accessible: true,
-          ...(accessibilityLabel === undefined ? {} : { accessibilityLabel }),
-        })}
+        {image(
+          current,
+          accessibilityLabel === undefined
+            ? { accessible: false }
+            : { accessible: true, accessibilityRole: 'image', accessibilityLabel },
+        )}
       </FadingLayer>
     </View>
   );
