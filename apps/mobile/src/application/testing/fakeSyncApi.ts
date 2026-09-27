@@ -1,6 +1,6 @@
 // An in-memory copy of the server's POST /sync rule for sync tests: last-write-wins per row (ties keep
 // the stored row), `leavesDevice` refusals, `not_yours` for a media asset of another user, a change log with a cursor, and pages of pulled changes.
-import { SyncRequest, SyncResponse, type SyncChange, type SyncRefusal } from '@life/contracts';
+import { SyncRequest, SyncResponse, type PulledChange, type SyncRefusal } from '@life/contracts';
 import { leavesDevice } from '@life/story';
 import type { Api } from '../../domain/capturePorts';
 
@@ -8,21 +8,21 @@ export type FakeSyncApi = Api & {
   /** Every request as the phone sent it, serialized, in order. */
   sent: string[];
   /** Rows the server holds, by `entity:id`. */
-  rows: Map<string, SyncChange>;
+  rows: Map<string, PulledChange>;
   /** The next call throws, as a dropped connection would. */
   failNext: boolean;
-  /** Writes a row as another phone would, with its own change-log entry. */
-  seed(change: SyncChange): void;
+  /** Writes a row as another phone (or, for derived text, the service) would, with its own change-log entry. */
+  seed(change: PulledChange): void;
 };
 
-const key = (c: SyncChange) => `${c.entity}:${c.row.id}`;
+const key = (c: PulledChange) => `${c.entity}:${c.row.id}`;
 
 /** `userId` is the signed-in account; media assets owned by anyone else are refused `not_yours`. */
 export function fakeSyncApi(options: { page?: number; userId?: string } = {}): FakeSyncApi {
   const page = options.page ?? 500;
-  const rows = new Map<string, SyncChange>();
+  const rows = new Map<string, PulledChange>();
   const log: { seq: number; key: string }[] = [];
-  const record = (change: SyncChange) => {
+  const record = (change: PulledChange) => {
     rows.set(key(change), change);
     log.push({ seq: log.length + 1, key: key(change) });
   };

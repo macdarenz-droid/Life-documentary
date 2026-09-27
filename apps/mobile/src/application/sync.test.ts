@@ -1,4 +1,5 @@
 import { Moment, Uuid, type Documentary, type SyncChange, type SyncRequest } from '@life/contracts';
+import * as derived from '../data/repositories/derived';
 import * as mediaAssets from '../data/repositories/mediaAssets';
 import * as moments from '../data/repositories/moments';
 import * as syncState from '../data/repositories/syncState';
@@ -63,6 +64,99 @@ function note(documentary: Documentary, id: string, updatedAt: string, text: str
     updatedAt,
   });
 }
+
+function derivedChange(momentId: string, producedAt: string, transcript: string) {
+  return {
+    entity: 'derived' as const,
+    row: {
+      id: Uuid.parse('00000000-0000-4000-8000-0000000000d1'),
+      momentId: Uuid.parse(momentId),
+      transcript,
+      language: 'en',
+      provider: 'workersAi' as const,
+      modelVersion: '@cf/openai/whisper-large-v3-turbo',
+      producedAt,
+    },
+  };
+}
+
+describe('syncNow and derived text', () => {
+  it('lands derived text only for a moment on this phone, and an older row never replaces a newer one', async () => {
+    const { store, clock, ids, documentary, api } = await setup();
+    const moment = await captureMoment(store, clock, ids, {
+      kind: 'note',
+      text: 'Rain on the tram window.',
+      localOnly: false,
+    });
+    api.seed(derivedChange(moment.id, '2027-03-21T18:00:00Z', 'The newer words.'));
+    api.seed({
+      ...derivedChange(OTHER_ID, '2027-03-21T18:00:00Z', 'Not on this phone.'),
+      row: {
+        ...derivedChange(OTHER_ID, '2027-03-21T18:00:00Z', 'Not on this phone.').row,
+        id: Uuid.parse('00000000-0000-4000-8000-0000000000d2'),
+      },
+    });
+    await syncNow(store, clock, api, documentary);
+    expect((await derived.forMoment(store.driver, moment.id)).map((d) => d.transcript)).toEqual([
+      'The newer words.',
+    ]);
+    expect(await derived.forMoment(store.driver, OTHER_ID)).toEqual([]);
+
+    api.seed(derivedChange(moment.id, '2027-03-20T18:00:00Z', 'The older words.'));
+    await syncNow(store, clock, api, documentary);
+    expect((await derived.forMoment(store.driver, moment.id)).map((d) => d.transcript)).toEqual([
+      'The newer words.',
+    ]);
+
+    api.seed(derivedChange(moment.id, '2027-03-22T18:00:00Z', 'Newer again.'));
+    await syncNow(store, clock, api, documentary);
+    expect((await derived.forMoment(store.driver, moment.id)).map((d) => d.transcript)).toEqual([
+      'Newer again.',
+    ]);
+  });
+
+  it("removes a moment's derived text when its pulled tombstone lands", async () => {
+    const { store, clock, ids, documentary, api } = await setup();
+    const moment = await captureMoment(store, clock, ids, {
+      kind: 'note',
+      text: 'Rain on the tram window.',
+      localOnly: false,
+    });
+    api.seed(derivedChange(moment.id, '2027-03-21T18:00:00Z', 'Words.'));
+    await syncNow(store, clock, api, documentary);
+    expect(await derived.forMoment(store.driver, moment.id)).toHaveLength(1);
+
+    const tombstone = Moment.parse({
+      ...moment,
+      deletedAt: '2027-03-22T09:00:00Z',
+      updatedAt: '2027-03-22T09:00:00Z',
+    });
+    api.seed({ entity: 'moment', row: tombstone });
+    await syncNow(store, clock, api, documentary);
+    expect(await derived.forMoment(store.driver, moment.id)).toEqual([]);
+  });
+
+  it('never pushes a derived row', async () => {
+    const { store, clock, ids, documentary, api } = await setup();
+    const moment = await captureMoment(store, clock, ids, {
+      kind: 'note',
+      text: 'Rain on the tram window.',
+      localOnly: false,
+    });
+    api.seed(derivedChange(moment.id, '2027-03-21T18:00:00Z', 'Only from the service.'));
+    await syncNow(store, clock, api, documentary);
+    expect(await derived.forMoment(store.driver, moment.id)).toHaveLength(1);
+
+    clock.set('2027-03-22T09:00:00Z');
+    await captureMoment(store, clock, ids, { kind: 'note', text: 'Later.', localOnly: false });
+    await syncNow(store, clock, api, documentary);
+    expect(api.sent.length).toBeGreaterThan(1);
+    for (const body of api.sent) {
+      expect(body).not.toContain('"derived"');
+      expect(body).not.toContain('Only from the service.');
+    }
+  });
+});
 
 describe('syncNow', () => {
   it('pushes a new capture once', async () => {

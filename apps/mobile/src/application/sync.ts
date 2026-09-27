@@ -1,19 +1,23 @@
 // Sync on the phone (P6, D37). One round pushes every row changed since the last round, in pages of
 // 100, then pulls until the server has nothing newer. Only what `leavesDevice` allows goes out, without
 // device-only fields. Pulled rows land with the same last-write-wins rule the server uses. The cursor and
-// the push mark move only when the whole round worked, so a failed round is repeated as it was.
+// the push mark move only when the whole round worked, so a failed round is repeated as it was. Derived
+// text (P12) only comes down: it lands for this phone's live moments and goes with a moment's tombstone.
 import {
   MediaAsset,
   Question,
   SYNC_MAX_CHANGES,
   SyncChange,
   SyncedMediaAsset,
+  type Derived,
   type Documentary,
   type Moment,
-  type SyncEntity,
+  type PulledChange,
+  type PulledEntity,
 } from '@life/contracts';
 import { addDays, leavesDevice, localDay } from '@life/story';
 import * as castMembers from '../data/repositories/castMembers';
+import * as derived from '../data/repositories/derived';
 import * as documentaries from '../data/repositories/documentaries';
 import * as mediaAssets from '../data/repositories/mediaAssets';
 import * as moments from '../data/repositories/moments';
@@ -27,13 +31,14 @@ import type { Clock, Store } from './ports';
 const DEVICE_ONLY = ['localPath', 'wrappedKey', 'posterPath', 'posterWrappedKey', 'uploadState'];
 
 /** Pushed and applied in this order, so what a row points at comes first. */
-const ORDER: SyncEntity[] = [
+const ORDER: PulledEntity[] = [
   'documentary',
   'storyline',
   'castMember',
   'mediaAsset',
   'question',
   'moment',
+  'derived',
 ];
 
 export type SyncOutcome =
@@ -48,7 +53,7 @@ export type SyncOutcome =
 
 /** A pulled change as it is written here: a media asset keeps this phone's files and keys. */
 type Write =
-  Exclude<SyncChange, { entity: 'mediaAsset' }> | { entity: 'mediaAsset'; row: MediaAsset };
+  Exclude<PulledChange, { entity: 'mediaAsset' }> | { entity: 'mediaAsset'; row: MediaAsset };
 
 const running = new WeakMap<Store, Promise<SyncOutcome>>();
 
@@ -99,12 +104,10 @@ async function runRound(store: Store, api: Api, documentary: Documentary): Promi
   const outgoing = await collect(store, documentary, state.pushedUpTo);
 
   let cursor = state.cursor;
-  const pulled = new Map<string, SyncChange>();
+  const pulled = new Map<string, PulledChange>();
   const send = async (changes: SyncChange[]): Promise<number> => {
     const response = await api.sync({ documentaryId: documentary.id, cursor, changes });
     for (const change of response.changes) {
-      // Derived text (P12) is kept on the phone from T-013e; until then it is skipped.
-      if (change.entity === 'derived') continue;
       const key = `${change.entity}:${change.row.id}`;
       pulled.delete(key);
       pulled.set(key, change);
@@ -236,7 +239,7 @@ function newer(
 async function applyPulled(
   store: Store,
   documentary: Documentary,
-  pulled: SyncChange[],
+  pulled: PulledChange[],
 ): Promise<{ count: number; documentary?: Documentary }> {
   const { driver } = store;
   const sorted = [...pulled].sort((a, b) => ORDER.indexOf(a.entity) - ORDER.indexOf(b.entity));
@@ -247,6 +250,7 @@ async function applyPulled(
   const castIds = new Set<string>();
   const candidateMoments = new Map<string, Moment>();
   const candidateQuestions = new Map<string, Question>();
+  const candidateDerived: Derived[] = [];
 
   for (const change of sorted) {
     switch (change.entity) {
@@ -296,6 +300,10 @@ async function applyPulled(
         }
         break;
       }
+      case 'derived': {
+        candidateDerived.push(change.row);
+        break;
+      }
     }
   }
 
@@ -335,6 +343,18 @@ async function applyPulled(
   for (const row of candidateQuestions.values()) writes.push({ entity: 'question', row });
   for (const row of candidateMoments.values()) writes.push({ entity: 'moment', row });
 
+  // Derived text lands only for a moment on this phone that is not deleted, and only when newer by
+  // `producedAt` than the row for the same moment and provider.
+  for (const row of candidateDerived) {
+    const moment = candidateMoments.get(row.momentId) ?? (await moments.get(driver, row.momentId));
+    if (!moment || moment.deletedAt !== undefined) continue;
+    const stored = (await derived.forMoment(driver, row.momentId)).find(
+      (d) => d.provider === row.provider,
+    );
+    if (stored && Date.parse(row.producedAt) <= Date.parse(stored.producedAt)) continue;
+    writes.push({ entity: 'derived', row });
+  }
+
   await syncState.applyPulled(driver, async (tx) => {
     for (const change of writes) {
       switch (change.entity) {
@@ -355,6 +375,11 @@ async function applyPulled(
           break;
         case 'moment':
           await moments.put(tx, change.row);
+          // A tombstone takes the moment's derived text with it.
+          if (change.row.deletedAt !== undefined) await derived.deleteForMoment(tx, change.row.id);
+          break;
+        case 'derived':
+          await derived.put(tx, change.row);
           break;
       }
     }
