@@ -184,26 +184,18 @@ Text: `tasks/p13/T-014.md`.
 ### T-014b · P13.2 · The planner provider and the style prompt · done · needs: T-013c, T-014a
 Text: `tasks/p13/T-014.md`.
 
-### T-014c · P13.3 · EpisodePipeline step 2: plan · changes r1 · needs: T-013d, T-014a, T-014b
+### T-014c · P13.3 · EpisodePipeline step 2: plan · done · needs: T-013d, T-014a, T-014b
 Text: `tasks/p13/T-014.md`.
-Note (2026-09-27): (1) When the first answer had no text, the retry sends no assistant turn (an empty one is a 400): the errors follow the brief in the one user message. (2) `planOnce` catches an error on the retry call and returns `invalid` with the usage so far; only an error on the first call throws. (3) `planOnce(brief, planner, { effort = PLAN_EFFORT } = {})` so the eval can set effort. (4) The error-string test allows ids and nothing else from the brief or the answer.
 
-**Fix list r1** (workflow review of 48f2a76; everything else approved: the migration, `briefInput` and `leavesDevice`, `planOnce` and its retry turns, the recap path, costs).
-1. A replayed step after an empty week's removal fails the run. `planStep` and `recapStep` start with `episodeOf`, which throws `The episode is gone.` once `remove` has run. So a replay of `plan` (for example after its D1 batch committed but reported an error) throws on both attempts, and `plan-recap` then throws on all six, leaving the instance errored instead of complete. When the episode is missing, both steps return `{ outcome: 'empty' }` and throw nothing (ARCHITECTURE §7: every pipeline step is idempotent on its key).
-2. The error-string test skips every string under 8 characters (`if (text.length >= 8)`), so a cast name like "Maya", a weekday or a mood could appear in an error and the test would still pass (Note 4 allows ids and nothing else). Exempt only UUIDs, the brief's dates, the fixed kind words (`answer`, `clip`, `photo`, `note`) and the banned phrases and characters `planVoiceErrors` names on purpose, and check every other string of the brief and the answers whatever its length. Add bad answers that reach `validatePlan`: a lower third whose cast id is not tagged on its moment, a cold open on a photo, and one outside the 30 to 240 s bounds.
-Tests: `planStep` twice on a notes-only week gives `empty` both times, and so does `recapStep` after the removal; the Workflow run on a notes-only week whose `plan` step is replayed (`mockStepError` once after the removal, or a direct second call) completes; the stricter error-string test above.
-Allowed test changes: the error-string test is made stricter as above.
-Checks: API typecheck, tests, lint, format, boundaries, `deploy:dry`.
-
-### T-014d · P13.4 · The planner evaluation · todo · needs: T-014c
+### T-014d · P13.4 · The planner evaluation · done · needs: T-014c
 Text: `tasks/p13/T-014.md`.
 
 ## P14 — Narration (step 3 of the episode pipeline)
 
-### T-015a · P14.1 · Narration shapes and rules · todo · needs: T-014a
+### T-015a · P14.1 · Narration shapes and rules · done · needs: T-014a
 Text: `tasks/p14/T-015.md`.
 
-### T-015b · P14.2 · The ElevenLabs provider · todo · needs: T-013c, T-015a
+### T-015b · P14.2 · The ElevenLabs provider · done · needs: T-013c, T-015a
 Text: `tasks/p14/T-015.md`.
 
 ### T-015c · P14.3 · EpisodePipeline step 3: narrate · todo · needs: T-014c, T-015a, T-015b
