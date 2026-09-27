@@ -103,6 +103,52 @@ describe('MomentViewer', () => {
     expect(actions.closeOriginal).toHaveBeenCalledWith(moment.mediaAssetId);
   });
 
+  it("shows an answer's transcript under the player, and nothing for an answer without one", async () => {
+    const h = await todayHarness();
+    const question = await todayQuestion(h.store, h.ctx.documentary, h.ctx.clock, h.ctx.ids);
+    const voice = {
+      kind: 'answer' as const,
+      questionId: question.id,
+      media: { sourcePath: 'tmp/source', mediaKind: 'audio' as const, durationMs: 6000 },
+      localOnly: false,
+    };
+    const said = await capture(h, voice, fileWithHead(ftyp('M4A ')));
+    const quiet = await capture(h, voice, fileWithHead(ftyp('M4A ')));
+    // Rows as a pull lands them: a transcript for the first answer, only a caption for the second.
+    const derived = (id: string, momentId: string, provider: string, field: string, text: string) =>
+      h.store.driver.run(
+        `INSERT INTO derived (id, moment_id, ${field}, language, provider, model_version, produced_at)
+         VALUES (?, ?, ?, 'en', ?, 'fixture-1', '2027-03-21T18:00:00Z')`,
+        [id, momentId, text, provider],
+      );
+    await derived(
+      '00000000-0000-4000-8000-0000000000d1',
+      said.id,
+      'workersAi',
+      'transcript',
+      'We walked down to the lake after work.',
+    );
+    await derived(
+      '00000000-0000-4000-8000-0000000000d2',
+      quiet.id,
+      'anthropic',
+      'caption',
+      'A person on a bench by the water.',
+    );
+
+    const first = await open(h, said.id);
+    expect(await screen.findByText('We walked down to the lake after work.')).toBeOnTheScreen();
+    expect(screen.getByText(question.text)).toBeOnTheScreen();
+    await act(async () => {
+      first.view.unmount();
+    });
+
+    await open(h, quiet.id);
+    expect(await screen.findByTestId('audio-player')).toBeOnTheScreen();
+    expect(screen.queryByText('We walked down to the lake after work.')).toBeNull();
+    expect(screen.queryByText('A person on a bench by the water.')).toBeNull();
+  });
+
   it('shows a photo still with its note as the caption', async () => {
     const h = await todayHarness();
     const moment = await capture(

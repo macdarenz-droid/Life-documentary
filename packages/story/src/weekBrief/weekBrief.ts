@@ -14,6 +14,7 @@ import type {
 } from '@life/contracts';
 import { addDays } from '../dates';
 import { isShareable, localDay } from '../shareable';
+import { recapWords } from '../words/recap';
 
 export type WeekBriefInput = {
   documentaryId: Uuid;
@@ -21,7 +22,7 @@ export type WeekBriefInput = {
   weekStart: LocalDate;
   timeZone: string;
   moments: readonly Moment[];
-  mediaAssets: readonly MediaAsset[];
+  mediaAssets: readonly Pick<MediaAsset, 'id' | 'durationMs'>[];
   derived: readonly Derived[];
   questions: readonly Question[];
   storylines: readonly Storyline[];
@@ -48,12 +49,27 @@ export function cutAtWord(text: string, max: number): string {
   return `${cut.trimEnd()}…`;
 }
 
-function latestDerived(derived: readonly Derived[]): Map<string, Derived> {
-  const byMoment = new Map<string, Derived>();
+type DerivedText = {
+  transcript?: { text: string; producedAt: string };
+  caption?: { text: string; producedAt: string };
+};
+
+/**
+ * Per moment, the latest transcript and the latest caption, each on its own: a video answer has a
+ * transcript from one provider and a caption from another, and neither replaces the other.
+ */
+function latestDerived(derived: readonly Derived[]): Map<string, DerivedText> {
+  const byMoment = new Map<string, DerivedText>();
+  const newer = (d: Derived, current?: { producedAt: string }) =>
+    !current || Date.parse(d.producedAt) > Date.parse(current.producedAt);
   for (const d of derived) {
-    const current = byMoment.get(d.momentId);
-    if (!current || Date.parse(d.producedAt) > Date.parse(current.producedAt))
-      byMoment.set(d.momentId, d);
+    const current = byMoment.get(d.momentId) ?? {};
+    const next = { ...current };
+    if (d.transcript !== undefined && newer(d, current.transcript))
+      next.transcript = { text: d.transcript, producedAt: d.producedAt };
+    if (d.caption !== undefined && newer(d, current.caption))
+      next.caption = { text: d.caption, producedAt: d.producedAt };
+    byMoment.set(d.momentId, next);
   }
   return byMoment;
 }
@@ -78,16 +94,16 @@ function build(input: WeekBriefInput, moments: readonly Moment[]) {
     const d = derived.get(m.id);
     const asset = m.mediaAssetId ? assets.get(m.mediaAssetId) : undefined;
     const question = m.questionId ? questions.get(m.questionId) : undefined;
+    const day = localDay(m.capturedAt, m.timeZone);
     return {
       momentId: m.id,
-      day: localDay(m.capturedAt, m.timeZone),
+      day,
+      weekday: recapWords.weekday(day),
       kind: m.kind,
       ...(asset?.durationMs !== undefined ? { durationMs: asset.durationMs } : {}),
       ...(question ? { questionText: question.text } : {}),
-      ...(d?.transcript !== undefined
-        ? { transcript: cutAtWord(d.transcript, TRANSCRIPT_MAX) }
-        : {}),
-      ...(d?.caption !== undefined ? { caption: cutAtWord(d.caption, CAPTION_MAX) } : {}),
+      ...(d?.transcript ? { transcript: cutAtWord(d.transcript.text, TRANSCRIPT_MAX) } : {}),
+      ...(d?.caption ? { caption: cutAtWord(d.caption.text, CAPTION_MAX) } : {}),
       ...(m.text !== undefined ? { text: m.text } : {}),
       ...(m.mood !== undefined ? { mood: m.mood } : {}),
       ...(m.placeName !== undefined ? { placeName: m.placeName } : {}),

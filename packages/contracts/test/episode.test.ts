@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Derived, EditOp, EpisodePlanV1, WeekBriefV1 } from '../src';
+import { CostLedgerRow, Derived, EditOp, EpisodePlanV1, WeekBriefV1 } from '../src';
 
 const id = (n: number) => `3b241101-e2bb-4255-8caf-4136c566${String(n).padStart(4, '0')}`;
 const NOW = '2027-03-15T09:30:00Z';
@@ -70,6 +70,7 @@ describe('WeekBriefV1', () => {
   const moment = (n: number) => ({
     momentId: id(n),
     day: '2027-03-09',
+    weekday: 'Tuesday',
     kind: 'answer',
     durationMs: 8000,
     questionText: 'What happened next with The new job?',
@@ -105,6 +106,7 @@ describe('WeekBriefV1', () => {
 
 describe('Derived', () => {
   const derived = {
+    id: id(11),
     momentId: id(10),
     transcript: 'We met the team.',
     language: 'en',
@@ -117,6 +119,61 @@ describe('Derived', () => {
   });
   it('rejects a row without transcript and caption', () => {
     expect(Derived.safeParse({ ...derived, transcript: undefined }).success).toBe(false);
+  });
+  const segments = [
+    {
+      startMs: 0,
+      endMs: 1200,
+      text: 'We met',
+      words: [
+        { text: 'We', startMs: 0, endMs: 400 },
+        { text: 'met', startMs: 400, endMs: 1200 },
+      ],
+    },
+    { startMs: 1200, endMs: 2500, text: 'the team.' },
+  ];
+  it('accepts timed segments with and without words', () => {
+    expect(Derived.safeParse({ ...derived, segments }).success).toBe(true);
+  });
+  it('refuses a segment or a word that ends before it starts', () => {
+    const late = [{ startMs: 1200, endMs: 1000, text: 'the team.' }];
+    expect(Derived.safeParse({ ...derived, segments: late }).success).toBe(false);
+    const word = [
+      { startMs: 0, endMs: 1200, text: 'We', words: [{ text: 'We', startMs: 400, endMs: 0 }] },
+    ];
+    expect(Derived.safeParse({ ...derived, segments: word }).success).toBe(false);
+  });
+  it('refuses 201 segments and a segment with 61 words', () => {
+    const many = Array.from({ length: 201 }, (_, i) => ({
+      startMs: i * 10,
+      endMs: i * 10 + 5,
+      text: 'a',
+    }));
+    expect(Derived.safeParse({ ...derived, segments: many }).success).toBe(false);
+    const words = Array.from({ length: 61 }, (_, i) => ({
+      text: 'a',
+      startMs: i * 10,
+      endMs: i * 10 + 5,
+    }));
+    const wordy = [{ startMs: 0, endMs: 1000, text: 'a', words }];
+    expect(Derived.safeParse({ ...derived, segments: wordy }).success).toBe(false);
+  });
+});
+
+describe('CostLedgerRow', () => {
+  it('accepts a plan row counted in cache-read and cache-write tokens', () => {
+    const row = {
+      id: id(60),
+      episodeId: id(61),
+      step: 'plan',
+      provider: 'anthropic',
+      unit: 'cacheReadToken',
+      units: 1300,
+      microUsd: 260,
+      at: NOW,
+    };
+    expect(CostLedgerRow.safeParse(row).success).toBe(true);
+    expect(CostLedgerRow.safeParse({ ...row, unit: 'cacheWriteToken' }).success).toBe(true);
   });
 });
 

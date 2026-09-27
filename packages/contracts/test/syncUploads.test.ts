@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CostLedgerRow,
   CreateUploadResult,
   SyncedMediaAsset,
   SyncRequest,
+  SyncResponse,
   UPLOAD_PART_SIZE,
   UploadJob,
   UploadedPart,
@@ -65,6 +67,50 @@ describe('SyncRequest', () => {
         request([{ entity: 'mediaAsset', row: { ...synced, localPath: 'media/1.enc' } }]),
       ).success,
     ).toBe(false);
+  });
+});
+
+describe('derived rows in sync', () => {
+  const derived = {
+    entity: 'derived',
+    row: {
+      id: ID(20),
+      momentId: ID(21),
+      caption: 'A person walks a dog along a canal.',
+      language: 'en',
+      provider: 'anthropic',
+      modelVersion: 'claude-haiku-4-5-20251001',
+      producedAt: '2027-03-21T18:00:00Z',
+    },
+  };
+
+  it('come back in a pull', () => {
+    expect(SyncResponse.parse({ cursor: 4, changes: [derived], refused: [] }).changes).toEqual([
+      derived,
+    ]);
+  });
+
+  it('are refused in a push', () => {
+    expect(SyncRequest.safeParse(request([derived])).success).toBe(false);
+  });
+});
+
+describe('CostLedgerRow', () => {
+  const row = {
+    id: ID(30),
+    episodeId: ID(31),
+    step: 'caption',
+    provider: 'anthropic',
+    unit: 'inputToken',
+    units: 972,
+    microUsd: 486,
+    at: '2027-03-21T18:00:00Z',
+  };
+
+  it('holds whole units and micro-dollars', () => {
+    expect(CostLedgerRow.parse(row)).toEqual(row);
+    expect(CostLedgerRow.safeParse({ ...row, microUsd: 0.5 }).success).toBe(false);
+    expect(CostLedgerRow.safeParse({ ...row, units: -1 }).success).toBe(false);
   });
 });
 

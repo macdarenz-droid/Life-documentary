@@ -12,4 +12,12 @@ export type Env = {
   APPLE_APP_BUNDLE_IDENTIFIER?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
+  /** Workers AI (P12): speech to text. */
+  AI: Ai;
+  /** Worker secret: the Anthropic key for captions (P12). */
+  ANTHROPIC_API_KEY?: string;
+  /** `fixture` makes the pipeline use fixture providers; set only by the test pool and local dev. */
+  PROVIDERS?: string;
+  /** The episode pipeline Workflow (P12). */
+  EPISODE_PIPELINE: Workflow<{ documentaryId: string; weekStart: string }>;
 };
