@@ -357,6 +357,51 @@ describe('the sync migration', () => {
     expect(again.changes).toEqual([{ entity: 'derived', row: second }]);
   });
 
+  it('keeps timed segments through upsert and a pull, and refuses one that ends before it starts', async () => {
+    const ada = await person('ada.segments@example.com');
+    const moment = note(ada.documentary.id, ada.userId);
+    const { cursor } = await ada.ok({ cursor: null, changes: [moment] });
+    const db = database(bindings.DB);
+    const segments = [
+      {
+        startMs: 0,
+        endMs: 1400,
+        text: 'We walked',
+        words: [
+          { text: 'We', startMs: 0, endMs: 500 },
+          { text: 'walked', startMs: 500, endMs: 1400 },
+        ],
+      },
+      { startMs: 1400, endMs: 2600, text: 'to the lake.' },
+    ];
+    const stored = await derivedRepo.upsert(db, ada.documentary.id, {
+      momentId: moment.row.id,
+      transcript: 'We walked to the lake.',
+      segments,
+      language: 'en',
+      provider: 'workersAi',
+      modelVersion: '@cf/openai/whisper-large-v3-turbo',
+      producedAt: at(10),
+    });
+    expect(stored.segments).toEqual(segments);
+    expect(await derivedRepo.forMoments(db, [moment.row.id])).toEqual([stored]);
+    const pulled = await ada.ok({ cursor, changes: [] });
+    expect(pulled.changes).toEqual([{ entity: 'derived', row: stored }]);
+
+    await expect(
+      derivedRepo.upsert(db, ada.documentary.id, {
+        momentId: moment.row.id,
+        transcript: 'We walked to the lake.',
+        segments: [{ startMs: 1400, endMs: 900, text: 'to the lake.' }],
+        language: 'en',
+        provider: 'workersAi',
+        modelVersion: '@cf/openai/whisper-large-v3-turbo',
+        producedAt: at(20),
+      }),
+    ).rejects.toThrow();
+    expect(await derivedRepo.forMoments(db, [moment.row.id])).toEqual([stored]);
+  });
+
   it('refuses a pushed derived change with 400 and stores nothing', async () => {
     const ada = await person('ada.pushderived@example.com');
     const moment = note(ada.documentary.id, ada.userId);

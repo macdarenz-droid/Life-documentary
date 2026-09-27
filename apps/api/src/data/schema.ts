@@ -307,6 +307,8 @@ export const derived = sqliteTable(
       .notNull()
       .references(() => moments.id, { onDelete: 'cascade' }),
     transcript: text('transcript'),
+    /** TranscriptSegment[] as JSON (P12 fix r1, D40). */
+    segments: text('segments'),
     caption: text('caption'),
     language: text('language').notNull(),
     provider: text('provider').notNull(),

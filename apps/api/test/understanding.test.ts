@@ -88,6 +88,26 @@ describe('the cost ledger', () => {
   });
 });
 
+describe('the cost ledger for planning', () => {
+  it('round-trips a plan row counted in cache-read tokens', async () => {
+    const db = database(bindings.DB);
+    const documentaryId = await documentaryIn(bindings.DB);
+    const episode = await episodes.getOrCreate(db, documentaryId, '2027-03-15', T0);
+    const row = {
+      episodeId: episode.id,
+      step: 'plan',
+      provider: 'anthropic',
+      unit: 'cacheReadToken',
+      units: 1300,
+      microUsd: 260,
+      at: T0,
+    } as const;
+    await costLedger.upsert(db, row);
+    const [stored] = await costLedger.forEpisode(db, episode.id);
+    expect(stored).toEqual({ ...row, id: stored?.id });
+  });
+});
+
 describe('costs', () => {
   it('prices 10 s of audio at 86 µUSD', () => {
     expect(transcribeMicroUsd(10)).toBe(86);
@@ -174,5 +194,48 @@ describe('migration 0004', () => {
         .run();
     await insertDerived();
     await expect(insertDerived()).rejects.toThrow();
+  });
+});
+
+describe('migration 0005', () => {
+  it('adds segments to derived and keeps the rows before it', async () => {
+    const { MIGRATION_DB, TEST_MIGRATIONS } = env as unknown as {
+      MIGRATION_DB: D1Database;
+      TEST_MIGRATIONS: Parameters<typeof applyD1Migrations>[1];
+    };
+    const before = TEST_MIGRATIONS.filter((m) => m.name < '0005_');
+    const next = TEST_MIGRATIONS.filter((m) => m.name.startsWith('0005_'));
+    expect(next).toHaveLength(1);
+    await applyD1Migrations(MIGRATION_DB, before);
+    const documentaryId = await documentaryIn(MIGRATION_DB);
+    const momentId = crypto.randomUUID();
+    await MIGRATION_DB.prepare(
+      `INSERT INTO moments (id, documentary_id, author_user_id, captured_at, time_zone, kind, text, local_only, storyline_ids, cast_ids, updated_at)
+       VALUES (?, ?, ?, ?, 'Europe/Berlin', 'note', 'Hi', 0, '[]', '[]', ?)`,
+    )
+      .bind(momentId, documentaryId, crypto.randomUUID(), T0, T0)
+      .run();
+    const derivedId = crypto.randomUUID();
+    await MIGRATION_DB.prepare(
+      `INSERT INTO derived (id, documentary_id, moment_id, transcript, language, provider, model_version, produced_at)
+       VALUES (?, ?, ?, 'Hi.', 'en', 'workersAi', 'fixture-1', ?)`,
+    )
+      .bind(derivedId, documentaryId, momentId, T0)
+      .run();
+
+    await applyD1Migrations(MIGRATION_DB, next);
+    const kept = await MIGRATION_DB.prepare('SELECT transcript, segments FROM derived WHERE id = ?')
+      .bind(derivedId)
+      .first<{ transcript: string; segments: string | null }>();
+    expect(kept).toEqual({ transcript: 'Hi.', segments: null });
+    await MIGRATION_DB.prepare('UPDATE derived SET segments = ? WHERE id = ?')
+      .bind('[{"startMs":0,"endMs":500,"text":"Hi."}]', derivedId)
+      .run();
+    const updated = await MIGRATION_DB.prepare('SELECT segments FROM derived WHERE id = ?')
+      .bind(derivedId)
+      .first<{ segments: string }>();
+    expect(JSON.parse(updated?.segments ?? 'null')).toEqual([
+      { startMs: 0, endMs: 500, text: 'Hi.' },
+    ]);
   });
 });

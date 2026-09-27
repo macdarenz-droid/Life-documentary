@@ -11,10 +11,13 @@ const ID_CHUNK = 90;
 
 /** A stored row as the contract has it (no documentary, no nulls), with its documentary. */
 export function toDerived(row: typeof derived.$inferSelect): { documentaryId: Uuid; row: Derived } {
-  const { documentaryId, ...rest } = row;
+  const { documentaryId, segments, ...rest } = row;
   return {
     documentaryId: documentaryId as Uuid,
-    row: Derived.parse(Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== null))),
+    row: Derived.parse({
+      ...Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== null)),
+      ...(segments !== null ? { segments: JSON.parse(segments) as unknown } : {}),
+    }),
   };
 }
 
@@ -36,6 +39,7 @@ export async function upsert(
     documentaryId,
     momentId: row.momentId,
     transcript: row.transcript ?? null,
+    segments: row.segments !== undefined ? JSON.stringify(row.segments) : null,
     caption: row.caption ?? null,
     language: row.language,
     provider: row.provider,

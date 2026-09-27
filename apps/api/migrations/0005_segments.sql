@@ -1,0 +1,1 @@
+ALTER TABLE `derived` ADD `segments` text;

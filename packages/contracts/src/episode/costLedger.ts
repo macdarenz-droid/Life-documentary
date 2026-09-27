@@ -8,9 +8,9 @@ import { Timestamp, Uuid } from '../ids';
 export const CostLedgerRow = z.object({
   id: Uuid,
   episodeId: Uuid,
-  step: z.enum(['transcribe', 'caption']),
+  step: z.enum(['transcribe', 'caption', 'plan']),
   provider: z.enum(['workersAi', 'anthropic']),
-  unit: z.enum(['audioSecond', 'inputToken', 'outputToken']),
+  unit: z.enum(['audioSecond', 'inputToken', 'outputToken', 'cacheWriteToken', 'cacheReadToken']),
   units: z.number().int().min(0),
   microUsd: z.number().int().min(0),
   at: Timestamp,
