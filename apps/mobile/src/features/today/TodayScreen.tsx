@@ -32,7 +32,13 @@ export type TodayScreenProps = {
   /** Storylines and cast for the Tag tray; without them no "Tag" is offered. */
   tags?: TagActions;
   /** Opens a screen from the quiet top row; without it the row is not shown. */
-  onNavigate?: (to: 'storylines' | 'cast') => void;
+  onNavigate?: (to: 'storylines' | 'cast' | 'settings') => void;
+  /** The one-time "Remind me each morning" card; without it no card is offered. */
+  reminderOffer?: {
+    shouldOffer(): Promise<boolean>;
+    accept(): Promise<unknown>;
+    dismiss(): Promise<unknown>;
+  };
   /** Changes when the screen comes into focus, so the question is loaded again. */
   reloadKey?: number;
 };
@@ -73,6 +79,7 @@ export function TodayScreen({
   CameraView,
   tags,
   onNavigate,
+  reminderOffer,
   reloadKey = 0,
 }: TodayScreenProps) {
   const { reduced } = useMotionPreference();
@@ -101,6 +108,7 @@ export function TodayScreen({
   /** The last saved moment, which "Tag" applies to. */
   const [lastMomentId, setLastMomentId] = useState<Uuid | null>(null);
   const [tagOpen, setTagOpen] = useState(false);
+  const [offer, setOffer] = useState(false);
 
   /** Mood, place and keep-on-phone apply to the next capture only. */
   const extras = () => ({
@@ -122,10 +130,14 @@ export function TodayScreen({
       setQuestion(q);
       if (q.answeredByMomentId) setPhase('saved');
     });
+    // Checked when the screen loads, so the card appears on a later visit, never mid-answer.
+    void reminderOffer?.shouldOffer().then((yes) => {
+      if (active) setOffer(yes);
+    });
     return () => {
       active = false;
     };
-  }, [loadQuestion, reloadKey]);
+  }, [loadQuestion, reminderOffer, reloadKey]);
 
   useEffect(
     () => () => {
@@ -471,6 +483,30 @@ export function TodayScreen({
         </View>
       ) : null}
 
+      {offer && reminderOffer && !recording ? (
+        <View style={styles.offer}>
+          <Text variant="body" tone="secondary">
+            {words.reminders.offerLine}
+          </Text>
+          <Button
+            label={words.reminders.offerAccept}
+            variant="quiet"
+            onPress={() => {
+              setOffer(false);
+              void reminderOffer.accept();
+            }}
+          />
+          <Button
+            label={words.reminders.offerDismiss}
+            variant="quiet"
+            onPress={() => {
+              setOffer(false);
+              void reminderOffer.dismiss();
+            }}
+          />
+        </View>
+      ) : null}
+
       {!recording ? (
         <View style={styles.extras}>
           <AddRow onAction={(a) => void onAdd(a)} />
@@ -540,7 +576,7 @@ export function TodayScreen({
           accessibilityElementsHidden={recording}
           importantForAccessibility={recording ? 'no-hide-descendants' : 'auto'}
         >
-          {(['storylines', 'cast'] as const).map((to) => (
+          {(['storylines', 'cast', 'settings'] as const).map((to) => (
             <Pressable
               key={to}
               accessibilityRole="link"
@@ -622,4 +658,5 @@ const styles = StyleSheet.create({
   },
   topLink: { minHeight: tokens.space[7], justifyContent: 'center' },
   hidden: { opacity: 0 },
+  offer: { alignSelf: 'stretch', alignItems: 'center', gap: tokens.space[2] },
 });

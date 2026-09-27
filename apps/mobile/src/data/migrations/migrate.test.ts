@@ -5,7 +5,6 @@ import {
   MigrationEditedError,
   MigrationListError,
   migrate,
-  migrations,
   type Migration,
 } from './index';
 import { seedIds, seedV1 } from './testing/seedV1';
@@ -46,7 +45,7 @@ async function applied(db: SqlDriver): Promise<number[]> {
 describe('migrate', () => {
   it('brings a fresh database to v1 with every table and index', async () => {
     const db = await openMemoryDriver();
-    expect(await migrate(db, NOW, migrations)).toEqual({ from: 0, to: 1 });
+    expect(await migrate(db, NOW, [v1])).toEqual({ from: 0, to: 1 });
     const tables = await names(db, 'table');
     for (const t of [...TABLES, 'schema_migrations']) expect(tables).toContain(t);
     const indexes = await names(db, 'index');
@@ -57,21 +56,21 @@ describe('migrate', () => {
 
   it('changes nothing on a second run', async () => {
     const db = await openMemoryDriver();
-    await migrate(db, NOW, migrations);
+    await migrate(db, NOW, [v1]);
     const before = await db.all('SELECT * FROM schema_migrations');
-    expect(await migrate(db, '2027-03-16T09:30:00Z', migrations)).toEqual({ from: 1, to: 1 });
+    expect(await migrate(db, '2027-03-16T09:30:00Z', [v1])).toEqual({ from: 1, to: 1 });
     expect(await db.all('SELECT * FROM schema_migrations')).toEqual(before);
   });
 
   it('leaves the database at v1 when v2 fails midway', async () => {
     const db = await openMemoryDriver();
-    await migrate(db, NOW, migrations);
+    await migrate(db, NOW, [v1]);
     const broken: Migration = {
       version: 2,
       name: 'broken',
       sql: 'CREATE TABLE v2_things (id TEXT PRIMARY KEY); INSERT INTO no_such_table VALUES (1);',
     };
-    await expect(migrate(db, NOW, [...migrations, broken])).rejects.toThrow();
+    await expect(migrate(db, NOW, [v1, broken])).rejects.toThrow();
     expect(await names(db, 'table')).not.toContain('v2_things');
     expect(await applied(db)).toEqual([1]);
     expect(await userVersion(db)).toBe(1);
@@ -79,7 +78,7 @@ describe('migrate', () => {
 
   it('refuses a v1 whose SQL was edited after it was applied', async () => {
     const db = await openMemoryDriver();
-    await migrate(db, NOW, migrations);
+    await migrate(db, NOW, [v1]);
     const edited = [{ ...v1, sql: `${v1.sql}\n-- edited` }];
     await expect(migrate(db, NOW, edited)).rejects.toBeInstanceOf(MigrationEditedError);
   });

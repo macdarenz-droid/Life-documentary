@@ -1,7 +1,7 @@
 // A labelled on/off row. The Switch is the control; the explanation is read with it.
 import { tokens } from '@life/design';
-import { StyleSheet, Switch, View } from 'react-native';
-import { Text } from '../../../design-system';
+import { StyleSheet, View } from 'react-native';
+import { Switch, Text } from '../../../design-system';
 
 export function Toggle({
   label,
@@ -31,7 +31,6 @@ export function Toggle({
         accessibilityHint={help}
         value={value}
         onValueChange={onChange}
-        trackColor={{ false: tokens.color.surface, true: tokens.color.ash.hex }}
       />
     </View>
   );

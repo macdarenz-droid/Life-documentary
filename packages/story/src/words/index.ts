@@ -71,6 +71,7 @@ export const words = {
     today: 'Today',
     storylines: 'Storylines',
     cast: 'Cast',
+    settings: 'Settings',
   },
   storylines: {
     title: 'Storylines',
@@ -104,6 +105,23 @@ export const words = {
     keep: 'Keep them',
     empty:
       "Name the people in your days. Names stay on this phone, and nobody's face or voice is ever recognised.",
+  },
+  reminders: {
+    notificationTitle: "Today's question",
+    notificationBody: 'One question, ten seconds.',
+    channelName: 'Daily question',
+    settingsTitle: 'Settings',
+    dailyQuestion: 'Daily question',
+    dailyQuestionHelp: 'One quiet reminder a day, at the time you choose.',
+    time: 'Time',
+    hour: 'Hour',
+    minutes: 'Minutes',
+    earlier: 'Earlier',
+    later: 'Later',
+    denied: 'Notifications are off for Life Documentary. You can turn them on in Settings.',
+    offerLine: "Would a quiet reminder help? One a day, for the day's question.",
+    offerAccept: 'Remind me each morning',
+    offerDismiss: 'Not now',
   },
   lab: {
     title: 'Design lab',

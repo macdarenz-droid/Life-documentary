@@ -53,6 +53,19 @@ export interface SettingsOpener {
   open(): void;
 }
 
+/** Local notifications: the one daily reminder, scheduled on the device with no account or network. */
+export interface Reminders {
+  permission(): Promise<PermissionState>;
+  request(): Promise<PermissionState>;
+  /** Schedules a notification every day at hour:minute; returns its id. */
+  scheduleDaily(
+    hour: number,
+    minute: number,
+    content: { title: string; body: string },
+  ): Promise<string>;
+  cancel(id: string): Promise<void>;
+}
+
 /** The props every camera view (the Expo one or a fake) accepts. */
 export type CameraViewProps = {
   onRecorder: (recorder: VideoRecorder | null) => void;
@@ -71,4 +84,5 @@ export type CaptureServices = {
   haptics: Haptics;
   permissions: Permissions;
   settings: SettingsOpener;
+  reminders: Reminders;
 };

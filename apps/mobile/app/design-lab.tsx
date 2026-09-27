@@ -10,6 +10,11 @@ import { Dissolve } from '../src/design-system/motion/Dissolve';
 import { TextMorph } from '../src/design-system/motion/TextMorph';
 import { TitleCard } from '../src/design-system/motion/TitleCard';
 import { CastScreen, type CastActions, type CastRow } from '../src/features/cast';
+import {
+  SettingsScreen,
+  type ReminderChoice,
+  type SettingsActions,
+} from '../src/features/settings';
 import { StorylinesScreen, type StorylineActions } from '../src/features/storylines';
 import { TodayScreen, type TodayScreenProps } from '../src/features/today';
 import { fakeCameraView } from '../src/services/testing/FakeCameraView';
@@ -129,6 +134,19 @@ function labCastActions(): CastActions {
   };
 }
 
+/** The reminder as if notifications were allowed; nothing is scheduled in the web preview. */
+function labSettingsActions(): SettingsActions {
+  let reminder: ReminderChoice = { enabled: true, hour: 8, minute: 0 };
+  return {
+    load: async () => ({ permission: 'granted', reminder }),
+    request: async () => 'granted',
+    save: async (choice) => {
+      reminder = choice;
+    },
+    openSettings: () => undefined,
+  };
+}
+
 const GrainBreath = lazy(async () => {
   if (Platform.OS === 'web') {
     const { LoadSkiaWeb } = await import('@shopify/react-native-skia/lib/module/web');
@@ -179,6 +197,7 @@ export default function DesignLab() {
   const [todayProps] = useState(labTodayProps);
   const [storylineActions] = useState(labStorylineActions);
   const [castActions] = useState(labCastActions);
+  const [settingsActions] = useState(labSettingsActions);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -271,6 +290,12 @@ export default function DesignLab() {
       <Section title="Cast">
         <View style={styles.list}>
           <CastScreen actions={castActions} />
+        </View>
+      </Section>
+
+      <Section title="Settings">
+        <View style={styles.list}>
+          <SettingsScreen actions={settingsActions} />
         </View>
       </Section>
 

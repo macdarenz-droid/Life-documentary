@@ -187,3 +187,12 @@ export async function countByStoryline(
   );
   return Object.fromEntries(rows.map((r) => [r.storyline_id, r.n]));
 }
+
+/** Whether the documentary has at least one live answer. */
+export async function hasAnswer(driver: SqlDriver, documentaryId: string): Promise<boolean> {
+  const row = await driver.first<{ n: number }>(
+    `SELECT count(*) AS n FROM moments WHERE documentary_id = ? AND kind = 'answer' AND deleted_at IS NULL`,
+    [documentaryId],
+  );
+  return (row?.n ?? 0) > 0;
+}

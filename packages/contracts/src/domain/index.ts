@@ -6,3 +6,4 @@ export * from './question';
 export * from './storyline';
 export * from './episode';
 export * from './uploadJob';
+export * from './settings';

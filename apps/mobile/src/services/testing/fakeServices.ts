@@ -7,6 +7,7 @@ import type {
   Permissions,
   PickedMedia,
   PlaceFinder,
+  Reminders,
   SettingsOpener,
   VideoRecorder,
 } from '../../domain/capturePorts';
@@ -18,6 +19,12 @@ export type FakeServices = CaptureServices & {
   place: PlaceFinder & { name: string | null };
   permissions: Permissions & { set(which: keyof Permissions, state: PermissionState): void };
   settings: SettingsOpener & { opened: number };
+  reminders: Reminders & {
+    state: PermissionState;
+    /** Scheduled notifications by id. */
+    scheduled: Map<string, { hour: number; minute: number; title: string; body: string }>;
+    cancelled: string[];
+  };
   /** Called with the source path a recording "writes"; the test puts fixture bytes there. */
   onRecordingFile?: (path: string) => void;
 };
@@ -89,6 +96,30 @@ export function fakeServices(
         services.settings.opened += 1;
       },
     },
+    reminders: (() => {
+      let next = 0;
+      const reminders: FakeServices['reminders'] = {
+        state: 'undetermined',
+        scheduled: new Map(),
+        cancelled: [],
+        permission: async () => reminders.state,
+        request: async () => {
+          if (reminders.state === 'undetermined') reminders.state = 'granted';
+          return reminders.state;
+        },
+        scheduleDaily: async (hour, minute, content) => {
+          next += 1;
+          const id = `reminder-${next}`;
+          reminders.scheduled.set(id, { hour, minute, ...content });
+          return id;
+        },
+        cancel: async (id) => {
+          reminders.cancelled.push(id);
+          reminders.scheduled.delete(id);
+        },
+      };
+      return reminders;
+    })(),
     permissions: {
       camera: permission('camera'),
       microphone: permission('microphone'),

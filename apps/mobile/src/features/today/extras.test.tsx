@@ -1,3 +1,4 @@
+import { tokens } from '@life/design';
 import { words } from '@life/story';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { RECORDING_BYTES, todayHarness } from '../../application/testing/todayHarness';
@@ -139,6 +140,18 @@ describe('Today extras', () => {
     await press(words.extras.takePhoto);
     await waitFor(async () => expect(await rows()).toHaveLength(1));
     expect((await rows())[0]?.place_name).toBeNull();
+  });
+
+  it('draws "Keep on this phone" in the design-system switch colours', async () => {
+    await setup();
+    const keep = () => screen.getByRole('switch', { name: words.extras.keepOnPhone });
+    expect(keep().props.tintColor).toBe(tokens.color.surface);
+    expect(keep().props.thumbTintColor).toBe(tokens.color.text);
+    await act(async () => {
+      fireEvent(keep(), 'valueChange', true);
+    });
+    expect(keep().props.onTintColor).toBe(tokens.color.text);
+    expect(keep().props.thumbTintColor).toBe(tokens.color.background);
   });
 
   it('keeps a moment on this phone: localOnly and no upload job', async () => {

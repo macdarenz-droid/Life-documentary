@@ -4,6 +4,11 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { addCastMember, listCast } from '../../application/cast';
 import { captureMoment } from '../../application/captureMoment';
+import {
+  acceptReminderOffer,
+  dismissReminderOffer,
+  shouldOfferReminder,
+} from '../../application/reminders';
 import { useOptionalCapture, type CaptureContextValue } from '../../application/captureContext';
 import { createStoryline, listOpenStorylines } from '../../application/storylines';
 import { tagMoment } from '../../application/tagMoment';
@@ -22,6 +27,11 @@ export function todayScreenProps(ctx: CaptureContextValue): Omit<TodayScreenProp
     },
     services,
     CameraView,
+    reminderOffer: {
+      shouldOffer: () => shouldOfferReminder(store, services.reminders, documentary),
+      accept: () => acceptReminderOffer(store, services.reminders),
+      dismiss: () => dismissReminderOffer(store),
+    },
     tags: {
       load: async () => ({
         storylines: await listOpenStorylines(store, documentary),
@@ -42,11 +52,7 @@ function ConnectedToday({ ctx }: { ctx: CaptureContextValue }) {
   const [props] = useState(() => todayScreenProps(ctx));
   const router = useRouter();
   return (
-    <TodayScreen
-      {...props}
-      reloadKey={reloadKey}
-      onNavigate={(to) => router.push(to === 'storylines' ? '/storylines' : '/cast')}
-    />
+    <TodayScreen {...props} reloadKey={reloadKey} onNavigate={(to) => router.push(`/${to}`)} />
   );
 }
 

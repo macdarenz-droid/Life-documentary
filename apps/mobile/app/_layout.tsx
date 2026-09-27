@@ -4,6 +4,7 @@ import {
 } from '@expo-google-fonts/instrument-serif';
 import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { tokens } from '@life/design';
+import { words } from '@life/story';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -24,6 +25,7 @@ import { expoFileIO } from '../src/services/files/expoFileIO';
 import { expoHaptics } from '../src/services/haptics/expoHaptics';
 import { expoIds } from '../src/services/ids/expoIds';
 import { expoPermissions } from '../src/services/permissions/expoPermissions';
+import { expoReminders } from '../src/services/notifications/expoReminders';
 import { expoLibraryPicker } from '../src/services/picker/expoLibraryPicker';
 import { expoPlaceFinder } from '../src/services/place/expoPlaceFinder';
 import { CameraRecorderView } from '../src/services/camera/CameraRecorderView';
@@ -31,6 +33,8 @@ import { systemSettings } from '../src/services/settings/systemSettings';
 import { expoKeyStore } from '../src/services/secureStore/expoKeyStore';
 
 void SplashScreen.preventAutoHideAsync();
+
+const reminders = expoReminders(words.reminders.channelName);
 
 // Composition root for capture: the real database, file store, keychain and device services. It lives
 // here because nothing may import from app/ (the routes folder).
@@ -58,6 +62,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       haptics: expoHaptics,
       permissions: expoPermissions,
       settings: systemSettings,
+      reminders,
     }),
     [voice],
   );
