@@ -119,7 +119,7 @@ Inputs: today's local date, open storylines, yesterday's and last week's moments
 Pure function from the week's moments, derived text, storylines, cast names, the previous three episode summaries and the questions asked → a compact `WeekBrief` (≤ 15k tokens) for the planner. Media never enters the brief, only text and references.
 
 ### Episode plan (server; `providers/anthropic` → `EpisodePlan v1`)
-Claude Sonnet 5 with a cached style prompt (the documentary voice and the rules) and structured output (D39). The model writes only the story part (`PlannerOutput`: title, subtitle, cold open, scenes, closing, tease, music mood, lower thirds, summary); the server adds the week, the number, the duration, captions on and the narrator voice. The contract and `validatePlan` are authoritative for the numbers (3–5 scenes and 60–240 s for a model plan). The plan is:
+Claude Sonnet 5 with a cached style prompt (the documentary voice and the rules) and structured output (D39). The model chooses and orders moments and writes the words (`PlannerOutput`); the server builds every shot and time from the moments (the recap's rules), times the lower thirds, and adds the week, the number, the duration, captions on and the narrator voice. The contract and `validatePlan` are authoritative for the numbers (3–5 scenes and 30–240 s for a model plan). The plan is:
 
 ```
 EpisodePlan v1
@@ -131,10 +131,10 @@ EpisodePlan v1
   tease?: { storylineId, text ≤ 100 chars }
   music: { mood: calm|warm|bright|bittersweet|driving, trackId? }
   lowerThirds[]: { momentId, castId, atMs }
-  narratorVoiceId?, targetDurationMs (20000..240000; a model plan 60000..240000)
+  narratorVoiceId?, targetDurationMs (20000..240000; a model plan 30000..240000)
   summary ≤ 400 chars                                      stored on Episode and fed to later briefs
 ```
-Validation (`packages/story/planValidation`): every `momentId` exists in the brief and is not `localOnly`; total duration within bounds; the narrator's total text ≤ 25% of the episode's spoken time (the user's voice is the narration); no scene without a shot. Model text also passes the voice rules (`planVoiceErrors`). Invalid → one retry with the errors; still invalid, refused or failing → the `recap` plan (no narrator, music and titles only) so an episode always arrives. A week with no answer, clip or photo has no episode (D39). Plans are stored as `episode_plans` rows; the episode's `summary` is its plan's summary.
+Validation (`packages/story/planValidation`): every `momentId` exists in the brief and is not `localOnly`; total duration within bounds; the narrator's total text ≤ 25% of the episode's spoken time (the user's voice is the narration); no scene without a shot. Model text also passes the voice rules (`planVoiceErrors`) and never repeats the person's words (`planCopyErrors`). Invalid → one retry showing the first answer and its errors; still invalid, refused or failing → the `recap` plan (no narrator, music and titles only) so an episode always arrives. A week with no answer, clip or photo has no episode (D39). Plans are stored as `episode_plans` rows; the episode's `summary` is its plan's summary.
 
 ### Narration (`providers/elevenlabs`)
 Only `narratorBridge` and `tease` texts are synthesised. The user's own answers are cut from their recordings. Captions come from transcripts and bridge texts. Voices: a cast of 4 licensed documentary voices; the user's own voice is not offered in release 1.
