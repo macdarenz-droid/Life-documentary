@@ -169,7 +169,7 @@ Checks: mobile typecheck, tests, lint, format, boundaries; `npx expo-doctor` no 
 
 ## P12 — Understanding (step 1 of the episode pipeline)
 
-### T-013a · P12.1 · Keyframes leave the phone · todo · needs: T-011e, T-011d
+### T-013a · P12.1 · Keyframes leave the phone · approved (40261e2; merges after T-011e fix r1) · needs: T-011e, T-011d
 Text: `tasks/p12/T-013.md`.
 
 ### T-013b · P12.2 · Derived rows, episodes and the cost ledger · todo · needs: T-011d, T-011b, T-011c
