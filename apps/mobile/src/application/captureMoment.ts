@@ -1,13 +1,14 @@
 // One capture, one step: the media is encrypted into the file store, then the asset, the moment, the
-// answered question and (unless local-only) the upload job are written in one transaction.
-import { MediaAsset, Moment, UploadJob } from '@life/contracts';
+// answered question and (when `leavesDevice` lets an answer go up) its upload job are written in one
+// transaction. A photo's preview job needs a file made first, so `enqueueUploads` adds it after.
+import { MediaAsset, Moment } from '@life/contracts';
 import type { MomentMood, Uuid } from '@life/contracts';
 import { encryptFile } from '../data/fileStore/fileStore';
 import * as documentaries from '../data/repositories/documentaries';
 import * as mediaAssets from '../data/repositories/mediaAssets';
 import * as moments from '../data/repositories/moments';
 import * as questions from '../data/repositories/questions';
-import * as uploadJobs from '../data/repositories/uploadJobs';
+import { enqueueAnswer } from './enqueueUploads';
 import type { Clock, Ids, Store } from './ports';
 
 export type MediaInput = {
@@ -100,23 +101,10 @@ export async function captureMoment(
   let saved: Moment;
   try {
     saved = await driver.transaction(async (tx) => {
-      if (asset) await mediaAssets.put(tx, MediaAsset.parse(asset));
+      const stored = asset ? await mediaAssets.put(tx, MediaAsset.parse(asset)) : undefined;
       const written = await moments.put(tx, Moment.parse(moment));
       if (input.kind === 'answer') await questions.markAnswered(tx, input.questionId, written.id);
-      // P6 replaces this check with leavesDevice.
-      if (asset && !input.localOnly) {
-        await uploadJobs.put(
-          tx,
-          UploadJob.parse({
-            assetId: asset.id,
-            state: 'pending',
-            parts: [],
-            bytesDone: 0,
-            attempts: 0,
-            updatedAt: now,
-          }),
-        );
-      }
+      if (stored) await enqueueAnswer(tx, written, stored, now);
       return written;
     });
   } catch (error) {

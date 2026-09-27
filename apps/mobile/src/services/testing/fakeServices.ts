@@ -1,7 +1,9 @@
 // Fake capture services for screen tests and the Design Lab: scripted, recorded, no device.
 import {
   Documentary,
+  UPLOAD_PART_SIZE,
   Uuid,
+  partCountFor,
   type LinkDocumentaryResult,
   type Me,
   type RegisterDevice,
@@ -14,6 +16,7 @@ import type {
   CaptureServices,
   Haptics,
   LibraryPicker,
+  Network,
   PermissionState,
   Permissions,
   PickedMedia,
@@ -41,7 +44,8 @@ export type FakeServices = CaptureServices & {
     /** 'make' writes a poster through onPosterFile; 'none' gives null; 'throw' rejects. */
     mode: 'make' | 'none' | 'throw';
     /** Every call, in order. */
-    calls: { kind: 'video' | 'photo'; uri: string; at: number }[];
+    /** `at` is the frame time for a video and the longest side for a photo. */
+    calls: { kind: 'video' | 'photo'; uri: string; at: number; maxSide?: number }[];
   };
   account: Account & {
     /** The person a sign-in signs in as. */
@@ -65,7 +69,10 @@ export type FakeServices = CaptureServices & {
     deletionCancels: number;
     /** Every sync request, in order; the fake server has nothing to send back. */
     syncs: SyncRequest[];
+    /** Every upload call, in order, as `create:<asset>:<purpose>`, `part:<n>` or `complete`. */
+    uploads: string[];
   };
+  network: Network & { kind: 'wifi' | 'cellular' | 'none' };
   /** Called with the source path a recording "writes"; the test puts fixture bytes there. */
   onRecordingFile?: (path: string) => void;
   /** Called with the path a poster "writes"; the test puts fixture bytes there. */
@@ -170,8 +177,13 @@ export function fakeServices(
     })(),
     posters: (() => {
       let next = 0;
-      const make = async (kind: 'video' | 'photo', uri: string, at: number) => {
-        services.posters.calls.push({ kind, uri, at });
+      const make = async (kind: 'video' | 'photo', uri: string, at: number, maxSide?: number) => {
+        services.posters.calls.push({
+          kind,
+          uri,
+          at,
+          ...(maxSide !== undefined ? { maxSide } : {}),
+        });
         if (services.posters.mode === 'throw') throw new Error('No poster');
         if (services.posters.mode === 'none') return null;
         next += 1;
@@ -182,7 +194,8 @@ export function fakeServices(
       return {
         mode: 'make' as const,
         calls: [],
-        fromVideo: (uri: string, atMs: number) => make('video', uri, atMs),
+        fromVideo: (uri: string, atMs: number, maxSide: number) =>
+          make('video', uri, atMs, maxSide),
         fromPhoto: (uri: string, maxSide: number) => make('photo', uri, maxSide),
       };
     })(),
@@ -247,6 +260,27 @@ export function fakeServices(
         services.api.syncs.push(request);
         return { cursor: services.api.syncs.length, changes: [], refused: [] };
       },
+      uploads: [],
+      createUpload: async (input) => {
+        services.api.uploads.push(`create:${input.assetId}:${input.purpose}`);
+        return {
+          uploadId: `upload-${input.assetId}`,
+          partSize: UPLOAD_PART_SIZE,
+          partCount: partCountFor(input.bytes),
+        };
+      },
+      uploadPart: async (_assetId, _purpose, partNumber) => {
+        services.api.uploads.push(`part:${partNumber}`);
+        return { partNumber, etag: `etag-${partNumber}` };
+      },
+      completeUpload: async (assetId, purpose) => {
+        services.api.uploads.push('complete');
+        return { cloudKey: `tmp/${assetId}/${purpose}` };
+      },
+    },
+    network: {
+      kind: 'wifi',
+      connection: async () => services.network.kind,
     },
     device: { platform: 'ios', appVersion: '0.0.0' },
     permissions: {

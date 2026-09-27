@@ -187,17 +187,24 @@ export async function editMoment(
  * tombstone points at it). A second call changes nothing.
  */
 export async function deleteMoment(store: Store, clock: Clock, id: Uuid): Promise<void> {
+  const previews: string[] = [];
   const moment = await store.driver.transaction(async (tx) => {
     const found = await moments.get(tx, id);
     if (!found || found.deletedAt) return found;
     await moments.softDelete(tx, id, clock.now());
-    if (found.mediaAssetId) await uploadJobs.remove(tx, found.mediaAssetId);
+    if (found.mediaAssetId) {
+      // A photo's preview waiting to go up is removed with its job.
+      for (const job of await uploadJobs.listForAsset(tx, found.mediaAssetId)) {
+        if (job.sourcePath) previews.push(job.sourcePath);
+      }
+      await uploadJobs.remove(tx, found.mediaAssetId);
+    }
     if (found.questionId) await questions.clearAnswer(tx, found.questionId, found.id);
     return found;
   });
   if (!moment?.mediaAssetId) return;
   const asset = await mediaAssets.get(store.driver, moment.mediaAssetId);
-  for (const path of [asset?.localPath, asset?.posterPath]) {
+  for (const path of [asset?.localPath, asset?.posterPath, ...previews]) {
     if (path && (await store.io.exists(path))) await store.io.remove(path);
   }
 }

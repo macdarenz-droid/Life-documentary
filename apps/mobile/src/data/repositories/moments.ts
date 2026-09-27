@@ -73,6 +73,17 @@ export async function get(driver: SqlDriver, id: string): Promise<Moment | undef
   return row ? read(driver, row) : undefined;
 }
 
+/** The moment that holds this media asset, deleted or not. */
+export async function forMediaAsset(
+  driver: SqlDriver,
+  assetId: string,
+): Promise<Moment | undefined> {
+  const row = await driver.first<Row>('SELECT * FROM moments WHERE media_asset_id = ? LIMIT 1', [
+    assetId,
+  ]);
+  return row ? read(driver, row) : undefined;
+}
+
 /** Moments whose local day is in [fromDay, toDay], by capture time then id. */
 export async function listByDays(
   driver: SqlDriver,
