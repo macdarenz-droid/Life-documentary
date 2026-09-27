@@ -8,6 +8,7 @@ import {
   UPLOAD_PART_SIZE,
   UploadDone,
   UploadPurpose,
+  UploadedPart,
   Uuid,
   partCountFor,
 } from '@life/contracts';
@@ -152,7 +153,7 @@ export const uploads = new Hono<AppEnv>()
         readable,
       );
       await piping;
-      return c.json({ partNumber: part.partNumber, etag: part.etag }, 200);
+      return c.json(UploadedPart.parse({ partNumber: part.partNumber, etag: part.etag }), 200);
     } catch (error) {
       console.error('A part was not stored.', error);
       return apiError(c, 400, 'bad_request', `Part ${n} must be ${expected} bytes long.`);

@@ -55,7 +55,8 @@ export async function assetForUpload(db: Db, assetId: Uuid): Promise<AssetForUpl
   const found = await db
     .select({ id: moments.id })
     .from(moments)
-    .where(eq(moments.mediaAssetId, assetId));
+    // Only moments of the asset's own documentary count; another person's moment cannot name it.
+    .where(and(eq(moments.documentaryId, asset.documentaryId), eq(moments.mediaAssetId, assetId)));
   const stored = await rows.getMany(
     db,
     'moment',

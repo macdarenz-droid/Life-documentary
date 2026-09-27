@@ -8,7 +8,8 @@ export const bindings = env as unknown as Env;
 const ORIGIN = bindings.BETTER_AUTH_URL;
 let client = 0;
 
-export function testApp() {
+/** `overrides` replace bindings for this app only, e.g. a MEDIA bucket that counts calls. */
+export function testApp(overrides: Partial<Env> = {}) {
   const mail = recordingMail();
   const app = createApp({ mail });
   client += 1;
@@ -21,7 +22,7 @@ export function testApp() {
     headers.set('cf-connecting-ip', ip);
     if (rest.body !== undefined) headers.set('content-type', 'application/json');
     if (cookie) headers.set('cookie', cookie);
-    return app.request(path, { ...rest, headers }, bindings);
+    return app.request(path, { ...rest, headers }, { ...bindings, ...overrides });
   };
 
   /** Signs `email` in with a fresh code and returns the session cookie. */

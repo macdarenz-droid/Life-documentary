@@ -32,8 +32,15 @@ export const CreateUploadResult = z.object({
 });
 export type CreateUploadResult = z.infer<typeof CreateUploadResult>;
 
+/** A stored part, as the part route answers and the completion lists it. */
+export const UploadedPart = z.object({
+  partNumber: z.number().int().min(1),
+  etag: z.string().min(1),
+});
+export type UploadedPart = z.infer<typeof UploadedPart>;
+
 export const CompleteUpload = z.object({
-  parts: z.array(z.object({ partNumber: z.number().int().min(1), etag: z.string().min(1) })).min(1),
+  parts: z.array(UploadedPart).min(1),
 });
 export type CompleteUpload = z.infer<typeof CompleteUpload>;
 

@@ -7,6 +7,7 @@ import {
   SyncResponse,
   UPLOAD_PART_SIZE,
   UploadDone,
+  UploadedPart,
 } from '@life/contracts';
 import { applyD1Migrations } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
@@ -27,9 +28,9 @@ async function sha256(bytes: ArrayBuffer | Uint8Array<ArrayBuffer>): Promise<str
 /** A signed-in person with a linked documentary and one synced answer (a video) or photo. */
 async function person(
   email: string,
-  options: { localOnly?: boolean; kind?: 'answer' | 'photo' } = {},
+  options: { localOnly?: boolean; kind?: 'answer' | 'photo'; media?: R2Bucket } = {},
 ) {
-  const phone = testApp();
+  const phone = testApp(options.media ? { MEDIA: options.media } : {});
   const cookie = await phone.signIn(email);
   const me = Me.parse(await (await phone.call('/me', { cookie })).json());
   const documentary = Documentary.parse({
@@ -109,9 +110,29 @@ async function sendAll(p: Awaited<ReturnType<typeof person>>, numbers = [1, 2, 3
   for (const n of numbers) {
     const res = await p.put(n, part(n));
     expect(res.status).toBe(200);
-    parts.push(await res.json<{ partNumber: number; etag: string }>());
+    parts.push(UploadedPart.parse(await res.json()));
   }
   return parts;
+}
+
+/** The real MEDIA bucket, counting the multipart uploads started through it. */
+function countingMedia() {
+  const counter = { starts: 0 };
+  const media = new Proxy(bindings.MEDIA, {
+    get(target, prop) {
+      if (prop === 'createMultipartUpload') {
+        return (...args: Parameters<R2Bucket['createMultipartUpload']>) => {
+          counter.starts += 1;
+          return target.createMultipartUpload(...args);
+        };
+      }
+      const value: unknown = Reflect.get(target, prop);
+      return typeof value === 'function'
+        ? (value as (...a: unknown[]) => unknown).bind(target)
+        : value;
+    },
+  });
+  return { media, counter };
 }
 
 async function openUploads(assetId: string): Promise<number> {
@@ -142,10 +163,12 @@ describe('uploads', () => {
   });
 
   it('gives the same open upload when it is created again', async () => {
-    const p = await person('ada.again@example.com');
+    const { media, counter } = countingMedia();
+    const p = await person('ada.again@example.com', { media });
     const first = CreateUploadResult.parse(await (await p.create()).json());
     const second = CreateUploadResult.parse(await (await p.create()).json());
     expect(second).toEqual(first);
+    expect(counter.starts).toBe(1);
     expect(await openUploads(p.assetId)).toBe(1);
   });
 
@@ -184,8 +207,10 @@ describe('uploads', () => {
   });
 
   it('refuses a local-only asset and starts no upload', async () => {
-    const p = await person('ada.kept@example.com', { localOnly: true });
+    const { media, counter } = countingMedia();
+    const p = await person('ada.kept@example.com', { localOnly: true, media });
     const res = await p.create();
+    expect(counter.starts).toBe(0);
     expect(res.status).toBe(403);
     expect(ApiError.parse(await res.json()).error.code).toBe('forbidden');
     expect(await openUploads(p.assetId)).toBe(0);
@@ -202,6 +227,41 @@ describe('uploads', () => {
     );
     expect(original.status).toBe(403);
     expect((await p.create(1000)).status).toBe(200);
+  });
+
+  it("ignores another person's moment that names your asset", async () => {
+    const ada = await person('ada.named@example.com', { kind: 'photo' });
+    const bo = await person('bo.naming@example.com');
+    const theirs = SyncChange.parse({
+      entity: 'moment',
+      row: {
+        id: crypto.randomUUID(),
+        documentaryId: bo.documentary.id,
+        authorUserId: bo.me.userId,
+        capturedAt: T0,
+        timeZone: 'Europe/Berlin',
+        kind: 'answer',
+        questionId: crypto.randomUUID(),
+        mediaAssetId: ada.assetId,
+        localOnly: false,
+        storylineIds: [],
+        castIds: [],
+        updatedAt: T0,
+      },
+    });
+    const pushed = await bo.phone.post(
+      '/sync',
+      { documentaryId: bo.documentary.id, cursor: null, changes: [theirs] },
+      bo.cookie,
+    );
+    expect(pushed.status).toBe(200);
+    const answer = await ada.phone.post(
+      '/uploads',
+      { assetId: ada.assetId, purpose: 'answer', contentType: 'video/mp4', bytes: 1000 },
+      ada.cookie,
+    );
+    expect(answer.status).toBe(403);
+    expect((await ada.create(1000)).status).toBe(200);
   });
 
   it("refuses another person's asset", async () => {

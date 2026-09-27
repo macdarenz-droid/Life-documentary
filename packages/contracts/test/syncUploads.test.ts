@@ -5,6 +5,7 @@ import {
   SyncRequest,
   UPLOAD_PART_SIZE,
   UploadJob,
+  UploadedPart,
   partCountFor,
 } from '../src';
 
@@ -68,6 +69,15 @@ describe('SyncRequest', () => {
 });
 
 describe('uploads', () => {
+  it('takes a stored part only with a part number and a non-empty etag', () => {
+    expect(UploadedPart.parse({ partNumber: 1, etag: 'e1' })).toEqual({
+      partNumber: 1,
+      etag: 'e1',
+    });
+    expect(UploadedPart.safeParse({ partNumber: 1, etag: '' }).success).toBe(false);
+    expect(UploadedPart.safeParse({ partNumber: 0, etag: 'e1' }).success).toBe(false);
+  });
+
   it('counts parts: none for an empty file, 2 for 5 MiB and one byte', () => {
     expect(() => partCountFor(0)).toThrow(RangeError);
     expect(partCountFor(1)).toBe(1);
