@@ -204,6 +204,23 @@ Text: `tasks/p14/T-015.md`.
 ### T-015c · P14.3 · EpisodePipeline step 3: narrate · todo · needs: T-014c, T-015a, T-015b
 Text: `tasks/p14/T-015.md`.
 
+## P15 — Render (the episode timeline, the compositions, the renderer)
+
+### T-016a · P15.1 · The episode timeline · todo · needs: T-014a, T-015a
+Text: `tasks/p15/T-016.md`.
+
+### T-016b · P15.2 · The episode, drawn · todo · needs: T-016a
+Text: `tasks/p15/T-016.md`.
+
+### T-016c · P15.3 · Word-level captions · todo · needs: T-016b
+Text: `tasks/p15/T-016.md`.
+
+### T-016d · P15.4 · The render input and the renderer port · todo · needs: T-014c, T-015c, T-016a
+Text: `tasks/p15/T-016.md`.
+
+### T-016e · P15.5 · Remotion Lambda · todo · needs: T-016b, T-016d
+Text: `tasks/p15/T-016.md`.
+
 ## Blocked on the owner
 
 ### P-B · Capture and upload proof on real devices · blocked · needs: P3, P5, P6 tasks (not yet written)
