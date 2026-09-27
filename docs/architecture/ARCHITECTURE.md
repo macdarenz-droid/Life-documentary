@@ -108,7 +108,7 @@ Routes call `policy` and `data`; `pipeline` calls `providers` through ports; `pr
 | `ChangeLog` | documentaryId, seq, entity, id, changedAt | API `data/` for sync cursors |
 | `UploadJob` (device only) | assetId, state, uploadId, parts (etag per part), bytesDone, attempts, nextAttemptAt | Device `data/uploadQueue` |
 
-Media key layout in R2 (D37, D38): `u/{uid}/{documentaryId}/{assetId}/original` (kept only when in an episode or Cloud backup is on) · working copies `tmp/{uid}/{documentaryId}/{assetId}/{answer|preview|keyframe}` (lifecycle rule on `tmp/`: delete after 9 days, since the weekly run reads a whole week; the pipeline deletes them when its run ends) · `u/{uid}/{documentaryId}/narration/{episodeId}/{hash}.mp3` (D40) · `users/{uid}/episodes/{episodeId}/v{renderVersion}.mp4` and `poster.jpg` · `users/{uid}/exports/{jobId}.zip` (7 days).
+Media key layout in R2 (D37, D38): `u/{uid}/{documentaryId}/{assetId}/original` (kept only when in an episode or Cloud backup is on) · working copies `tmp/{uid}/{documentaryId}/{assetId}/{answer|preview|keyframe}` (lifecycle rule on `tmp/`: delete after 9 days, since the weekly run reads a whole week; the pipeline deletes them when its run ends) · `u/{uid}/{documentaryId}/narration/{episodeId}/{hash}.mp3` (D40) · `u/{uid}/{documentaryId}/episodes/{episodeId}/v{renderVersion}.mp4` (and `-wide.mp4` for the 16:9 export, D41) and the poster (P16) · `users/{uid}/exports/{jobId}.zip` (7 days).
 
 ## 4. The story engine
 
@@ -140,7 +140,7 @@ Validation (`packages/story/planValidation`): every `momentId` exists in the bri
 Only `narratorBridge` and `tease` texts are synthesised, one clip per line with ElevenLabs Flash and its character timings (D40); clips are cached by a hash of voice, model, format and text in `narration_clips` and R2 (`u/{uid}/{documentaryId}/narration/{episodeId}/{hash}.mp3`). The narrator's share is re-checked on the real clip lengths. The user's own answers are cut from their recordings. Word timings come from Whisper's segments and words (kept with the transcript) and from the clips' character timings; P15 groups them into caption pages and places them on the episode timeline. Voices: a cast of 4 voices (`narrator-1` … `narrator-4`, mapped to vendor ids in the Worker's `NARRATOR_VOICES`); the user's own voice is not offered in release 1.
 
 ### Render (`packages/render` on Remotion Lambda)
-`RenderManifest v1` = plan + presigned media URLs (15 minutes) + narration URLs + the music track URL + design tokens + captions. Compositions are React components; a fixture manifest renders locally with `npx remotion render` in CI so the visual layer is testable without any cloud. 1080×1920 at 30 fps by default, with a 1920×1080 export.
+`packages/story` `episodeTimeline` places the whole episode (cold open, title card, a bridge slot per kept bridge, the shots with their own sound, the closing card with the credit, the tease) and returns `RenderManifest v2` (D41): segments, narration, speech units with their words in episode time, scene labels, lower thirds and music. The narrator speaks only in its slots and the share is checked again on the final speech. Captions are word-level pages from the speech units (`@remotion/captions`), burned in on a solid box. Music ducks under all speech. 1080×1920 at 30 fps is the episode, and 1920×1080 an export on request. The server builds the input from D1 and R2 with 15-minute presigned R2 URLs, and starts and polls the render through the `Renderer` port: a fixture renderer in tests, Remotion Lambda invoked directly from the Worker in production (Remotion's client does not run on Workers). Lambda writes the MP4 straight to R2. A fixture manifest renders in CI in both shapes, with loudness and stills checks.
 
 ### Edits (`packages/story/editOps`)
 Five operations, each a pure function `(plan, op) → plan'`: `retitle`, `swapLine` (replace a narrator bridge with a user moment, or vice versa), `dropClip`, `closingShot`, `musicMood`. The API appends the op, applies it to the current plan, bumps the version, re-narrates only if a bridge text changed, re-renders, and publishes. Limit: 10 re-renders per episode per day (policy).
@@ -205,7 +205,7 @@ Yearly: Claude Opus 5.5 reads the year's episode summaries and plans and writes 
 | Cloudflare account with Workers Paid, R2, D1, Queues, Workflows; a wrangler API token for CI deploys | Owner | Before Prove (P-B) |
 | Apple Developer Program, Google Play Console, EAS account | Owner | Before the first device build (Prove) |
 | Anthropic API key, ElevenLabs API key | Owner | Before P12 and P14 |
-| AWS account for Remotion Lambda (or the decision to use Containers) | Owner | Before P15.2 |
+| AWS account for Remotion Lambda: region, deploy user and role, an invoke-only user for the Worker, the Lambda concurrency quota; an R2 API token scoped to the media bucket (`docs/ops/RENDER.md`, D41) | Owner | Before real renders (T-016e) |
 | RevenueCat project and store products | Owner | Before P23 |
 | Music licence for the mood library | Owner | Before public release; CC0 fixtures until then |
 | A real iPhone and Android phone for capture and upload checks | Owner | Prove, P5, P6, P20 |
