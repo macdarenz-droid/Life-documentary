@@ -258,4 +258,30 @@ describe('EpisodePipeline planning', () => {
       .first<{ n: number }>();
     expect(left?.n).toBe(0);
   });
+
+  it('completes a notes-only week whose plan step is replayed after the removal', async () => {
+    const seed = await seedDocumentary();
+    await seed.add('note');
+    // The episode is removed as it enters planning, and the first plan attempt then reports an error,
+    // as when the removal committed but the step failed: the retry finds no episode.
+    await bindings.DB.prepare(
+      `CREATE TRIGGER remove_on_planning AFTER UPDATE OF state ON episodes WHEN NEW.state = 'planning'
+       BEGIN DELETE FROM episodes WHERE id = NEW.id; END`,
+    ).run();
+    try {
+      const output = await runWeek(seed.documentaryId, async (m) => {
+        await m.mockStepError({ name: 'plan' }, new Error('D1 is busy'), 1);
+      });
+      expect(output).toMatchObject({ plan: 'empty', costCents: 0 });
+    } finally {
+      await bindings.DB.prepare('DROP TRIGGER remove_on_planning').run();
+    }
+    expect(fixtures.planner.calls).toEqual([]);
+    const left = await bindings.DB.prepare(
+      'SELECT COUNT(*) AS n FROM episodes WHERE documentary_id = ?',
+    )
+      .bind(seed.documentaryId)
+      .first<{ n: number }>();
+    expect(left?.n).toBe(0);
+  });
 });

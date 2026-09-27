@@ -1,7 +1,7 @@
 import { applyD1Migrations } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { PlannerOutput, Uuid, WeekBriefV1, type EpisodePlanV1 } from '@life/contracts';
-import { assemblePlan } from '@life/story';
+import { assemblePlan, voiceBannedCharacters, voiceBannedPhrases } from '@life/story';
 import { beforeEach, describe, expect, it } from 'vitest';
 import * as briefRepo from '../src/data/repositories/brief';
 import * as costLedger from '../src/data/repositories/costLedger';
@@ -210,11 +210,34 @@ describe('planOnce', () => {
           ...output.scenes.slice(0, 2),
         ],
       },
+      // These three pass the moment checks and reach the duration check or validatePlan.
+      { ...output, lowerThirds: [{ momentId: C1, castId: CAST }] },
+      { ...output, coldOpen: { momentId: P1 } },
+      {
+        ...output,
+        scenes: [
+          { heading: 'Tuesday', shots: [{ momentId: C2 }] },
+          { heading: 'At the allotment', shots: [{ momentId: P1 }] },
+          { heading: 'Home again', shots: [{ momentId: A3 }] },
+        ],
+      },
     ];
+    // Allowed in errors: ids, the brief's dates, the kind words, and the banned items planVoiceErrors names.
+    const allowed = new Set<string>([
+      brief.weekStart,
+      brief.weekEnd,
+      ...brief.moments.map((m) => m.day),
+      'answer',
+      'clip',
+      'photo',
+      'note',
+      ...voiceBannedPhrases,
+      ...voiceBannedCharacters,
+    ]);
     const texts = new Set<string>();
     const collect = (value: unknown): void => {
       if (typeof value === 'string') {
-        if (!/^[0-9a-f-]{36}$/.test(value) && !/^\d{4}-\d{2}-\d{2}$/.test(value)) texts.add(value);
+        if (!Uuid.safeParse(value).success && !allowed.has(value)) texts.add(value);
       } else if (Array.isArray(value)) value.forEach(collect);
       else if (value && typeof value === 'object') Object.values(value).forEach(collect);
     };
@@ -232,10 +255,15 @@ describe('planOnce', () => {
       errors.push(...retry.split('\n').slice(1));
     }
     expect(errors.length).toBeGreaterThanOrEqual(bad.length);
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/^lower third 0: /),
+        expect.stringMatching(/^cold open: /),
+        expect.stringMatching(/ it must be 30 to 240 s\.$/),
+      ]),
+    );
     for (const error of errors) {
-      for (const text of texts) {
-        if (text.length >= 8) expect(error).not.toContain(text);
-      }
+      for (const text of texts) expect(error).not.toContain(text);
     }
   });
 });
@@ -441,6 +469,15 @@ describe('the plan steps', () => {
     expect(await episodes.get(ctx().db, episode.id)).toBeNull();
     expect(await count('episode_plans', episode.id)).toBe(0);
     expect(await count('cost_ledger', episode.id)).toBe(0);
+  });
+
+  it('gives empty again when a notes-only week is planned a second time, and the recap does too', async () => {
+    const { episode } = await weekWith(['note', 'note']);
+    expect(await planStep(ctx(), episode.id)).toEqual({ outcome: 'empty' });
+    expect(await planStep(ctx(), episode.id)).toEqual({ outcome: 'empty' });
+    expect(await recapStep(ctx(), episode.id)).toBe('empty');
+    expect(fixtures.planner.calls).toEqual([]);
+    expect(await episodes.get(ctx().db, episode.id)).toBeNull();
   });
 });
 

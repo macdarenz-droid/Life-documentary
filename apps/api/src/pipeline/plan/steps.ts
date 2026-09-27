@@ -30,12 +30,6 @@ export type PlanStepResult =
 
 const PLAN_VERSION = 1;
 
-async function episodeOf(ctx: PlanContext, id: Episode['id']): Promise<Episode> {
-  const episode = await episodes.get(ctx.db, id);
-  if (!episode) throw new Error('The episode is gone.');
-  return episode;
-}
-
 async function briefOf(ctx: PlanContext, episode: Episode): Promise<WeekBriefV1> {
   return weekBrief(await briefInput(ctx.db, episode));
 }
@@ -48,7 +42,9 @@ export async function planStep(
   ctx: PlanContext,
   episodeId: Episode['id'],
 ): Promise<PlanStepResult> {
-  const episode = await episodeOf(ctx, episodeId);
+  const episode = await episodes.get(ctx.db, episodeId);
+  // A replay after an empty week's removal finds no episode: the step already ended the week.
+  if (!episode) return { outcome: 'empty' };
   const brief = await briefOf(ctx, episode);
   const eligibility = planEligibility(brief);
   if (eligibility === 'empty') {
@@ -85,7 +81,8 @@ export async function recapStep(
   ctx: PlanContext,
   episodeId: Episode['id'],
 ): Promise<'recap' | 'empty'> {
-  const episode = await episodeOf(ctx, episodeId);
+  const episode = await episodes.get(ctx.db, episodeId);
+  if (!episode) return 'empty';
   const plan = recapPlan(await briefOf(ctx, episode));
   if (!plan) {
     await episodes.remove(ctx.db, episode.id);
