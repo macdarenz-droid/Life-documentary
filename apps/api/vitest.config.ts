@@ -9,6 +9,8 @@ export default defineConfig({
     cloudflareTest({
       wrangler: { configPath: './wrangler.jsonc' },
       miniflare: {
+        // A second, empty database for the migration test.
+        d1Databases: ['MIGRATION_DB'],
         bindings: {
           BETTER_AUTH_SECRET: 'test-only-secret-not-used-anywhere-else-0123456789',
           TEST_MIGRATIONS: migrations,
