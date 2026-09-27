@@ -1,5 +1,5 @@
 // The episode pipeline (P12, D38): a Cloudflare Workflow, one instance per documentary and week. Step 1,
-// understand, runs here; P13 adds the planner after it. Step results hold ids, keys and counts only.
+// understand, then step 2, plan (P13, D39). Step results hold ids, keys, outcomes and counts only.
 // Sending a caption batch is never retried (a failure can leave no second, forgotten batch), a failed
 // transcript leaves that answer without one, and batches that do not end in 2 hours are cancelled: the
 // run goes on with what it has.
@@ -8,6 +8,14 @@ import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from 'cloud
 import { z } from 'zod';
 import * as episodes from '../data/repositories/episodes';
 import type { Env } from '../shared/env';
+import {
+  planContext,
+  planStep,
+  recapStep,
+  recordPlanCosts,
+  type PlanStepResult,
+} from './plan/steps';
+import type { PlanUsage } from './ports';
 import { understandContext, type EpisodeRef } from './understand/context';
 import { CAPTION_CHECK_EVERY, CAPTION_CHECKS, CAPTION_ENDING_CHECKS } from './understand/settings';
 import {
@@ -31,9 +39,17 @@ export type EpisodePipelineOutput = {
   transcribed: number;
   captioned: number;
   costCents: number;
+  /** Which plan the episode got; `empty` when the week had nothing to show and the episode is gone. */
+  plan: 'model' | 'recap' | 'empty';
 };
 
 const NO_USAGE: CaptionUsage = { kept: 0, dropped: 0, inputTokens: 0, outputTokens: 0 };
+const NO_PLAN_USAGE: PlanUsage = {
+  inputTokens: 0,
+  outputTokens: 0,
+  cacheWriteTokens: 0,
+  cacheReadTokens: 0,
+};
 
 export class EpisodePipeline extends WorkflowEntrypoint<Env, EpisodePipelineParams> {
   override async run(
@@ -126,7 +142,7 @@ export class EpisodePipeline extends WorkflowEntrypoint<Env, EpisodePipelinePara
     }
 
     await step.do('working-copies', () => removeWorkingCopies(ctx, found.keys));
-    const costCents = await step.do('costs', () =>
+    await step.do('costs', () =>
       recordCosts(ctx, episode, {
         seconds,
         inputTokens: usage.inputTokens,
@@ -137,7 +153,30 @@ export class EpisodePipeline extends WorkflowEntrypoint<Env, EpisodePipelinePara
       await episodes.setState(ctx.db, episode.id, 'planning', ctx.clock.now());
       return 'planning';
     });
-    return { episodeId: episode.id, transcribed, captioned: usage.kept, costCents };
+
+    // Step 2: plan. A model plan when it passes the checks, else the recap, so an episode always
+    // arrives (D20); a week with nothing to show has no episode.
+    const planCtx = planContext(this.env);
+    const understood = { episodeId: episode.id, transcribed, captioned: usage.kept };
+    let planned: PlanStepResult | undefined;
+    try {
+      planned = await step.do('plan', { retries: { limit: 1, delay: '10 seconds' } }, () =>
+        planStep(planCtx, episode.id),
+      );
+    } catch (error) {
+      console.error('Planning failed; the week gets the recap.', error);
+    }
+    if (planned?.outcome === 'empty') return { ...understood, costCents: 0, plan: 'empty' };
+    let plan: EpisodePipelineOutput['plan'] = 'model';
+    if (planned?.outcome !== 'model') {
+      plan = await step.do('plan-recap', () => recapStep(planCtx, episode.id));
+      if (plan === 'empty') return { ...understood, costCents: 0, plan };
+    }
+    const planUsage = planned && 'usage' in planned ? planned.usage : NO_PLAN_USAGE;
+    const total = await step.do('plan-costs', () =>
+      recordPlanCosts(planCtx, episode.id, planUsage),
+    );
+    return { ...understood, costCents: total, plan };
   }
 }
 

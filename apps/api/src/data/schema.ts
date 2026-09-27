@@ -334,3 +334,18 @@ export const costLedger = sqliteTable(
   },
   (t) => [uniqueIndex('cost_ledger_episode_step_unit_idx').on(t.episodeId, t.step, t.unit)],
 );
+
+/** One stored version of an episode's plan (P13, D39): the plan as JSON, made by the model or the recap. */
+export const episodePlans = sqliteTable(
+  'episode_plans',
+  {
+    episodeId: text('episode_id')
+      .notNull()
+      .references(() => episodes.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    plan: text('plan').notNull(),
+    createdBy: text('created_by').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [uniqueIndex('episode_plans_episode_version_idx').on(t.episodeId, t.version)],
+);

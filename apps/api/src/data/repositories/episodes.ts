@@ -9,7 +9,7 @@ import {
 } from '@life/contracts';
 import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '../db';
-import { episodes } from '../schema';
+import { costLedger, episodePlans, episodes } from '../schema';
 
 /** Drops SQL nulls: the contracts use absent fields, not nulls. */
 function toEpisode(row: typeof episodes.$inferSelect): Episode {
@@ -71,4 +71,26 @@ export async function setCostCents(
   now: Timestamp,
 ): Promise<void> {
   await db.update(episodes).set({ costCents, updatedAt: now }).where(eq(episodes.id, id));
+}
+
+/** Points the episode at the plan it uses, with that plan's summary, and moves it on to `state`. */
+export async function setPlan(
+  db: Db,
+  id: Uuid,
+  plan: { version: number; summary: string; state: EpisodeState },
+  now: Timestamp,
+): Promise<void> {
+  await db
+    .update(episodes)
+    .set({ planVersion: plan.version, summary: plan.summary, state: plan.state, updatedAt: now })
+    .where(eq(episodes.id, id));
+}
+
+/** Removes the episode with its plans and its ledger rows (a week with nothing to show, D2). */
+export async function remove(db: Db, id: Uuid): Promise<void> {
+  await db.batch([
+    db.delete(episodePlans).where(eq(episodePlans.episodeId, id)),
+    db.delete(costLedger).where(eq(costLedger.episodeId, id)),
+    db.delete(episodes).where(eq(episodes.id, id)),
+  ]);
 }
