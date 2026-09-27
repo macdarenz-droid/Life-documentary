@@ -18,7 +18,7 @@ export function testApp() {
     const { cookie, ...rest } = init;
     const headers = new Headers(rest.headers);
     headers.set('origin', ORIGIN);
-    headers.set('x-forwarded-for', ip);
+    headers.set('cf-connecting-ip', ip);
     if (rest.body !== undefined) headers.set('content-type', 'application/json');
     if (cookie) headers.set('cookie', cookie);
     return app.request(path, { ...rest, headers }, bindings);

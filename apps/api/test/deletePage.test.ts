@@ -4,6 +4,7 @@ import { words } from '@life/story';
 import { createApp } from '../src/app';
 import { recordingMail } from '../src/providers/mail';
 import type { Env } from '../src/shared/env';
+import { testApp } from './session';
 
 const bindings = env as unknown as Env;
 const ORIGIN = new URL(bindings.BETTER_AUTH_URL).origin;
@@ -23,7 +24,7 @@ function browser() {
         method: 'POST',
         headers: {
           origin,
-          'x-forwarded-for': ip,
+          'cf-connecting-ip': ip,
           'content-type': 'application/x-www-form-urlencoded',
           ...(cookie ? { cookie } : {}),
         },
@@ -46,6 +47,21 @@ async function deletionRows(email: string) {
     .all<{ purge_after: string }>();
 }
 
+/** Makes an account for `email` through the app's own sign-in, as a person with the app would. */
+async function account(email: string) {
+  await testApp().signIn(email);
+}
+
+async function userRows(email: string) {
+  return (await bindings.DB.prepare('SELECT id FROM user WHERE email = ?').bind(email).all())
+    .results;
+}
+
+/** The page's text as a person reads it: character references turned back into characters. */
+function readable(html: string): string {
+  return html.replace(/&#(\d+);/g, (_, code: string) => String.fromCharCode(Number(code)));
+}
+
 function codeOf(text: string): string {
   return /\b(\d{6})\b/.exec(text)![1]!;
 }
@@ -64,6 +80,7 @@ describe('the public deletion page', () => {
   it('deletes by email code: sends the code, signs in for the page only, opens the request', async () => {
     const { mail, submit } = browser();
     const email = 'page.leaver@example.com';
+    await account(email);
 
     const sent = await submit('/account/delete/web/code', { email });
     expect(sent.res.status).toBe(200);
@@ -96,6 +113,7 @@ describe('the public deletion page', () => {
   it('shows the plain error line for a wrong code and creates nothing', async () => {
     const { mail, submit } = browser();
     const email = 'page.wrong@example.com';
+    await account(email);
     await submit('/account/delete/web/code', { email });
     const right = codeOf(mail.sent[0]!.text);
     const wrong = String((Number(right) + 1) % 1_000_000).padStart(6, '0');
@@ -119,5 +137,53 @@ describe('the public deletion page', () => {
     expect(res.res.status).toBe(403);
     expect(res.text).toContain(t.refused);
     expect(mail.sent).toHaveLength(0);
+  });
+
+  it('sends no more than three codes to one address in ten minutes', async () => {
+    const { mail, submit } = browser();
+    const email = 'page.often@example.com';
+    await account(email);
+    for (let i = 0; i < 3; i++) {
+      const res = await submit('/account/delete/web/code', { email });
+      expect(res.text).toContain(`<label for="otp">${t.codeLabel}</label>`);
+    }
+    expect(mail.sent).toHaveLength(3);
+
+    const fourth = await submit('/account/delete/web/code', { email });
+    expect(fourth.res.status).toBe(429);
+    expect(readable(fourth.text)).toContain(t.tooManyCodes);
+    expect(fourth.text).not.toContain('<label for="otp">');
+    expect(mail.sent).toHaveLength(3);
+  });
+
+  it('sends no more than five codes for one client in ten minutes', async () => {
+    const { mail, submit } = browser();
+    const email = 'page.sixth@example.com';
+    await account(email);
+    for (let i = 0; i < 5; i++) {
+      const res = await submit('/account/delete/web/code', { email: `page.many${i}@example.com` });
+      expect(res.res.status).toBe(200);
+    }
+
+    const sixth = await submit('/account/delete/web/code', { email });
+    expect(sixth.res.status).toBe(429);
+    expect(readable(sixth.text)).toContain(t.tooManyCodes);
+    expect(mail.sent).toHaveLength(0);
+  });
+
+  it('never creates an account: an unknown address gets the code step and no mail', async () => {
+    const { mail, submit } = browser();
+    const email = 'page.nobody@example.com';
+
+    const sent = await submit('/account/delete/web/code', { email });
+    expect(sent.res.status).toBe(200);
+    expect(sent.text).toContain(`<label for="otp">${t.codeLabel}</label>`);
+    expect(mail.sent).toHaveLength(0);
+
+    const verified = await submit('/account/delete/web/verify', { email, otp: '123456' });
+    expect(verified.res.status).toBe(400);
+    expect(verified.text).toContain(t.codeWrong);
+    expect(verified.set).toBeUndefined();
+    expect(await userRows(email)).toHaveLength(0);
   });
 });

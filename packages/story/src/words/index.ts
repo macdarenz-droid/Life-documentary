@@ -171,6 +171,7 @@ export const words = {
     howToCancel:
       'Changed your mind? Sign in again in the app within 30 days and cancel the deletion in Settings.',
     refused: 'This request did not come from this page.',
+    tooManyCodes: "You've asked for a lot of codes. Wait 10 minutes, then try again.",
   },
   mail: {
     codeSubject: 'Your Life Documentary code',

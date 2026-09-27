@@ -44,7 +44,7 @@ function post(path: string, body: unknown, headers: Record<string, string> = {})
       headers: {
         'content-type': 'application/json',
         origin: ORIGIN,
-        'x-forwarded-for': ip,
+        'cf-connecting-ip': ip,
         ...headers,
       },
       body: JSON.stringify(body),
@@ -131,6 +131,40 @@ describe('Better Auth on D1', () => {
     const last = await signIn(email, code);
     expect(last.status).not.toBe(429);
     expect(last.ok).toBe(false);
+  });
+
+  it('counts sign-in tries by cf-connecting-ip, whatever X-Forwarded-For says', async () => {
+    const email = 'ida@example.com';
+    const code = await sendCode(email);
+    // A new X-Forwarded-For on every try does not make a new client.
+    for (let i = 0; i < 3; i++) {
+      const res = await post(
+        '/sign-in/email-otp',
+        { email, otp: wrong(code) },
+        {
+          'x-forwarded-for': `10.0.0.${i}`,
+        },
+      );
+      expect(res.status).not.toBe(429);
+    }
+    const fourth = await post(
+      '/sign-in/email-otp',
+      { email, otp: code },
+      {
+        'x-forwarded-for': '10.0.0.9',
+      },
+    );
+    expect(fourth.status).toBe(429);
+    // A list in X-Forwarded-For does not put a different client into the same count.
+    const other = await post(
+      '/sign-in/email-otp',
+      { email, otp: wrong(code) },
+      {
+        'cf-connecting-ip': `198.51.100.${client}`,
+        'x-forwarded-for': '10.0.0.1, 10.0.0.2',
+      },
+    );
+    expect(other.status).not.toBe(429);
   });
 
   it('never stores or logs the plain code', async () => {

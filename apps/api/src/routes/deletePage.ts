@@ -8,6 +8,8 @@ import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import { database } from '../data/db';
 import * as deletionRequests from '../data/repositories/deletionRequests';
+import * as pageLimits from '../data/repositories/pageLimits';
+import * as users from '../data/repositories/users';
 import type { AppEnv } from './middleware/session';
 
 const PAGE = '/account/delete';
@@ -16,6 +18,11 @@ const t = words.deletePage;
 
 const Email = z.email().max(254);
 const Code = z.string().regex(/^\d{6}$/);
+
+/** Codes the page sends in a window: per email address and per client. */
+export const CODES_PER_EMAIL = 3;
+export const CODES_PER_CLIENT = 5;
+export const CODES_WINDOW_MS = 10 * 60 * 1000;
 
 function escape(text: string): string {
   return text.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
@@ -90,7 +97,7 @@ function doneText(purgeAfter: string): string {
 <p class="note">${escape(t.howToCancel)}</p>`;
 }
 
-function html(c: Context<AppEnv>, body: string, status: 200 | 400 | 401 | 403 = 200) {
+function html(c: Context<AppEnv>, body: string, status: 200 | 400 | 401 | 403 | 429 = 200) {
   c.header('Cache-Control', 'no-store');
   c.header(
     'Content-Security-Policy',
@@ -102,6 +109,22 @@ function html(c: Context<AppEnv>, body: string, status: 200 | 400 | 401 | 403 = 
 /** A POST is accepted only from this page's own origin. */
 function sameOrigin(c: Context<AppEnv>): boolean {
   return c.req.header('origin') === new URL(c.env.BETTER_AUTH_URL).origin;
+}
+
+/** Counts a code request against the address and the client; false when either is over its limit. */
+async function mayAskForCode(c: Context<AppEnv>, email: string): Promise<boolean> {
+  const db = database(c.env.DB);
+  const now = Date.now();
+  const client = c.req.header('cf-connecting-ip') ?? 'unknown';
+  const byClient = await pageLimits.take(
+    db,
+    `delete-page:client:${client}`,
+    CODES_PER_CLIENT,
+    CODES_WINDOW_MS,
+    now,
+  );
+  if (!byClient) return false;
+  return pageLimits.take(db, `delete-page:email:${email}`, CODES_PER_EMAIL, CODES_WINDOW_MS, now);
 }
 
 async function field(c: Context<AppEnv>, name: string): Promise<string> {
@@ -121,7 +144,10 @@ export const deletePage = new Hono<AppEnv>()
     if (!sameOrigin(c)) return html(c, `<p class="error">${escape(t.refused)}</p>`, 403);
     const email = Email.safeParse((await field(c, 'email')).toLowerCase());
     if (!email.success) return html(c, emailForm(t.emailInvalid), 400);
-    await c.var.auth().api.sendVerificationOTP({ body: { email: email.data, type: 'sign-in' } });
+    if (!(await mayAskForCode(c, email.data))) return html(c, emailForm(t.tooManyCodes), 429);
+    // The page never creates an account, and shows the same code step whether one exists or not.
+    if (await users.existsByEmail(database(c.env.DB), email.data))
+      await c.var.auth().api.sendVerificationOTP({ body: { email: email.data, type: 'sign-in' } });
     return html(c, codeForm(email.data));
   })
   .post(`${STEPS}/verify`, async (c) => {
@@ -130,6 +156,8 @@ export const deletePage = new Hono<AppEnv>()
     if (!email.success) return html(c, emailForm(t.emailInvalid), 400);
     const otp = Code.safeParse(await field(c, 'otp'));
     if (!otp.success) return html(c, codeForm(email.data, t.codeWrong), 400);
+    if (!(await users.existsByEmail(database(c.env.DB), email.data)))
+      return html(c, codeForm(email.data, t.codeWrong), 400);
     try {
       const { headers } = await c.var.auth().api.signInEmailOTP({
         body: { email: email.data, otp: otp.data },
