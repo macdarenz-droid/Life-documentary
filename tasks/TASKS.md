@@ -106,13 +106,8 @@ Text: `tasks/p8/T-008.md`.
 ### T-008b · P8.2 · Storylines and Cast screens · done · needs: T-008a
 Text: `tasks/p8/T-008.md`.
 
-### T-008c · P9.1 · Settings and the local daily reminder · changes r1 · needs: T-008b
+### T-008c · P9.1 · Settings and the local daily reminder · done · needs: T-008b
 Text: `tasks/p8/T-008.md`.
-**Fix list r1** (review of e339d0c; everything else approved: the reminder use cases and their tests, migration v2 and its test, the Settings screen, the one-time Today card, the forced `migrate.test.ts` edits that pin the v1 tests to `[v1]`).
-1. The switches take the platform's accent when on: in the Design Lab recording the "Daily question" switch shows a teal thumb (react-native-web's default `activeThumbColor`; Android's default thumb is its theme accent too). Only `trackColor` is set, in `SettingsScreen.tsx` and in `features/today/extras/Toggle.tsx`, and the two disagree (`text` and `ash`). DESIGN §1 allows no colour but the tokens, with amber for the one action. Add `src/design-system/Switch.tsx` (props-only over React Native's `Switch`): off: track `surface`, thumb `text`; on: track `text`, thumb `background`; `thumbColor` follows the value, and on web also pass `activeThumbColor` and `activeTrackColor` (react-native-web reads the on colours only from these). Use it in both places.
-Tests: the design-system `Switch` renders the token colours for off and on (read the rendered props or styles; no colour outside `tokens.color`), and each thumb or track the eye uses to read the state has a contrast of at least 3:1 against `background` (`contrastRatio` from `@life/design`); the Settings and Keep-on-this-phone switches render through it.
-Allowed test changes: none needed; no assertion is removed.
-Checks: mobile tests, typecheck, lint, format, boundaries; the lab job green (the recording shows no teal).
 
 ## P10 — Footage (the local archive)
 
