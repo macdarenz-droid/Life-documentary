@@ -165,8 +165,9 @@ Note (2026-09-27): `upload_jobs.purpose` gets no CHECK list (the `UploadJob` con
 ### T-013a · P12.1 · Keyframes leave the phone · todo · needs: T-011e, T-011d
 Text: `tasks/p12/T-013.md`.
 
-### T-013b · P12.2 · Derived rows, episodes and the cost ledger · todo · needs: T-011d, T-011b
+### T-013b · P12.2 · Derived rows, episodes and the cost ledger · todo · needs: T-011d, T-011b, T-011c
 Text: `tasks/p12/T-013.md`.
+Note (2026-09-27): for P13, `CostLedgerRow.step` also allows `plan` and `unit` also allows `cacheWriteToken` and `cacheReadToken`; store `step`, `provider` and `unit` as plain text columns without CHECK lists so later steps need no table rebuild.
 
 ### T-013c · P12.3 · Transcriber and captioner providers · todo · needs: T-011d
 Text: `tasks/p12/T-013.md`.
