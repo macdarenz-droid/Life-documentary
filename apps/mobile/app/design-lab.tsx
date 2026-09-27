@@ -19,7 +19,9 @@ import {
   type ViewerActions,
 } from '../src/features/footage';
 import {
+  AccountSection,
   SettingsScreen,
+  type AccountActions,
   type ReminderChoice,
   type SettingsActions,
 } from '../src/features/settings';
@@ -27,6 +29,7 @@ import { StorylinesScreen, type StorylineActions } from '../src/features/storyli
 import { TodayScreen, type TodayScreenProps } from '../src/features/today';
 import { fakeCameraView } from '../src/services/testing/FakeCameraView';
 import { fakePlayback } from '../src/services/testing/fakePlayback';
+import { FakeAppleButton } from '../src/services/testing/FakeAppleButton';
 import { fakeServices } from '../src/services/testing/fakeServices';
 
 /** Lab-only cadences and sample copy (T-003d); not product timing or product words. */
@@ -248,6 +251,28 @@ function labSettingsActions(): SettingsActions {
   };
 }
 
+/** The Account section with nothing behind it: signed out, or signed in as a sample address. */
+function labAccountActions(signedInAs: string | null): () => AccountActions {
+  return () => {
+    let email = signedInAs;
+    return {
+      load: async () => email,
+      sendCode: async (typed) => ({ to: typed.trim().toLowerCase() }),
+      signInWithCode: async () => ({ email }),
+      signInWithApple: async () => ({ email }),
+      signInWithGoogle: async () => ({ email }),
+      signOut: async () => {
+        email = null;
+        return { email };
+      },
+      requestDeletion: async () => {
+        email = null;
+        return { email };
+      },
+    };
+  };
+}
+
 const GrainBreath = lazy(async () => {
   if (Platform.OS === 'web') {
     const { LoadSkiaWeb } = await import('@shopify/react-native-skia/lib/module/web');
@@ -299,6 +324,8 @@ export default function DesignLab() {
   const [storylineActions] = useState(labStorylineActions);
   const [castActions] = useState(labCastActions);
   const [settingsActions] = useState(labSettingsActions);
+  const [signedOutAccount] = useState(labAccountActions(null));
+  const [signedInAccount] = useState(labAccountActions('sam@example.com'));
   const [footage] = useState(labFootageActions);
   const [viewer] = useState(labViewerActions);
   const [edit] = useState(labEditActions);
@@ -400,7 +427,12 @@ export default function DesignLab() {
 
       <Section title="Settings">
         <View style={styles.list}>
-          <SettingsScreen actions={settingsActions} />
+          <SettingsScreen
+            actions={settingsActions}
+            account={signedOutAccount}
+            AppleButton={FakeAppleButton}
+          />
+          <AccountSection actions={signedInAccount} />
         </View>
       </Section>
 

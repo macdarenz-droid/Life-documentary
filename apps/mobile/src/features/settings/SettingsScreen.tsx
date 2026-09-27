@@ -2,7 +2,7 @@
 // Undecided permission: the switch asks. Refused: a plain line and "Open Settings".
 import { tokens } from '@life/design';
 import { words } from '@life/story';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ComponentType } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -10,8 +10,9 @@ import {
   View,
   type AccessibilityActionEvent,
 } from 'react-native';
-import type { PermissionState } from '../../domain/capturePorts';
+import type { AppleButtonProps, PermissionState } from '../../domain/capturePorts';
 import { Button, Switch, Text } from '../../design-system';
+import { AccountSection, type AccountActions } from './AccountSection';
 
 export type ReminderChoice = { enabled: boolean; hour: number; minute: number };
 
@@ -26,6 +27,9 @@ export type SettingsScreenProps = {
   actions: SettingsActions;
   /** Back to Today; absent in the Design Lab. */
   onBack?: () => void;
+  /** The Account section (P4); absent where there is no account (the web preview). */
+  account?: AccountActions;
+  AppleButton?: ComponentType<AppleButtonProps>;
 };
 
 const MINUTE_STEP = 15;
@@ -86,7 +90,7 @@ function Stepper({
   );
 }
 
-export function SettingsScreen({ actions, onBack }: SettingsScreenProps) {
+export function SettingsScreen({ actions, onBack, account, AppleButton }: SettingsScreenProps) {
   const [permission, setPermission] = useState<PermissionState | null>(null);
   const [choice, setChoice] = useState<ReminderChoice | null>(null);
 
@@ -188,6 +192,10 @@ export function SettingsScreen({ actions, onBack }: SettingsScreenProps) {
               />
             </View>
           </>
+        ) : null}
+
+        {account ? (
+          <AccountSection actions={account} {...(AppleButton ? { AppleButton } : {})} />
         ) : null}
       </ScrollView>
     </View>

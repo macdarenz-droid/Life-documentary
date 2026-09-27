@@ -1,5 +1,16 @@
 // Fake capture services for screen tests and the Design Lab: scripted, recorded, no device.
+import {
+  Documentary,
+  Uuid,
+  type LinkDocumentaryResult,
+  type Me,
+  type RegisterDevice,
+  type SyncRequest,
+} from '@life/contracts';
 import type {
+  Account,
+  AccountUser,
+  Api,
   CaptureServices,
   Haptics,
   LibraryPicker,
@@ -32,6 +43,29 @@ export type FakeServices = CaptureServices & {
     /** Every call, in order. */
     calls: { kind: 'video' | 'photo'; uri: string; at: number }[];
   };
+  account: Account & {
+    /** The person a sign-in signs in as. */
+    person: AccountUser;
+    /** The code that works; any other is wrong. */
+    code: string;
+    /** What Apple and Google do: sign in, the person cancels, or the call throws. */
+    social: 'signedIn' | 'cancelled' | 'throw';
+    signedIn: AccountUser | null;
+    sentCodes: string[];
+  };
+  api: Api & {
+    /** The server's owner id for a newly linked documentary. */
+    ownerUserId: string;
+    failLink: boolean;
+    devices: RegisterDevice[];
+    linked: Documentary[];
+    deletionRequests: number;
+    /** The open deletion request `me()` reports, if any. */
+    deletion: Me['deletion'];
+    deletionCancels: number;
+    /** Every sync request, in order; the fake server has nothing to send back. */
+    syncs: SyncRequest[];
+  };
   /** Called with the source path a recording "writes"; the test puts fixture bytes there. */
   onRecordingFile?: (path: string) => void;
   /** Called with the path a poster "writes"; the test puts fixture bytes there. */
@@ -56,6 +90,11 @@ export function fakeServices(
       return states[which];
     },
   });
+
+  const person: AccountUser = {
+    userId: '0a4b5c6d-7e8f-4a0b-9c1d-2e3f4a5b6c7d',
+    email: 'sam@example.com',
+  };
 
   const services: FakeServices = {
     video: (() => {
@@ -147,6 +186,69 @@ export function fakeServices(
         fromPhoto: (uri: string, maxSide: number) => make('photo', uri, maxSide),
       };
     })(),
+    account: {
+      person,
+      code: '123456',
+      social: 'signedIn',
+      signedIn: null,
+      sentCodes: [],
+      session: async () => services.account.signedIn,
+      sendCode: async (email) => {
+        services.account.sentCodes.push(email);
+      },
+      signInWithCode: async (_email, code) => {
+        if (code !== services.account.code) return 'wrongCode';
+        services.account.signedIn = services.account.person;
+        return 'signedIn';
+      },
+      signInWithApple: () => social(),
+      signInWithGoogle: () => social(),
+      signOut: async () => {
+        services.account.signedIn = null;
+      },
+      cookie: () => (services.account.signedIn ? 'life.session_token=fake' : null),
+    },
+    api: {
+      ownerUserId: person.userId,
+      failLink: false,
+      devices: [],
+      linked: [],
+      deletionRequests: 0,
+      deletion: null,
+      deletionCancels: 0,
+      me: async (): Promise<Me> => ({
+        userId: Uuid.parse(person.userId),
+        email: person.email,
+        documentaries: services.api.linked,
+        deletion: services.api.deletion,
+      }),
+      registerDevice: async (device) => {
+        services.api.devices.push(device);
+        return device;
+      },
+      linkDocumentary: async (documentary): Promise<LinkDocumentaryResult> => {
+        if (services.api.failLink) throw new Error('No network');
+        const stored =
+          services.api.linked.find((d) => d.id === documentary.id) ??
+          Documentary.parse({ ...documentary, ownerUserId: services.api.ownerUserId });
+        if (!services.api.linked.includes(stored)) services.api.linked.push(stored);
+        return { documentary: stored };
+      },
+      requestDeletion: async () => {
+        services.api.deletionRequests += 1;
+        services.account.signedIn = null;
+      },
+      cancelDeletion: async () => {
+        services.api.deletionCancels += 1;
+        services.api.deletion = null;
+      },
+      syncs: [],
+      sync: async (request) => {
+        services.api.syncs.push(request);
+        return { cursor: services.api.syncs.length, changes: [], refused: [] };
+      },
+    },
+    device: { platform: 'ios', appVersion: '0.0.0' },
     permissions: {
       camera: permission('camera'),
       microphone: permission('microphone'),
@@ -156,5 +258,11 @@ export function fakeServices(
       },
     },
   };
+  function social(): Promise<'signedIn' | 'cancelled'> {
+    if (services.account.social === 'throw') return Promise.reject(new Error('No network'));
+    if (services.account.social === 'signedIn') services.account.signedIn = services.account.person;
+    return Promise.resolve(services.account.social);
+  }
+
   return services;
 }

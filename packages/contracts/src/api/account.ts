@@ -4,6 +4,9 @@ import { z } from 'zod';
 import { Documentary } from '../domain/documentary';
 import { Timestamp, Uuid } from '../ids';
 
+/** Days between a deletion request and the purge (P21's DeleteJob); the words say "30 days". */
+export const ACCOUNT_PURGE_DAYS = 30;
+
 export const DevicePlatform = z.enum(['ios', 'android']);
 export type DevicePlatform = z.infer<typeof DevicePlatform>;
 

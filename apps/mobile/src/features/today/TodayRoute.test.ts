@@ -47,4 +47,12 @@ describe("TodayRoute's save", () => {
     await todayScreenProps(h.ctx).save(clip);
     expect(await assets(h)).toEqual([{ id: expect.any(String), poster_path: null }]);
   });
+
+  it('asks for a sync after a capture, without waiting for it', async () => {
+    const h = await todayHarness();
+    h.store.io.files.set(clip.media.sourcePath, MOV);
+    const requestSync = jest.fn();
+    await todayScreenProps({ ...h.ctx, requestSync }).save(clip);
+    expect(requestSync).toHaveBeenCalledTimes(1);
+  });
 });

@@ -1,4 +1,12 @@
 // Capture ports (types only). Adapters live in src/services/; screens get them through the capture context.
+import type {
+  Documentary,
+  LinkDocumentaryResult,
+  Me,
+  RegisterDevice,
+  SyncRequest,
+  SyncResponse,
+} from '@life/contracts';
 
 /** Provided by a mounted camera view (CameraRecorderView). */
 export interface VideoRecorder {
@@ -102,6 +110,41 @@ export type AudioPlaybackProps = {
   onProgress: (positionMs: number, durationMs: number) => void;
 };
 
+/** The signed-in person, as the session says. */
+export type AccountUser = { userId: string; email: string };
+
+/** How a sign-in ended; anything else (no network, the server refusing) throws. */
+export type SignInResult = 'signedIn' | 'wrongCode' | 'cancelled';
+
+/** The account session (P4): Better Auth on the phone, the session kept in the secure store. */
+export interface Account {
+  session(): Promise<AccountUser | null>;
+  sendCode(email: string): Promise<void>;
+  signInWithCode(email: string, code: string): Promise<SignInResult>;
+  signInWithApple(): Promise<SignInResult>;
+  signInWithGoogle(): Promise<SignInResult>;
+  signOut(): Promise<void>;
+  /** The session cookie for API calls; null when signed out. */
+  cookie(): string | null;
+}
+
+/** The Worker's account API; every response is parsed with the contracts. */
+export interface Api {
+  me(): Promise<Me>;
+  registerDevice(device: RegisterDevice): Promise<RegisterDevice>;
+  linkDocumentary(documentary: Documentary): Promise<LinkDocumentaryResult>;
+  requestDeletion(): Promise<void>;
+  cancelDeletion(): Promise<void>;
+  /** POST /sync: pushes changed rows and pulls what changed after the cursor (P6). */
+  sync(request: SyncRequest): Promise<SyncResponse>;
+}
+
+/** What the phone says about itself when it registers. */
+export type DeviceInfo = { platform: 'ios' | 'android'; appVersion: string };
+
+/** Sign in with Apple's own button (Apple requires it); only on iPhone. */
+export type AppleButtonProps = { onPress: () => void };
+
 /** The services a capture screen uses, except the video recorder that comes from a mounted camera view. */
 export type CaptureServices = {
   voice: VoiceRecorder;
@@ -112,4 +155,7 @@ export type CaptureServices = {
   settings: SettingsOpener;
   reminders: Reminders;
   posters: PosterMaker;
+  account: Account;
+  api: Api;
+  device: DeviceInfo;
 };

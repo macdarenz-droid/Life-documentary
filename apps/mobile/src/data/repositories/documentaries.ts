@@ -33,3 +33,31 @@ export async function listAll(driver: SqlDriver): Promise<Documentary[]> {
   const rows = await driver.all<Row>('SELECT * FROM documentaries ORDER BY created_at, id');
   return rows.map((r) => fromRow(documentarySpec, r));
 }
+
+/**
+ * Hands a documentary to its account owner (the first link): the row, and the placeholder owner id on
+ * its moments (their updatedAt moves to the documentary's) and on those moments' media, in one
+ * transaction.
+ */
+export async function takeOwner(
+  driver: SqlDriver,
+  documentary: Documentary,
+  placeholder: string,
+): Promise<Documentary> {
+  const parsed = Documentary.parse(documentary);
+  return driver.transaction(async (tx) => {
+    await upsert(tx, documentarySpec, parsed);
+    await tx.run(
+      `UPDATE media_assets SET owner_user_id = ?
+       WHERE owner_user_id = ?
+         AND id IN (SELECT media_asset_id FROM moments WHERE documentary_id = ?)`,
+      [parsed.ownerUserId, placeholder, parsed.id],
+    );
+    await tx.run(
+      `UPDATE moments SET author_user_id = ?, updated_at = ?
+       WHERE documentary_id = ? AND author_user_id = ?`,
+      [parsed.ownerUserId, parsed.updatedAt, parsed.id, placeholder],
+    );
+    return parsed;
+  });
+}

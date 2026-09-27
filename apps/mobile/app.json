@@ -11,7 +11,8 @@
       "bundleIdentifier": "com.macdarenz.lifedocumentary",
       "infoPlist": {
         "CADisableMinimumFrameDurationOnPhone": true
-      }
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.macdarenz.lifedocumentary"
@@ -54,7 +55,11 @@
         }
       ],
       "expo-video",
-      "expo-notifications"
-    ]
+      "expo-notifications",
+      "expo-apple-authentication"
+    ],
+    "extra": {
+      "apiBaseUrl": "http://localhost:8787"
+    }
   }
 }

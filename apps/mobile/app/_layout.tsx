@@ -33,10 +33,21 @@ import { systemSettings } from '../src/services/settings/systemSettings';
 import { expoKeyStore } from '../src/services/secureStore/expoKeyStore';
 import { expoPosterMaker } from '../src/services/posters/expoPosterMaker';
 import { expoPlayback } from '../src/services/playback';
+import { apiBaseUrl, appVersion } from '../src/services/api/config';
+import { createApiClient } from '../src/services/api/apiClient';
+import { createLifeAuthClient } from '../src/services/auth/authClient';
+import { betterAuthAccount } from '../src/services/auth/betterAuthAccount';
+import { AppleSignInButton } from '../src/services/auth/AppleSignInButton';
 
 void SplashScreen.preventAutoHideAsync();
 
 const reminders = expoReminders(words.reminders.channelName);
+const account = betterAuthAccount(createLifeAuthClient(apiBaseUrl()));
+const api = createApiClient(apiBaseUrl(), () => account.cookie());
+const device = {
+  platform: Platform.OS === 'ios' ? 'ios' : 'android',
+  appVersion: appVersion(),
+} as const;
 
 // Composition root for capture: the real database, file store, keychain and device services. It lives
 // here because nothing may import from app/ (the routes folder).
@@ -67,6 +78,9 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       settings: systemSettings,
       reminders,
       posters: expoPosterMaker,
+      account,
+      api,
+      device,
     }),
     [voice],
   );
@@ -76,6 +90,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       services={services}
       CameraView={CameraRecorderView}
       Playback={expoPlayback}
+      AppleButton={AppleSignInButton}
     >
       {children}
     </CaptureRoot>

@@ -52,11 +52,16 @@ export function editActions(ctx: CaptureContextValue): EditActions {
     }),
     edit: async (id, patch) => {
       await editMoment(store, clock, id, patch);
+      ctx.requestSync?.();
     },
     tag: async (id, tags) => {
       await tagMoment(store, clock, id, tags);
+      ctx.requestSync?.();
     },
-    remove: (id) => deleteMoment(store, clock, id),
+    remove: async (id) => {
+      await deleteMoment(store, clock, id);
+      ctx.requestSync?.();
+    },
   };
 }
 

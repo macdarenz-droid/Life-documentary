@@ -9,6 +9,7 @@ export * from './shareable';
 export * from './weekBrief';
 export * from './planValidation';
 export * from './recapPlan';
+export * from './leavesDevice';
 export * from './motion/titleCardPlan';
 export * from './capture';
 export * from './footage';

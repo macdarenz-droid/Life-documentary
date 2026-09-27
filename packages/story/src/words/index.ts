@@ -214,6 +214,22 @@ export const words = {
     tooManyCodes: "You've asked for a lot of codes. Wait 10 minutes, then try again.",
   },
   account: {
+    title: 'Account',
+    signInApple: 'Sign in with Apple',
+    continueGoogle: 'Continue with Google',
+    emailLabel: 'Email',
+    sendCode: 'Send code',
+    codeSent: (email: string) => `Enter the code we sent to ${email}. It works for 5 minutes.`,
+    codeLabel: 'Code',
+    signIn: 'Sign in',
+    signOut: 'Sign out',
+    deleteAccount: 'Delete account',
+    emailInvalid: "That email address doesn't look right. Check it and try again.",
+    codeWrong: "That code didn't work. Check it and try again, or get a new one.",
+    sendFailed: "Couldn't send the code. Try again later.",
+    signInFailed: "Couldn't sign you in. Try again later.",
+    signOutFailed: "Couldn't sign you out. Try again later.",
+    deleteFailed: "Couldn't ask for your account to be deleted. Try again later.",
     intro:
       'You can use Life Documentary on this phone without an account. Sign in to get your weekly episodes.',
     deleteAsk:
