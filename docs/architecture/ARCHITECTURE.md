@@ -77,7 +77,7 @@ Nothing imports from `app/`. Only `data/` imports the SQLite driver. Only `servi
 | Folder | Holds |
 |---|---|
 | `index.ts`, `routes/` | Hono app; routes: `auth`, `sync`, `uploads`, `moments`, `episodes`, `edits`, `crew`, `export`, `account`, `webhooks` (RevenueCat) |
-| `auth/` | Better Auth on D1: Sign in with Apple, Google, email magic link; session tokens; device registration |
+| `auth/` | Better Auth on D1: Sign in with Apple, Google, a six-digit email code (D36); session tokens; device registration |
 | `data/` | D1 schema (Drizzle), append-only migrations, repositories, R2 key layout, change log |
 | `pipeline/` | Workflows and Queue consumers: `EpisodePipeline`, `SeasonPipeline`, `ExportJob`, `DeleteJob`; each step idempotent and keyed |
 | `providers/` | adapters: `anthropic` (plan, captions, season), `workersAi` (STT), `elevenlabs` (TTS), `remotionLambda` (render), `expoPush`, `revenuecat`, `music` (licensed library index) |

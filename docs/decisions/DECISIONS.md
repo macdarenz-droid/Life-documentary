@@ -51,7 +51,7 @@ Originals stay on the device, encrypted at rest with per-file keys wrapped by a 
 Client UUIDs, server timestamps, tombstones, per-documentary change log. Moments are single-writer, episodes are server artefacts, edits are an append-only op log. No CRDTs.
 
 ## D17 · 2026-09-26 · supervisor · Better Auth on Workers and D1 for accounts
-Sign in with Apple (required once any third-party login exists on iOS), Google, and email magic link. Why: keeps auth on the same vendor and database; open source. To be proven in P4; fallback is Supabase Auth with D1 kept for product data.
+Sign in with Apple (required once any third-party login exists on iOS), Google, and email (a six-digit code since D36; first written as a magic link). Why: keeps auth on the same vendor and database; open source. To be proven in P4; fallback is Supabase Auth with D1 kept for product data.
 
 ## D18 · 2026-09-26 · supervisor · Two test runners
 Vitest for `packages/*` and `apps/api` (with the Cloudflare Workers pool); Jest with `jest-expo` and React Native Testing Library for `apps/mobile`. Why: React Native component testing is only reliable on Jest; pure packages and Workers test faster on Vitest. Maestro for device journeys later.
@@ -106,3 +106,6 @@ The device uploads each 5 MiB part with an authenticated `PUT /uploads/:id/parts
 
 ## D35 · 2026-09-26 · supervisor · Capture keeps originals as recorded; no on-device trim or compression in P5
 Answers are capped at 10 s when they are recorded (`recordAsync({ maxDuration })`, `record({ forDuration })`); library clips up to 60 s are accepted as they are and longer ones are refused with a plain line. Why: `expo-image-picker` does not trim library videos, `expo-video` has no export API, `ffmpeg-kit-react-native` is deprecated, and `react-native-compressor` 2.0.3 is Nitro-based and unverified on React Native 0.86. Downsampled previews for understanding are made when uploading (P6), where their size matters; the originals stay on the device (D14).
+
+## D36 · 2026-09-27 · supervisor · Email sign-in by a six-digit code; UUID user ids; auth built per request
+Better Auth's `emailOTP` plugin (6 digits, 5 minutes, 3 attempts, stored hashed) replaces the magic link, because a code works when the mail is opened on another device and needs no hand-off of a browser cookie into the app. `advanced.database.generateId: 'uuid'` keeps user ids in the contracts' `Uuid`; `advanced.database.validateSchema: false` and the Drizzle adapter's `transaction: false` fit D1 (no system-table reads, no interactive transactions); the auth instance is built per request from `env`. Mail goes through a `MailSender` port with a recording sender for tests and `wrangler dev`; the real vendor is chosen with the owner's account. Checked against better-auth 1.7.6 and @better-auth/expo 1.7.6 type declarations on 2026-09-27.

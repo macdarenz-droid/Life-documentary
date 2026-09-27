@@ -128,6 +128,20 @@ Text: `tasks/p10/T-009.md`.
 ### T-009d · P10.4 · Edit, delete and "One year ago today" · todo · needs: T-009c
 Text: `tasks/p10/T-009.md`.
 
+## P4 — Account (Better Auth on Workers and D1)
+
+### T-010a · P4.1 · Better Auth on Workers and D1, proved in the test pool · todo · needs: T-001c
+Text: `tasks/p4/T-010.md`.
+
+### T-010b · P4.2 · Product rows, devices and the first link · todo · needs: T-010a
+Text: `tasks/p4/T-010.md`.
+
+### T-010c · P4.3 · The public deletion page · todo · needs: T-010b
+Text: `tasks/p4/T-010.md`.
+
+### T-010d · P4.4 · Sign in on the phone and the first link · todo · needs: T-010b, T-009d
+Text: `tasks/p4/T-010.md`.
+
 ## Blocked on the owner
 
 ### P-B · Capture and upload proof on real devices · blocked · needs: P3, P5, P6 tasks (not yet written)
