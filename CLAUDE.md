@@ -13,7 +13,7 @@ Read this before every task. The product is described in `docs/VISION.md`, the s
 8. **`localOnly` never leaves the device.** Every upload, sync payload and model request goes through `leavesDevice` (from P6 onward).
 9. **No secrets in code, docs, tests or messages.** Vendor keys are Worker secrets. The client never calls a vendor directly.
 10. **Missing is not a value.** Never invent a transcript, caption, place, date or duration. Optional stays optional.
-11. **Words.** User-facing text lives in `packages/story/words` (from P2 onward), plain and warm. Never "streak", "badge", "level up", or exclamation marks in system messages.
+11. **Words.** User-facing text lives in `packages/story/words` (from P2 onward) and reads like a real person wrote it: the voice in `docs/design/DESIGN.md` §8. No AI stock phrases ("at a glance", "seamless", "unlock", "Something went wrong", …), no "streak", "badge" or "level up", no exclamation marks, em dashes or semicolons in UI text; the words test enforces the list.
 12. **Tests check behaviour** through public functions or the rendered UI, never source text. Never skip, delete or loosen a test to get green; change an existing test only where the task's "Allowed test changes" says so.
 13. **Ready** means: typecheck, lint, boundaries, the task's tests and the build pass locally; every acceptance line is met; CI is green on the pushed commit. Anything not run is reported as UNVERIFIED.
 14. **Accessibility.** WCAG 2.2 AA: labels, roles, focus order, contrast, reduced motion; captions on video.

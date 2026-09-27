@@ -108,3 +108,29 @@ Not used: Moti (unmaintained since Jan 2025; Reanimated 4's CSS API covers it), 
 | Skia grain drops frames | Hero surfaces only; measured on a Release build |
 | Web or simulator recordings misrepresent smoothness | Final motion sign-off only on a device Release build |
 | Paid fonts cost money | Open-licence pairing ships; upgrade is an owner decision |
+
+## 8. Voice
+
+How the app talks. This covers every user-facing string: labels, buttons, errors, questions, notifications, permission prompts and emails. A test refuses the banned phrases and characters.
+
+- **Who we sound like.** A careful writer at a small, design-led app. Think of Apple's own apps, Things or Day One. Calm, plain and specific. Not a chatbot, a coach or an advert.
+- **Say it like a person.** Use contractions where you'd say them: "couldn't", "didn't", "what's", "it's". Use the active voice. Pick short, specific words. Say it once and stop.
+- **Sentence case** for every label, button and screen title: "Take photo", "Add place". Product and screen names keep their capitals: Life Documentary, Today, Footage, Storylines, Cast, Settings.
+- **Buttons** are short verbs that say what happens: "Save", "Flip camera", "Remove it", "Keep it".
+- **Errors** say what happened, then what to do, in a line or two: "Couldn't open that clip. Try a different one." Never blame the person. Never "Something went wrong" or "Oops".
+- **Empty states** say what goes here, the way you'd say it out loud: "Tag a moment with a storyline and it'll show up here."
+- **Questions** sound like a curious friend with a good ear, not a survey or a coach. One question ending in "?", addressed to "you", that can be answered out loud in ten seconds. Ask about something concrete, like a sound, a step or a person. Leave the slot ({storyline}, {person} or {place}) as it is.
+- **No guilt and no games.** Never "you missed", "you forgot" or "finally". Never streak, badge, level up, leaderboard, points or XP. People are named by the person, and nothing we write suggests the app recognises faces or voices.
+- **No stock phrases.** Never write: at a glance, seamless, effortless, unlock, elevate, dive in, delve, journey, embark, tailored, curated, empower, harness, insights, in just a few taps, made easy, your story your way, cherish, treasure, memories that last, we've got you, Let's, Here's, Great job, Awesome, "Ready to ...?", "whether you're ... or ...", "not just X, but Y", "it's not about X, it's about Y". Don't write a poetic line where a plain one works. Don't keep reaching for soft words like "quiet", "gentle" or "little". No therapy-speak, no rhetorical questions in labels and no emoji.
+- **Punctuation.** No exclamation marks. No em dashes, en dashes or semicolons in UI text. Use a full stop or a comma instead. Keep numbers and limits exact: "up to 280 characters", "30 days".
+- **Spelling** is British: recognised, colour, favourite, organise.
+
+**Before and after.**
+
+- "This one could not be saved. Try once more." → "Couldn't save that. Give it another try."
+- "Your moments gather here, day by day." → "Nothing here yet."
+- "If {storyline} were a chapter, what would today's scene be?" → "What's one scene from {storyline} today?"
+
+When in doubt, read it out loud. If you wouldn't say it to a friend, rewrite it. If a plain line already works, leave it alone.
+
+The banned phrases and characters are `voiceBannedPhrases` and `voiceBannedCharacters` in `packages/story/src/words/voice.ts` (from T-012a), and a test checks every user-facing string against them. Task texts quote words in this voice; when a task text and this section disagree, this section wins.
