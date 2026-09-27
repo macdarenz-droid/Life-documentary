@@ -123,6 +123,11 @@ Text: `tasks/p10/T-009.md`.
 ### T-009d · P10.4 · Edit, delete and "One year ago today" · done · needs: T-009c
 Text: `tasks/p10/T-009.md`.
 
+## Words — a real person's voice (owner request, 2026-09-27)
+
+### T-012a · W.1 · Words in a real person's voice · todo · needs: T-009d
+Text: `tasks/words/T-012.md`. Taken before the rest of P4 because T-010c and T-010d use the words it adds.
+
 ## P4 — Account (Better Auth on Workers and D1)
 
 ### T-010a · P4.1 · Better Auth on Workers and D1, proved in the test pool · done · needs: T-001c
