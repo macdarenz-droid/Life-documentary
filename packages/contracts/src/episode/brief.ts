@@ -2,6 +2,18 @@ import { z } from 'zod';
 import { MomentKind, MomentMood } from '../domain/moment';
 import { IanaTimeZone, LocalDate, Uuid } from '../ids';
 
+/** The English weekday name of a brief moment's day. */
+export const Weekday = z.enum([
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+]);
+export type Weekday = z.infer<typeof Weekday>;
+
 /** What the planner sees of one week: shareable moments only (no localOnly, no deleted). */
 export const WeekBriefV1 = z.object({
   version: z.literal(1),
@@ -15,6 +27,7 @@ export const WeekBriefV1 = z.object({
       z.object({
         momentId: Uuid,
         day: LocalDate,
+        weekday: Weekday,
         kind: MomentKind,
         durationMs: z.number().int().min(0).optional(),
         questionText: z.string().optional(),

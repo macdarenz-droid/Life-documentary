@@ -1,7 +1,7 @@
 import { EpisodePlanV1 } from '@life/contracts';
 import { describe, expect, it } from 'vitest';
 import { recapPlan, recapWords, validatePlan, weekBrief } from '../src';
-import { NAMES, fixtureWeeks } from './fixtures/weeks';
+import { NAMES, fixtureWeeks } from '../src/fixtures/weeks';
 
 const briefs = fixtureWeeks().map((w) => ({ name: w.name, brief: weekBrief(w.input) }));
 const hasMedia = (b: (typeof briefs)[number]['brief']) =>
@@ -63,5 +63,12 @@ describe('recap shape', () => {
     const answer = b.moments.find((m) => m.kind === 'answer');
     expect(plan?.scenes).toHaveLength(1);
     expect(plan?.coldOpen.momentId).toBe(answer?.momentId);
+  });
+});
+
+describe('recapPlan is unchanged by the shared shot rules', () => {
+  // The snapshot was written before recapPlan moved to shotFor and shotMs (T-014a).
+  it('gives the same plan for every fixture week', () => {
+    expect(briefs.map((b) => ({ name: b.name, plan: recapPlan(b.brief) }))).toMatchSnapshot();
   });
 });

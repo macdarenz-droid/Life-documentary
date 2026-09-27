@@ -12,7 +12,8 @@ import {
   type MomentKind,
   type MomentMood,
 } from '@life/contracts';
-import { addDays, type WeekBriefInput } from '../../src';
+import { addDays } from '../dates';
+import type { WeekBriefInput } from '../weekBrief';
 
 export type FixtureWeek = { name: string; input: WeekBriefInput };
 

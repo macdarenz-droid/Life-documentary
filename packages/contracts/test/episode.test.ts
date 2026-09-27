@@ -70,6 +70,7 @@ describe('WeekBriefV1', () => {
   const moment = (n: number) => ({
     momentId: id(n),
     day: '2027-03-09',
+    weekday: 'Tuesday',
     kind: 'answer',
     durationMs: 8000,
     questionText: 'What happened next with The new job?',

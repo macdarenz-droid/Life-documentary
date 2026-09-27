@@ -1,7 +1,7 @@
 import { Uuid, type EpisodePlanV1, type WeekBriefV1 } from '@life/contracts';
 import { describe, expect, it } from 'vitest';
 import { recapPlan, validatePlan, weekBrief } from '../src';
-import { NAMES, fixtureWeeks } from './fixtures/weeks';
+import { NAMES, fixtureWeeks } from '../src/fixtures/weeks';
 
 const fullWeek = fixtureWeeks().find((w) => w.name === NAMES.full);
 if (!fullWeek) throw new Error('no full week');
@@ -131,10 +131,11 @@ describe('validatePlan in model mode', () => {
     ]);
   });
 
-  it('flags a target duration outside 60,000–240,000 ms', () => {
-    expect(errorsOf({ ...plan, targetDurationMs: 59_999 })).toEqual([
-      'targetDurationMs 59999 is outside 60000–240000',
+  it('flags a target duration outside 30,000–240,000 ms', () => {
+    expect(errorsOf({ ...plan, targetDurationMs: 29_900 })).toEqual([
+      'targetDurationMs 29900 is outside 30000–240000',
     ]);
+    expect(errorsOf({ ...plan, targetDurationMs: 30_000 })).toEqual([]);
   });
 
   it('flags a cold open that is not an answer', () => {

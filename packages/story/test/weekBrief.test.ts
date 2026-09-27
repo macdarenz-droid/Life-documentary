@@ -1,7 +1,7 @@
 import { Derived, WeekBriefV1 } from '@life/contracts';
 import { describe, expect, it } from 'vitest';
 import { WEEK_BRIEF_BUDGET, weekBrief } from '../src';
-import { NAMES, fixtureId, fixtureWeeks, type FixtureWeek } from './fixtures/weeks';
+import { NAMES, fixtureId, fixtureWeeks, type FixtureWeek } from '../src/fixtures/weeks';
 
 const weeks = fixtureWeeks();
 function week(name: string): FixtureWeek {

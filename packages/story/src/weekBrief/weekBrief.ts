@@ -14,6 +14,7 @@ import type {
 } from '@life/contracts';
 import { addDays } from '../dates';
 import { isShareable, localDay } from '../shareable';
+import { recapWords } from '../words/recap';
 
 export type WeekBriefInput = {
   documentaryId: Uuid;
@@ -21,7 +22,7 @@ export type WeekBriefInput = {
   weekStart: LocalDate;
   timeZone: string;
   moments: readonly Moment[];
-  mediaAssets: readonly MediaAsset[];
+  mediaAssets: readonly Pick<MediaAsset, 'id' | 'durationMs'>[];
   derived: readonly Derived[];
   questions: readonly Question[];
   storylines: readonly Storyline[];
@@ -93,9 +94,11 @@ function build(input: WeekBriefInput, moments: readonly Moment[]) {
     const d = derived.get(m.id);
     const asset = m.mediaAssetId ? assets.get(m.mediaAssetId) : undefined;
     const question = m.questionId ? questions.get(m.questionId) : undefined;
+    const day = localDay(m.capturedAt, m.timeZone);
     return {
       momentId: m.id,
-      day: localDay(m.capturedAt, m.timeZone),
+      day,
+      weekday: recapWords.weekday(day),
       kind: m.kind,
       ...(asset?.durationMs !== undefined ? { durationMs: asset.durationMs } : {}),
       ...(question ? { questionText: question.text } : {}),
