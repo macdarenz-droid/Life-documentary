@@ -165,8 +165,9 @@ Note (2026-09-27): `upload_jobs.purpose` gets no CHECK list (the `UploadJob` con
 ### T-013a · P12.1 · Keyframes leave the phone · todo · needs: T-011e, T-011d
 Text: `tasks/p12/T-013.md`.
 
-### T-013b · P12.2 · Derived rows, episodes and the cost ledger · todo · needs: T-011d, T-011b
+### T-013b · P12.2 · Derived rows, episodes and the cost ledger · todo · needs: T-011d, T-011b, T-011c
 Text: `tasks/p12/T-013.md`.
+Note (2026-09-27): for P13, `CostLedgerRow.step` also allows `plan` and `unit` also allows `cacheWriteToken` and `cacheReadToken`; store `step`, `provider` and `unit` as plain text columns without CHECK lists so later steps need no table rebuild.
 
 ### T-013c · P12.3 · Transcriber and captioner providers · todo · needs: T-011d
 Text: `tasks/p12/T-013.md`.
@@ -176,6 +177,20 @@ Text: `tasks/p12/T-013.md`.
 
 ### T-013e · P12.5 · What was understood, on the phone · todo · needs: T-013b, T-011e
 Text: `tasks/p12/T-013.md`.
+
+## P13 — Planner (step 2 of the episode pipeline)
+
+### T-014a · P13.1 · The planner's shapes and checks · todo · needs: T-013b
+Text: `tasks/p13/T-014.md`.
+
+### T-014b · P13.2 · The planner provider and the style prompt · todo · needs: T-013c, T-014a
+Text: `tasks/p13/T-014.md`.
+
+### T-014c · P13.3 · EpisodePipeline step 2: plan · todo · needs: T-013d, T-014a, T-014b
+Text: `tasks/p13/T-014.md`.
+
+### T-014d · P13.4 · The planner evaluation · todo · needs: T-014c
+Text: `tasks/p13/T-014.md`.
 
 ## Blocked on the owner
 
