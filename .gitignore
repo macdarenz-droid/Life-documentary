@@ -15,3 +15,4 @@ apps/mobile/dist-web
 apps/mobile/public/canvaskit.wasm
 test-results/
 playwright-report/
+.dev.vars

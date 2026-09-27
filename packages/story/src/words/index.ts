@@ -153,6 +153,10 @@ export const words = {
     next: 'Next',
     oneYearAgo: 'One year ago today',
   },
+  mail: {
+    codeSubject: 'Your Life Documentary code',
+    codeText: (code: string) => `Your Life Documentary code is ${code}. It works for 5 minutes.`,
+  },
   lab: {
     title: 'Design lab',
     replay: 'Play again',
