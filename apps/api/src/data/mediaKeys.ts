@@ -12,3 +12,13 @@ export function mediaKey(
   const prefix = purpose === 'original' ? 'u' : 'tmp';
   return `${prefix}/${userId}/${documentaryId}/${assetId}/${purpose}`;
 }
+
+/** The R2 key of a narrator clip (P14, D40), under `u/` so the `tmp/` rule never touches it. */
+export function narrationKey(
+  userId: string,
+  documentaryId: string,
+  episodeId: string,
+  hash: string,
+): string {
+  return `u/${userId}/${documentaryId}/narration/${episodeId}/${hash}.mp3`;
+}
