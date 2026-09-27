@@ -111,13 +111,13 @@ Text: `tasks/p8/T-008.md`.
 
 ## P10 — Footage (the local archive)
 
-### T-009a · P10.1 · Posters and playback copies · todo · needs: T-008c
+### T-009a · P10.1 · Posters and playback copies · done · needs: T-008c
 Text: `tasks/p10/T-009.md`.
 
-### T-009b · P10.2 · Footage use cases · todo · needs: T-009a, T-008a
+### T-009b · P10.2 · Footage use cases · done · needs: T-009a, T-008a
 Text: `tasks/p10/T-009.md`.
 
-### T-009c · P10.3 · The Footage screen and the viewer · todo · needs: T-009b, T-008b
+### T-009c · P10.3 · The Footage screen and the viewer · done · needs: T-009b, T-008b
 Text: `tasks/p10/T-009.md`.
 
 ### T-009d · P10.4 · Edit, delete and "One year ago today" · todo · needs: T-009c
