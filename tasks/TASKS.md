@@ -177,6 +177,23 @@ Text: `tasks/p12/T-013.md`.
 ### T-013e · P12.5 · What was understood, on the phone · todo · needs: T-013b, T-011e
 Text: `tasks/p12/T-013.md`.
 
+## P13 — Planner (step 2 of the episode pipeline)
+
+### T-014a · P13.1 · The planner's shapes and checks · todo · needs: T-013b
+Text: `tasks/p13/T-014.md`.
+Note (2026-09-27, from a second check of the text): (1) Add `planMomentErrors(output, brief)`: every cold open, shot and closing id must be an answer, clip or photo of the brief, else `<where>: not a picture or sound from this week`; `planOnce` (T-014c) runs it after the `PlannerOutput` parse and before anything else. Error strings may contain ids, never other text. (2) `narratorShare` returns `{ narratorMs, spokenMs, share }` (`validatePlan` keeps its exact messages); `userVoiceShare` = 1 − `share`; the `planProperties` test for a narrator share over 25% expects `userVoiceShare` below 0.75 and `valid` false. (3) `weekday` is required on brief moments; allowed test change: the `WeekBriefV1` contract test's moments gain `weekday`. (4) `planDurationMs` takes the `PlannerOutput` and the brief (not the assembled plan) so the 30–240 s check runs before `assemblePlan` parses. (5) A lower third is timed on its moment's first scene shot; the cold open does not count, so a moment used only as the cold open gets no lower third.
+
+### T-014b · P13.2 · The planner provider and the style prompt · todo · needs: T-013c, T-014a
+Text: `tasks/p13/T-014.md`.
+Note (2026-09-27): the style prompt gains one sentence at the end of the "How an episode goes" paragraph, right after "and that must be an answer.": "It can play again, whole, in its scene." (Three fixture weeks reach 30 s only when it does, and the recap already reuses it.)
+
+### T-014c · P13.3 · EpisodePipeline step 2: plan · todo · needs: T-013d, T-014a, T-014b
+Text: `tasks/p13/T-014.md`.
+Note (2026-09-27): (1) When the first answer had no text, the retry sends no assistant turn (an empty one is a 400): the errors follow the brief in the one user message. (2) `planOnce` catches an error on the retry call and returns `invalid` with the usage so far; only an error on the first call throws. (3) `planOnce(brief, planner, { effort = PLAN_EFFORT } = {})` so the eval can set effort. (4) The error-string test allows ids and nothing else from the brief or the answer.
+
+### T-014d · P13.4 · The planner evaluation · todo · needs: T-014c
+Text: `tasks/p13/T-014.md`.
+
 ## Blocked on the owner
 
 ### P-B · Capture and upload proof on real devices · blocked · needs: P3, P5, P6 tasks (not yet written)

@@ -119,7 +119,7 @@ Inputs: today's local date, open storylines, yesterday's and last week's moments
 Pure function from the week's moments, derived text, storylines, cast names, the previous three episode summaries and the questions asked → a compact `WeekBrief` (≤ 15k tokens) for the planner. Media never enters the brief, only text and references.
 
 ### Episode plan (server; `providers/anthropic` → `EpisodePlan v1`)
-Claude Sonnet 5 with a cached style prefix (the documentary voice, the schema, examples) and structured output. The plan is:
+Claude Sonnet 5 with a cached style prompt (the documentary voice and the rules) and structured output (D39). The model chooses and orders moments and writes the words (`PlannerOutput`); the server builds every shot and time from the moments (the recap's rules), times the lower thirds, and adds the week, the number, the duration, captions on and the narrator voice. The contract and `validatePlan` are authoritative for the numbers (3–5 scenes and 30–240 s for a model plan). The plan is:
 
 ```
 EpisodePlan v1
@@ -131,10 +131,10 @@ EpisodePlan v1
   tease?: { storylineId, text ≤ 100 chars }
   music: { mood: calm|warm|bright|bittersweet|driving, trackId? }
   lowerThirds[]: { momentId, castId, atMs }
-  narratorVoiceId, targetDurationMs (120000..240000)
+  narratorVoiceId?, targetDurationMs (20000..240000; a model plan 30000..240000)
   summary ≤ 400 chars                                      stored on Episode and fed to later briefs
 ```
-Validation (`packages/story/planValidation`): every `momentId` exists in the brief and is not `localOnly`; total duration within bounds; the narrator's total text ≤ 25% of the episode's spoken time (the user's voice is the narration); no scene without a shot. Invalid → one retry with the validation errors; still invalid → the `recap` plan (no narrator, music and titles only) so an episode always arrives.
+Validation (`packages/story/planValidation`): every `momentId` exists in the brief and is not `localOnly`; total duration within bounds; the narrator's total text ≤ 25% of the episode's spoken time (the user's voice is the narration); no scene without a shot. Model text also passes the voice rules (`planVoiceErrors`) and never repeats the person's words (`planCopyErrors`). Invalid → one retry showing the first answer and its errors; still invalid, refused or failing → the `recap` plan (no narrator, music and titles only) so an episode always arrives. A week with no answer, clip or photo has no episode (D39). Plans are stored as `episode_plans` rows; the episode's `summary` is its plan's summary.
 
 ### Narration (`providers/elevenlabs`)
 Only `narratorBridge` and `tease` texts are synthesised. The user's own answers are cut from their recordings. Captions come from transcripts and bridge texts. Voices: a cast of 4 licensed documentary voices; the user's own voice is not offered in release 1.
@@ -174,7 +174,8 @@ Yearly: Claude Opus 5.5 reads the year's episode summaries and plans and writes 
 | Upload state | `apps/mobile/src/data/uploadQueue` |
 | Derived text | `apps/api/src/pipeline/understand` |
 | The week's brief | `packages/story/weekBrief` |
-| The episode plan | `apps/api/src/pipeline/plan` via `providers/anthropic`, validated by `packages/story/planValidation` |
+| The episode plan | `apps/api/src/pipeline/plan` via `providers/anthropic`, completed by `packages/story/plan` (`assemblePlan`) and validated by `packages/story/planValidation` |
+| Episode summary | the stored plan's `summary`, written by `apps/api/src/pipeline/plan` |
 | Edits | `packages/story/editOps` applied by `apps/api/src/routes/edits` |
 | What the episode looks like | `packages/render` compositions with `packages/design` tokens |
 | Episode state | `apps/api/src/pipeline/EpisodePipeline` |
@@ -214,7 +215,7 @@ Local development needs none of these: `wrangler dev` (Miniflare) for the API, a
 ## 9. Quality gates
 
 - CI on every PR and on `main`: install → typecheck (all workspaces) → lint → boundaries → unit tests (Vitest for `packages/*` and `apps/api` with the Workers pool; Jest with `jest-expo` and React Native Testing Library for `apps/mobile`) → `wrangler deploy --dry-run` → render a 15-second fixture episode with Remotion and upload it as an artifact.
-- Planner evaluation set: 20 fixture weeks with required properties (valid plan, user voice ≥ 75% of spoken time, no `localOnly` moment, title not generic, cold open is an answer). Run on every prompt or model change, not on every CI run; results recorded in `docs/architecture/EVALS.md` when it exists.
+- Planner evaluation set: 20 fixture weeks with required properties (valid plan, user voice ≥ 75% of spoken time, no `localOnly` moment, title not generic, cold open is an answer). Run on every prompt or model change, not on every CI run; run with `pnpm --filter @life/api eval:planner` and recorded in `docs/architecture/EVALS.md` (P13).
 - Device checks (owner or Maestro on a device farm later): capture, background upload resume, notification, widget, episode playback; recorded as unverified until evidence exists.
 - Release: `main` with green CI is GOLDEN; EAS builds from tags; store submission by the owner.
 
