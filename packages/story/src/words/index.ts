@@ -140,6 +140,18 @@ export const words = {
     noteEmpty: 'A note needs a few words.',
     noteTooLong: 'A note can be up to 280 characters.',
     unavailable: 'This moment is no longer here.',
+    edit: 'Edit',
+    editLabel: 'Edit this moment',
+    noteLabel: 'Note',
+    mood: 'Mood',
+    done: 'Done',
+    delete: 'Delete',
+    deleteAsk:
+      'Delete this moment? It and its original leave this phone. Nothing else in your documentary changes.',
+    deleteConfirm: 'Delete it',
+    keep: 'Keep it',
+    next: 'Next',
+    oneYearAgo: 'One year ago today',
   },
   lab: {
     title: 'Design lab',

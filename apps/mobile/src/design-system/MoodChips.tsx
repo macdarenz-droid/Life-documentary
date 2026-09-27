@@ -3,7 +3,7 @@ import type { MomentMood } from '@life/contracts';
 import { rgba, tokens } from '@life/design';
 import { words } from '@life/story';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Text } from '../../../design-system';
+import { Text } from './Text';
 
 const MOODS: readonly MomentMood[] = ['bright', 'calm', 'tender', 'tired', 'heavy'];
 
