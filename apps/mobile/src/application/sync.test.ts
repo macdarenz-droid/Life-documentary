@@ -2,10 +2,12 @@ import { Moment, Uuid, type Documentary, type SyncChange, type SyncRequest } fro
 import * as derived from '../data/repositories/derived';
 import * as mediaAssets from '../data/repositories/mediaAssets';
 import * as moments from '../data/repositories/moments';
+import * as questions from '../data/repositories/questions';
 import * as syncState from '../data/repositories/syncState';
 import { afterSignIn } from './account';
 import { openLocalDocumentary } from './bootstrap';
 import { captureMoment, type MediaInput } from './captureMoment';
+import { deleteMoment } from './footage';
 import { syncIfSignedIn, syncNow } from './sync';
 import { fakeSyncApi } from './testing/fakeSyncApi';
 import { fixedClock, memoryStore, sequentialIds } from './testing/memory';
@@ -136,6 +138,34 @@ describe('syncNow and derived text', () => {
     expect(await derived.forMoment(store.driver, moment.id)).toEqual([]);
   });
 
+  it('stores a pulled derived row without its transcript segments', async () => {
+    const { store, clock, ids, documentary, api } = await setup();
+    const moment = await captureMoment(store, clock, ids, {
+      kind: 'note',
+      text: 'Rain on the tram window.',
+      localOnly: false,
+    });
+    const change = derivedChange(moment.id, '2027-03-21T18:00:00Z', 'Rain again.');
+    api.seed({
+      ...change,
+      row: {
+        ...change.row,
+        segments: [
+          {
+            startMs: 0,
+            endMs: 900,
+            text: 'Rain again.',
+            words: [{ text: 'Rain', startMs: 0, endMs: 400 }],
+          },
+        ],
+      },
+    });
+    await syncNow(store, clock, api, documentary);
+    const [stored] = await derived.forMoment(store.driver, moment.id);
+    expect(stored?.transcript).toBe('Rain again.');
+    expect(stored).not.toHaveProperty('segments');
+  });
+
   it('never pushes a derived row', async () => {
     const { store, clock, ids, documentary, api } = await setup();
     const moment = await captureMoment(store, clock, ids, {
@@ -208,6 +238,46 @@ describe('syncNow', () => {
     ]) {
       expect(json).not.toContain(`"${field}"`);
     }
+  });
+
+  it('keeps a question unanswered when a full re-pull names the answer deleted on this phone', async () => {
+    const { store, clock, ids, documentary, api } = await setup();
+    const question = await todayQuestion(store, documentary, clock, ids);
+    const answer = await captureMoment(store, clock, ids, {
+      kind: 'answer',
+      questionId: question.id,
+      media: video,
+      localOnly: false,
+    });
+    await syncNow(store, clock, api, documentary);
+    await deleteMoment(store, clock, answer.id);
+    expect((await questions.get(store.driver, question.id))?.answeredByMomentId).toBeUndefined();
+
+    await syncNow(store, clock, api, documentary);
+
+    // The service keeps the stored answer, and a cleared cursor pulls every row again.
+    expect(api.rows.get(`question:${question.id}`)?.row).toMatchObject({
+      answeredByMomentId: answer.id,
+    });
+    await store.driver.run("DELETE FROM settings WHERE key = 'sync.cursor'", []);
+    expect((await syncState.read(store.driver)).cursor).toBeNull();
+    await syncNow(store, clock, api, documentary);
+
+    expect((await questions.get(store.driver, question.id))?.answeredByMomentId).toBeUndefined();
+    const today = await todayQuestion(store, documentary, clock, ids);
+    expect(today.id).toBe(question.id);
+    expect(today.answeredByMomentId).toBeUndefined();
+    store.io.files.set(
+      SOURCE,
+      new Uint8Array(2000).map((_, i) => i & 255),
+    );
+    const again = await captureMoment(store, clock, ids, {
+      kind: 'answer',
+      questionId: today.id,
+      media: photo,
+      localOnly: false,
+    });
+    expect((await questions.get(store.driver, question.id))?.answeredByMomentId).toBe(again.id);
   });
 
   it('does not send the id of a local-only answer on its question', async () => {

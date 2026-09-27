@@ -287,10 +287,15 @@ async function applyPulled(
           change.row.askedOn,
         );
         if (sameDay && sameDay.id !== change.row.id) break;
-        const row: Question =
-          change.row.answeredByMomentId === undefined && local?.answeredByMomentId
-            ? { ...change.row, answeredByMomentId: local.answeredByMomentId }
-            : change.row;
+        // The service keeps an answer after its moment is deleted, so a pulled answer that names a
+        // moment deleted on this phone never replaces the local one (an empty answer stays empty).
+        const pulledAnswer = change.row.answeredByMomentId;
+        const answerDeleted =
+          pulledAnswer !== undefined && !!(await moments.get(driver, pulledAnswer))?.deletedAt;
+        const keepLocal = pulledAnswer === undefined ? local?.answeredByMomentId : answerDeleted;
+        const row: Question = keepLocal
+          ? Question.parse({ ...change.row, answeredByMomentId: local?.answeredByMomentId })
+          : change.row;
         candidateQuestions.set(row.id, row);
         break;
       }

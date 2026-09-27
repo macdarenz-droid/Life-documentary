@@ -20,9 +20,13 @@ export const derivedSpec: TableSpec<Derived> = {
   },
 };
 
-/** Stores the row, replacing the one for the same moment and provider. */
+/**
+ * Stores the row, replacing the one for the same moment and provider. The phone keeps no transcript
+ * segments (their timings are for the service's captions), so they are dropped here.
+ */
 export async function put(driver: SqlDriver, row: Derived): Promise<Derived> {
   const parsed = Derived.parse(row);
+  delete parsed.segments;
   const { cols, vals } = toValues(derivedSpec, parsed);
   const updates = cols
     .filter((c) => c !== 'moment_id' && c !== 'provider')

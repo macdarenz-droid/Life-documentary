@@ -1,5 +1,5 @@
 // An in-memory copy of the server's POST /sync rule for sync tests: last-write-wins per row (ties keep
-// the stored row), `leavesDevice` refusals, `not_yours` for a media asset of another user, a change log with a cursor, and pages of pulled changes.
+// the stored row, and a stored answer is never cleared), `leavesDevice` refusals, `not_yours` for a media asset of another user, a change log with a cursor, and pages of pulled changes.
 import { SyncRequest, SyncResponse, type PulledChange, type SyncRefusal } from '@life/contracts';
 import { leavesDevice } from '@life/story';
 import type { Api } from '../../domain/capturePorts';
@@ -25,6 +25,12 @@ export function fakeSyncApi(options: { page?: number; userId?: string } = {}): F
   const record = (change: PulledChange) => {
     rows.set(key(change), change);
     log.push({ seq: log.length + 1, key: key(change) });
+  };
+  // As the server: a stored question takes only an answer, while it has none or its moment is deleted.
+  const questionStale = (incoming: string | undefined, answer: string | undefined) => {
+    if (!incoming || incoming === answer) return true;
+    const moment = answer === undefined ? undefined : rows.get(`moment:${answer}`);
+    return answer !== undefined && !(moment?.entity === 'moment' && moment.row.deletedAt);
   };
   const unused = async (): Promise<never> => {
     throw new Error('Not part of the sync fake');
@@ -80,9 +86,11 @@ export function fakeSyncApi(options: { page?: number; userId?: string } = {}): F
         }
         const stale =
           prior !== undefined &&
-          ('updatedAt' in change.row && 'updatedAt' in prior.row
-            ? Date.parse(prior.row.updatedAt) >= Date.parse(change.row.updatedAt)
-            : JSON.stringify(prior.row) === JSON.stringify(change.row));
+          (change.entity === 'question' && prior.entity === 'question'
+            ? questionStale(change.row.answeredByMomentId, prior.row.answeredByMomentId)
+            : 'updatedAt' in change.row && 'updatedAt' in prior.row
+              ? Date.parse(prior.row.updatedAt) >= Date.parse(change.row.updatedAt)
+              : JSON.stringify(prior.row) === JSON.stringify(change.row));
         if (stale) {
           refuse('stale');
           continue;
