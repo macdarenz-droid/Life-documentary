@@ -203,7 +203,7 @@ Text: `tasks/p14/T-015.md`.
 
 ## P15 — Render (the episode timeline, the compositions, the renderer)
 
-### T-016a · P15.1 · The episode timeline · todo · needs: T-014a, T-015a
+### T-016a · P15.1 · The episode timeline · done · needs: T-014a, T-015a
 Text: `tasks/p15/T-016.md`.
 
 ### T-016b · P15.2 · The episode, drawn · todo · needs: T-016a
