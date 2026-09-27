@@ -108,7 +108,7 @@ Routes call `policy` and `data`; `pipeline` calls `providers` through ports; `pr
 | `ChangeLog` | documentaryId, seq, entity, id, changedAt | API `data/` for sync cursors |
 | `UploadJob` (device only) | assetId, state, uploadId, parts (etag per part), bytesDone, attempts, nextAttemptAt | Device `data/uploadQueue` |
 
-Media key layout in R2 (D37, D38): `u/{uid}/{documentaryId}/{assetId}/original` (kept only when in an episode or Cloud backup is on) · working copies `tmp/{uid}/{documentaryId}/{assetId}/{answer|preview|keyframe}` (lifecycle rule on `tmp/`: delete after 2 days; the pipeline deletes them when its run ends) · `users/{uid}/narration/{episodeId}/{n}.mp3` · `users/{uid}/episodes/{episodeId}/v{renderVersion}.mp4` and `poster.jpg` · `users/{uid}/exports/{jobId}.zip` (7 days).
+Media key layout in R2 (D37, D38): `u/{uid}/{documentaryId}/{assetId}/original` (kept only when in an episode or Cloud backup is on) · working copies `tmp/{uid}/{documentaryId}/{assetId}/{answer|preview|keyframe}` (lifecycle rule on `tmp/`: delete after 9 days, since the weekly run reads a whole week; the pipeline deletes them when its run ends) · `users/{uid}/narration/{episodeId}/{n}.mp3` · `users/{uid}/episodes/{episodeId}/v{renderVersion}.mp4` and `poster.jpg` · `users/{uid}/exports/{jobId}.zip` (7 days).
 
 ## 4. The story engine
 

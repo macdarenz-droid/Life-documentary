@@ -188,6 +188,7 @@ Checks: API and contracts typecheck, tests, lint, format, boundaries, `deploy:dr
 
 ### T-011e · P6.5 · The upload queue on the phone · todo · needs: T-011d, T-011c, T-009a
 Text: `tasks/p6/T-011.md`.
+Note (2026-09-27): `upload_jobs.purpose` gets no CHECK list (the `UploadJob` contract guards it), so P12 can add the `keyframe` purpose without rebuilding the table. The part response is parsed with `UploadedPart` (T-011d fix r2).
 
 ## P12 — Understanding (step 1 of the episode pipeline)
 
