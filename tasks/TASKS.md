@@ -137,6 +137,23 @@ Text: `tasks/p4/T-010.md`.
 ### T-010d · P4.4 · Sign in on the phone and the first link · todo · needs: T-010b, T-009d
 Text: `tasks/p4/T-010.md`.
 
+## P6 — Upload queue and sync
+
+### T-011a · P6.1 · `leavesDevice` and the sync and upload contracts · todo · needs: T-001a
+Text: `tasks/p6/T-011.md`.
+
+### T-011b · P6.2 · `POST /sync` on the server · todo · needs: T-011a, T-010b
+Text: `tasks/p6/T-011.md`.
+
+### T-011c · P6.3 · Sync on the phone · todo · needs: T-011b, T-010d
+Text: `tasks/p6/T-011.md`.
+
+### T-011d · P6.4 · Uploads through the Worker · todo · needs: T-011b
+Text: `tasks/p6/T-011.md`.
+
+### T-011e · P6.5 · The upload queue on the phone · todo · needs: T-011d, T-011c, T-009a
+Text: `tasks/p6/T-011.md`.
+
 ## Blocked on the owner
 
 ### P-B · Capture and upload proof on real devices · blocked · needs: P3, P5, P6 tasks (not yet written)

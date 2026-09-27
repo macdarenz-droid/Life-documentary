@@ -48,7 +48,7 @@ Originals stay on the device, encrypted at rest with per-file keys wrapped by a 
 `packages/story/leavesDevice(moment, entitlement)` runs on the device (before enqueueing) and on the server (before accepting). `localOnly` moments never leave. Tested on both sides.
 
 ## D16 · 2026-09-26 · supervisor · Sync is pull/push with last-write-wins per field
-Client UUIDs, server timestamps, tombstones, per-documentary change log. Moments are single-writer, episodes are server artefacts, edits are an append-only op log. No CRDTs.
+Client UUIDs, server timestamps, tombstones, per-documentary change log. Moments are single-writer, episodes are server artefacts, edits are an append-only op log. No CRDTs. (D37: per row in v1, per field with crew in P19.)
 
 ## D17 · 2026-09-26 · supervisor · Better Auth on Workers and D1 for accounts
 Sign in with Apple (required once any third-party login exists on iOS), Google, and email (a six-digit code since D36; first written as a magic link). Why: keeps auth on the same vendor and database; open source. To be proven in P4; fallback is Supabase Auth with D1 kept for product data.
@@ -109,3 +109,6 @@ Answers are capped at 10 s when they are recorded (`recordAsync({ maxDuration })
 
 ## D36 · 2026-09-27 · supervisor · Email sign-in by a six-digit code; UUID user ids; auth built per request
 Better Auth's `emailOTP` plugin (6 digits, 5 minutes, 3 attempts, stored hashed) replaces the magic link, because a code works when the mail is opened on another device and needs no hand-off of a browser cookie into the app. `advanced.database.generateId: 'uuid'` keeps user ids in the contracts' `Uuid`; `advanced.database.validateSchema: false` and the Drizzle adapter's `transaction: false` fit D1 (no system-table reads, no interactive transactions); the auth instance is built per request from `env`. Mail goes through a `MailSender` port with a recording sender for tests and `wrangler dev`; the real vendor is chosen with the owner's account. Checked against better-auth 1.7.6 and @better-auth/expo 1.7.6 type declarations on 2026-09-27.
+
+## D37 · 2026-09-27 · supervisor · Sync is last-write-wins per row in v1; P6 uploads only answers and photo previews
+Each synced row carries `updatedAt`; the server keeps an incoming row only when it is newer (ties keep the stored row). With one writer per documentary until crew (P19) this equals per-field merge; P19 revisits it. Device-only fields (`localPath`, `wrappedKey`, poster fields) never leave the phone; the server stores a moment's storyline and cast ids as JSON arrays. What leaves is decided by `leavesDevice(moment, { cloudBackup })` on both sides: `localOnly` → nothing (not even the row); answers upload as recorded (10 s, needed for the transcript); photos upload a 1,000 px preview; library clips upload nothing until a later phase asks; originals only with Cloud backup (P23). Upload parts go to `PUT /uploads/:assetId/:purpose/parts/:n` (D34 with the purpose in the path). One phone holds a documentary's media in v1: another phone of the same account syncs rows but skips moments whose media it does not have. Video waits for Wi-Fi.

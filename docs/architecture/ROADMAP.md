@@ -23,7 +23,7 @@ If P-A fails, the render moves to plain FFmpeg templates on Containers. If P-B f
 | **P3 Local store** | SQLite schema v1 on expo-sqlite (D32); append-only migrations with a harness; repositories for Moment, MediaAsset, Question, Storyline, CastMember, Episode (view), UploadJob; integrity check; encrypted file store (AES-256-GCM via expo-crypto, per-file keys wrapped by a Keychain master key, D33). | P1 |
 | **P4 Account** | Better Auth on Workers + D1; Sign in with Apple, Google, a six-digit email code (D36); session in secure store; device registration; account deletion request (in-app and web page); the `User` and `Documentary` rows; the first sync handshake. | P1, P3 |
 | **P5 Capture** | Today screen with a placeholder question; hold-to-record 10 s video or voice; photo; clip or photo from the library; text note; mood; place name (opt-in); originals kept as recorded (D35); `captureMoment` writes file and row atomically; `localOnly` flag. | P2, P3 |
-| **P6 Upload queue and sync** | Multipart resumable upload to R2 with parts streamed through the Worker (D34); background drain; Wi-Fi rule; `POST /sync` with cursor, last-write-wins, tombstones, change log; `leavesDevice` shared rule. (The local Footage screen moved to P10, which needs no server.) | P4, P5 |
+| **P6 Upload queue and sync** | Multipart resumable upload to R2 with parts streamed through the Worker (D34); answers and photo previews only in v1 (D37); background drain; Wi-Fi rule; `POST /sync` with cursor, last-write-wins, tombstones, change log; `leavesDevice` shared rule. (The local Footage screen moved to P10, which needs no server.) | P4, P5 |
 
 ### Block B — The interview (P7–P10)
 | Phase | Scope | Needs |
