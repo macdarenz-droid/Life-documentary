@@ -205,9 +205,10 @@ Text: `tasks/p13/T-014.md`.
 Note (2026-09-27, from a second check of the text): (1) Add `planMomentErrors(output, brief)`: every cold open, shot and closing id must be an answer, clip or photo of the brief, else `<where>: not a picture or sound from this week`; `planOnce` (T-014c) runs it after the `PlannerOutput` parse and before anything else. Error strings may contain ids, never other text. (2) `narratorShare` returns `{ narratorMs, spokenMs, share }` (`validatePlan` keeps its exact messages); `userVoiceShare` = 1 − `share`; the `planProperties` test for a narrator share over 25% expects `userVoiceShare` below 0.75 and `valid` false. (3) `weekday` is required on brief moments; allowed test change: the `WeekBriefV1` contract test's moments gain `weekday`. (4) `planDurationMs` takes the `PlannerOutput` and the brief (not the assembled plan) so the 30–240 s check runs before `assemblePlan` parses. (5) A lower third is timed on its moment's first scene shot; the cold open does not count, so a moment used only as the cold open gets no lower third.
 Note (2026-09-27, for P14): `planVoiceErrors` also flags a digit in a bridge or the tease (for example `scene 2 bridge has a digit`), so the retry writes numbers in words (the narrator reads digits badly, D40).
 
-**Fix list r1** (7134b37 was committed before the second note above was published; a workflow review of it is running and may add items here, so read this entry again when you start it).
+**Fix list r1** (review of 7134b37 approved everything else; 7134b37 was committed before the second note above was published).
 1. The second note: `planVoiceErrors` also flags a digit in a bridge or the tease (`scene <n> bridge has a digit`, `tease has a digit`).
-Tests: a bridge with "12" and a tease with "3pm" are each flagged; "Twelve weeks in" is not.
+2. The test "sets narratorVoiceId only with a bridge or a tease" never runs the tease-only case: add `assemblePlan` on an output with no bridge and a tease, expecting `narrator-1`.
+Tests: a bridge with "12" and a tease with "3pm" are each flagged; "Twelve weeks in" is not; the tease-only case above.
 Checks: story typecheck, tests, lint, format, boundaries.
 ### T-014b · P13.2 · The planner provider and the style prompt · todo · needs: T-013c, T-014a
 Text: `tasks/p13/T-014.md`.
