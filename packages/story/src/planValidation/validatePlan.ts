@@ -7,11 +7,38 @@ import type { TimelineResult } from '../render/timeline';
 export const NARRATOR_MS_PER_WORD = 400;
 const DEFAULT_ANSWER_MS = 6000;
 const MODEL_MIN_SCENES = 3;
-const MODEL_MIN_DURATION_MS = 60_000;
+const MODEL_MIN_DURATION_MS = 30_000;
 const MODEL_MAX_DURATION_MS = 240_000;
 
 function wordCount(text: string): number {
   return text.split(/\s+/).filter((w) => w.length > 0).length;
+}
+
+/**
+ * The narrator's spoken time (bridges and tease), everyone's spoken time (the narrator, the cold open
+ * and the answer shots) and the narrator's share of it.
+ */
+export function narratorShare(
+  plan: EpisodePlanV1,
+  brief: WeekBriefV1,
+): { narratorMs: number; spokenMs: number; share: number } {
+  const moments = new Map(brief.moments.map((m) => [m.momentId as string, m]));
+  const narratorMs =
+    NARRATOR_MS_PER_WORD *
+    (plan.scenes.reduce(
+      (sum, scene) => sum + (scene.narratorBridge ? wordCount(scene.narratorBridge.text) : 0),
+      0,
+    ) +
+      (plan.tease ? wordCount(plan.tease.text) : 0));
+  let spokenMs = narratorMs + (plan.coldOpen.outMs - plan.coldOpen.inMs);
+  for (const scene of plan.scenes) {
+    for (const shot of scene.shots) {
+      const moment = moments.get(shot.momentId);
+      if (moment?.kind !== 'answer') continue;
+      spokenMs += (shot.outMs ?? moment.durationMs ?? DEFAULT_ANSWER_MS) - (shot.inMs ?? 0);
+    }
+  }
+  return { narratorMs, spokenMs, share: spokenMs > 0 ? narratorMs / spokenMs : 0 };
 }
 
 export function validatePlan(
@@ -94,18 +121,7 @@ export function validatePlan(
       if (plan.tease) errors.push('tease: a tease needs narratorVoiceId');
     }
 
-    const narratorMs =
-      NARRATOR_MS_PER_WORD *
-      (bridges.reduce((sum, b) => sum + wordCount(b.text), 0) +
-        (plan.tease ? wordCount(plan.tease.text) : 0));
-    let spokenMs = narratorMs + (plan.coldOpen.outMs - plan.coldOpen.inMs);
-    for (const scene of plan.scenes) {
-      for (const shot of scene.shots) {
-        const moment = moments.get(shot.momentId);
-        if (moment?.kind !== 'answer') continue;
-        spokenMs += (shot.outMs ?? moment.durationMs ?? DEFAULT_ANSWER_MS) - (shot.inMs ?? 0);
-      }
-    }
+    const { narratorMs, spokenMs } = narratorShare(plan, brief);
     if (narratorMs * 4 > spokenMs) {
       errors.push(`narrator time ${narratorMs} ms is above 25% of spoken time ${spokenMs} ms`);
     }

@@ -12,6 +12,7 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "~0.128.0",
     "@better-auth/expo": "~1.7.6",
     "@life/contracts": "workspace:*",
     "@life/story": "workspace:*",

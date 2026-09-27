@@ -1,17 +1,17 @@
 // The change log (P6): one row per accepted change, numbered by `seq`. A phone's cursor is the highest
 // `seq` it has seen; a pull returns each changed row once, at its latest `seq`.
-import type { SyncEntity, Timestamp, Uuid } from '@life/contracts';
+import type { PulledEntity, Timestamp, Uuid } from '@life/contracts';
 import { sql } from 'drizzle-orm';
 import type { BatchItem } from 'drizzle-orm/batch';
 import type { Db } from '../db';
 import { changeLog } from '../schema';
 
-export type ChangedRow = { entity: SyncEntity; entityId: string; seq: number };
+export type ChangedRow = { entity: PulledEntity; entityId: string; seq: number };
 
 export function record(
   db: Db,
   documentaryId: Uuid,
-  entity: SyncEntity,
+  entity: PulledEntity,
   entityId: string,
   updatedAt: Timestamp,
 ): BatchItem<'sqlite'> {

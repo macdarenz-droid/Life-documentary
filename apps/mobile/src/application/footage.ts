@@ -16,6 +16,7 @@ import {
   timeLabel,
   words,
 } from '@life/story';
+import * as derived from '../data/repositories/derived';
 import * as mediaAssets from '../data/repositories/mediaAssets';
 import * as moments from '../data/repositories/moments';
 import * as questions from '../data/repositories/questions';
@@ -42,6 +43,8 @@ export type FootageItem = {
   localOnly: boolean;
   hasPoster: boolean;
   assetId?: Uuid;
+  /** What was said in an answer, as the service transcribed it (the latest `workersAi` row). */
+  transcript?: string;
 };
 
 export type FootageDay = { date: LocalDate; dayLabel: string; items: FootageItem[] };
@@ -55,6 +58,9 @@ async function toItem(store: Store, moment: Moment): Promise<FootageItem> {
   const question = moment.questionId
     ? await questions.get(store.driver, moment.questionId)
     : undefined;
+  const transcript = (await derived.forMoment(store.driver, moment.id))
+    .filter((d) => d.provider === 'workersAi' && d.transcript !== undefined)
+    .sort((a, b) => Date.parse(b.producedAt) - Date.parse(a.producedAt))[0]?.transcript;
   return {
     id: moment.id,
     kind: moment.kind,
@@ -74,6 +80,7 @@ async function toItem(store: Store, moment: Moment): Promise<FootageItem> {
     castIds: moment.castIds,
     localOnly: moment.localOnly,
     hasPoster: asset?.posterPath !== undefined,
+    ...(transcript !== undefined ? { transcript } : {}),
   };
 }
 
@@ -182,9 +189,9 @@ export async function editMoment(
 }
 
 /**
- * Deletes a moment: a tombstone, no upload job, the day's question free again when this was its
- * answer, then the encrypted original and poster are removed. The media asset row stays (the
- * tombstone points at it). A second call changes nothing.
+ * Deletes a moment: a tombstone, no upload job, no derived text, the day's question free again when
+ * this was its answer, then the encrypted original and poster are removed. The media asset row stays
+ * (the tombstone points at it). A second call changes nothing.
  */
 export async function deleteMoment(store: Store, clock: Clock, id: Uuid): Promise<void> {
   const previews: string[] = [];
@@ -192,6 +199,7 @@ export async function deleteMoment(store: Store, clock: Clock, id: Uuid): Promis
     const found = await moments.get(tx, id);
     if (!found || found.deletedAt) return found;
     await moments.softDelete(tx, id, clock.now());
+    await derived.deleteForMoment(tx, id);
     if (found.mediaAssetId) {
       // A photo's preview waiting to go up is removed with its job.
       for (const job of await uploadJobs.listForAsset(tx, found.mediaAssetId)) {

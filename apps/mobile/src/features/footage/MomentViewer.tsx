@@ -176,9 +176,15 @@ export function MomentViewer({ id, actions, Playback, edit, onNext, onClose }: M
         </View>
       ) : null}
 
-      {caption && media !== 'audio' ? (
+      {(caption && media !== 'audio') || item.transcript ? (
         <View style={styles.caption} pointerEvents="none">
-          <Text variant="body">{caption}</Text>
+          {caption && media !== 'audio' ? <Text variant="body">{caption}</Text> : null}
+          {/* What was said, under the player and read after the question. */}
+          {item.transcript ? (
+            <Text variant="body" tone="secondary">
+              {item.transcript}
+            </Text>
+          ) : null}
         </View>
       ) : null}
 
@@ -219,6 +225,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     padding: tokens.space[5],
     paddingBottom: tokens.space[7],
+    gap: tokens.space[3],
     backgroundColor: rgba(tokens.color.scrim.hex, tokens.color.scrim.to),
   },
   close: {

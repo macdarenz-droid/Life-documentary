@@ -132,7 +132,7 @@ describe('valid fixtures', () => {
     expect(CastMember.safeParse(cast).success).toBe(true);
     expect(Episode.safeParse(episode).success).toBe(true);
     expect(UploadJob.safeParse(uploadJob).success).toBe(true);
-    expect(DOMAIN_SCHEMA_VERSION).toBe(3);
+    expect(DOMAIN_SCHEMA_VERSION).toBe(4);
   });
 });
 

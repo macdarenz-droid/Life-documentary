@@ -1,10 +1,14 @@
 // POST /sync (P6, D37): a phone sends the rows it changed for a documentary it owns and gets back what
 // changed since its cursor. Each row is refused when it belongs elsewhere (`not_yours`), may not leave
 // the phone (`local_only`), or is not newer than the stored one (`stale`); the rest are written with
-// one change-log row each in a single batch. Rows this request wrote are not sent back to it.
+// one change-log row each in a single batch. Rows this request wrote are not sent back to it. A pull
+// also carries the text the server derived (P12); an accepted moment tombstone removes that moment's
+// derived rows in the same batch.
 import {
   SyncRequest,
   SyncResponse,
+  type PulledChange,
+  type PulledEntity,
   type SyncChange,
   type SyncEntity,
   type SyncRefusal,
@@ -13,6 +17,7 @@ import type { BatchItem } from 'drizzle-orm/batch';
 import { Hono } from 'hono';
 import { database } from '../data/db';
 import * as changes from '../data/repositories/changes';
+import * as derivedRepo from '../data/repositories/derived';
 import * as documentariesRepo from '../data/repositories/documentaries';
 import * as rows from '../data/repositories/sync';
 import { momentRowMayLeave } from '../policy/leavesDevice';
@@ -23,7 +28,7 @@ import { requireSession, type AppEnv } from './middleware/session';
 /** At most this many rows come back per response; the phone asks again from the new cursor. */
 export const SYNC_PAGE = 500;
 
-const key = (entity: SyncEntity, id: string) => `${entity}:${id}`;
+const key = (entity: PulledEntity, id: string) => `${entity}:${id}`;
 
 /** JSON with sorted keys and no undefined values, to compare two rows. */
 function canonical(value: unknown): string {
@@ -42,7 +47,7 @@ function canonical(value: unknown): string {
  * The row as it would be stored. A media asset's cloud key is the server's alone: only a completed
  * upload sets it, so whatever the phone sends is dropped and the stored key kept.
  */
-function merged(change: SyncChange, prior: SyncChange | undefined): SyncChange {
+function merged(change: SyncChange, prior: PulledChange | undefined): SyncChange {
   if (change.entity !== 'mediaAsset') return change;
   const row = { ...change.row };
   delete row.cloudKey;
@@ -57,7 +62,7 @@ function merged(change: SyncChange, prior: SyncChange | undefined): SyncChange {
  */
 function isStale(
   change: SyncChange,
-  prior: SyncChange | undefined,
+  prior: PulledChange | undefined,
   momentDeleted: (id: string) => boolean,
 ): boolean {
   if (!prior) return false;
@@ -90,12 +95,15 @@ export const sync = new Hono<AppEnv>().post('/sync', requireSession, async (c) =
   for (const change of body.changes) {
     ids.set(change.entity, [...(ids.get(change.entity) ?? []), change.row.id]);
   }
-  const stored = new Map<SyncEntity, Map<string, { documentaryId: string; change: SyncChange }>>();
+  const stored = new Map<
+    SyncEntity,
+    Map<string, { documentaryId: string; change: PulledChange }>
+  >();
   for (const [entity, list] of ids) stored.set(entity, await rows.getMany(db, entity, list));
 
   // The moments that answer stored questions, to tell whether an answer's moment is deleted.
   const storedMoments =
-    stored.get('moment') ?? new Map<string, { documentaryId: string; change: SyncChange }>();
+    stored.get('moment') ?? new Map<string, { documentaryId: string; change: PulledChange }>();
   stored.set('moment', storedMoments);
   const answerIds = [...(stored.get('question')?.values() ?? [])].flatMap((q) =>
     q.change.entity === 'question' && q.change.row.answeredByMomentId
@@ -152,6 +160,9 @@ export const sync = new Hono<AppEnv>().post('/sync', requireSession, async (c) =
       continue;
     }
     statements.push(rows.upsert(db, body.documentaryId, change, now));
+    if (change.entity === 'moment' && change.row.deletedAt !== undefined) {
+      statements.push(derivedRepo.deleteForMoment(db, change.row.id));
+    }
     statements.push(
       changes.record(db, body.documentaryId, entity, id, rows.changeTime(change, now)),
     );
@@ -175,8 +186,8 @@ export const sync = new Hono<AppEnv>().post('/sync', requireSession, async (c) =
     ? page.at(-1)!.seq
     : Math.max(body.cursor ?? 0, pulled.top ?? 0, page.at(-1)?.seq ?? 0);
 
-  const found = new Map<string, SyncChange>();
-  const wanted = new Map<SyncEntity, string[]>();
+  const found = new Map<string, PulledChange>();
+  const wanted = new Map<PulledEntity, string[]>();
   for (const r of page) wanted.set(r.entity, [...(wanted.get(r.entity) ?? []), r.entityId]);
   for (const [entity, list] of wanted) {
     for (const [id, row] of await rows.getMany(db, entity, list))

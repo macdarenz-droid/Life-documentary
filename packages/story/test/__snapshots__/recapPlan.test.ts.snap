@@ -1,0 +1,1254 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`recapPlan is unchanged by the shared shot rules > gives the same plan for every fixture week 1`] = `
+[
+  {
+    "name": "full week",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-0000000186c9",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-0000000186aa",
+        "outMs": 6000,
+      },
+      "episodeNumber": 1,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Monday to Tuesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000186aa",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000186ad",
+            },
+            {
+              "kenBurns": {
+                "fromScale": 1,
+                "toScale": 1.06,
+              },
+              "momentId": "00000000-0000-4000-8000-0000000186c5",
+            },
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000000186bf",
+              "outMs": 6000,
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Wednesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000186b0",
+            },
+            {
+              "kenBurns": {
+                "fromScale": 1,
+                "toScale": 1.06,
+              },
+              "momentId": "00000000-0000-4000-8000-0000000186c7",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Thursday to Friday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000186b3",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000186b6",
+            },
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000000186c1",
+              "outMs": 6000,
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Saturday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000186b9",
+            },
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000000186c3",
+              "outMs": 6000,
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Sunday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000186bc",
+            },
+            {
+              "kenBurns": {
+                "fromScale": 1,
+                "toScale": 1.06,
+              },
+              "momentId": "00000000-0000-4000-8000-0000000186c9",
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 1 March to 7 March.",
+      "targetDurationMs": 76600,
+      "title": "The week of 1 March",
+      "version": 1,
+      "weekEnd": "2027-03-07",
+      "weekStart": "2027-03-01",
+    },
+  },
+  {
+    "name": "quiet week",
+    "plan": null,
+  },
+  {
+    "name": "single answer",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-0000000493ea",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-0000000493ea",
+        "outMs": 6000,
+      },
+      "episodeNumber": 3,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Wednesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000493ea",
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 15 March to 21 March.",
+      "targetDurationMs": 20000,
+      "title": "The week of 15 March",
+      "version": 1,
+      "weekEnd": "2027-03-21",
+      "weekStart": "2027-03-15",
+    },
+  },
+  {
+    "name": "photos only",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-000000061a92",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-000000061a8a",
+        "outMs": 3000,
+      },
+      "episodeNumber": 4,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Monday",
+          "shots": [
+            {
+              "kenBurns": {
+                "fromScale": 1,
+                "toScale": 1.06,
+              },
+              "momentId": "00000000-0000-4000-8000-000000061a8a",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Tuesday",
+          "shots": [
+            {
+              "kenBurns": {
+                "fromScale": 1,
+                "toScale": 1.06,
+              },
+              "momentId": "00000000-0000-4000-8000-000000061a8c",
+            },
+            {
+              "kenBurns": {
+                "fromScale": 1,
+                "toScale": 1.06,
+              },
+              "momentId": "00000000-0000-4000-8000-000000061a8e",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Friday",
+          "shots": [
+            {
+              "kenBurns": {
+                "fromScale": 1,
+                "toScale": 1.06,
+              },
+              "momentId": "00000000-0000-4000-8000-000000061a90",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Sunday",
+          "shots": [
+            {
+              "kenBurns": {
+                "fromScale": 1,
+                "toScale": 1.06,
+              },
+              "momentId": "00000000-0000-4000-8000-000000061a92",
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 22 March to 28 March.",
+      "targetDurationMs": 20500,
+      "title": "The week of 22 March",
+      "version": 1,
+      "weekEnd": "2027-03-28",
+      "weekStart": "2027-03-22",
+    },
+  },
+  {
+    "name": "three local-only and one deleted",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-00000007a130",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-00000007a12a",
+        "outMs": 6000,
+      },
+      "episodeNumber": 5,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Monday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-00000007a12a",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Wednesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-00000007a12d",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Friday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-00000007a130",
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 29 March to 4 April.",
+      "targetDurationMs": 23800,
+      "title": "The week of 29 March",
+      "version": 1,
+      "weekEnd": "2027-04-04",
+      "weekStart": "2027-03-29",
+    },
+  },
+  {
+    "name": "two open storylines and four cast members",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-0000000927d8",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-0000000927d0",
+        "outMs": 6000,
+      },
+      "episodeNumber": 6,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Monday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000927d0",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Wednesday",
+          "shots": [
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000000927d3",
+              "outMs": 6000,
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Friday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000927d5",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Sunday",
+          "shots": [
+            {
+              "kenBurns": {
+                "fromScale": 1,
+                "toScale": 1.06,
+              },
+              "momentId": "00000000-0000-4000-8000-0000000927d8",
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 5 April to 11 April.",
+      "targetDurationMs": 26700,
+      "title": "The week of 5 April",
+      "version": 1,
+      "weekEnd": "2027-04-11",
+      "weekStart": "2027-04-05",
+    },
+  },
+  {
+    "name": "Europe/Dublin across the DST change",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-0000000aae70",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-0000000aae6a",
+        "outMs": 6000,
+      },
+      "episodeNumber": 7,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Friday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000aae6a",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Sunday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000aae6d",
+            },
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000000aae70",
+              "outMs": 6000,
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 19 October to 25 October.",
+      "targetDurationMs": 23600,
+      "title": "The week of 19 October",
+      "version": 1,
+      "weekEnd": "2026-10-25",
+      "weekStart": "2026-10-19",
+    },
+  },
+  {
+    "name": "Asia/Manila week",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-0000000c3516",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-0000000c350a",
+        "outMs": 6000,
+      },
+      "episodeNumber": 8,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Monday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000c350a",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Tuesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000c350d",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Wednesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000c3510",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Thursday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000c3513",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Sunday",
+          "shots": [
+            {
+              "kenBurns": {
+                "fromScale": 1,
+                "toScale": 1.06,
+              },
+              "momentId": "00000000-0000-4000-8000-0000000c3516",
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 3 May to 9 May.",
+      "targetDurationMs": 33100,
+      "title": "The week of 3 May",
+      "version": 1,
+      "weekEnd": "2027-05-09",
+      "weekStart": "2027-05-03",
+    },
+  },
+  {
+    "name": "moments around local midnight",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-0000000dbbae",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-0000000dbbaa",
+        "outMs": 6000,
+      },
+      "episodeNumber": 9,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Tuesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000dbbaa",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Sunday",
+          "shots": [
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000000dbbae",
+              "outMs": 6000,
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 10 May to 16 May.",
+      "targetDurationMs": 20000,
+      "title": "The week of 10 May",
+      "version": 1,
+      "weekEnd": "2027-05-16",
+      "weekStart": "2027-05-10",
+    },
+  },
+  {
+    "name": "heavy week over budget",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-0000000f42bb",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-0000000f424a",
+        "outMs": 6000,
+      },
+      "episodeNumber": 10,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Monday to Tuesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f424a",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f425f",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f426d",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f427b",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f424d",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4261",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Wednesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4250",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4263",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4271",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f427f",
+            },
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000000f428d",
+              "outMs": 6000,
+            },
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000000f429b",
+              "outMs": 6000,
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Thursday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4253",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4265",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4273",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4281",
+            },
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000000f428f",
+              "outMs": 6000,
+            },
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000000f429d",
+              "outMs": 6000,
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Friday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4256",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4267",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4275",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4283",
+            },
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000000f4291",
+              "outMs": 6000,
+            },
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000000f429f",
+              "outMs": 6000,
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Saturday to Sunday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4259",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4269",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4277",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f4285",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f425c",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000000f426b",
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 17 May to 23 May.",
+      "targetDurationMs": 214900,
+      "title": "The week of 17 May",
+      "version": 1,
+      "weekEnd": "2027-05-23",
+      "weekStart": "2027-05-17",
+    },
+  },
+  {
+    "name": "answers without derived text yet",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-00000010c8f3",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-00000010c8ea",
+        "outMs": 6000,
+      },
+      "episodeNumber": 11,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Monday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-00000010c8ea",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Wednesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-00000010c8ed",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Friday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-00000010c8f0",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Sunday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-00000010c8f3",
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 24 May to 30 May.",
+      "targetDurationMs": 30100,
+      "title": "The week of 24 May",
+      "version": 1,
+      "weekEnd": "2027-05-30",
+      "weekStart": "2027-05-24",
+    },
+  },
+  {
+    "name": "clips only",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-000000124f90",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-000000124f8a",
+        "outMs": 6000,
+      },
+      "episodeNumber": 12,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Monday",
+          "shots": [
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-000000124f8a",
+              "outMs": 6000,
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Wednesday",
+          "shots": [
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-000000124f8c",
+              "outMs": 6000,
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Thursday",
+          "shots": [
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-000000124f8e",
+              "outMs": 6000,
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Saturday",
+          "shots": [
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-000000124f90",
+              "outMs": 6000,
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 31 May to 6 June.",
+      "targetDurationMs": 29500,
+      "title": "The week of 31 May",
+      "version": 1,
+      "weekEnd": "2027-06-06",
+      "weekStart": "2027-05-31",
+    },
+  },
+  {
+    "name": "notes only",
+    "plan": null,
+  },
+  {
+    "name": "a storyline closed mid-week",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-000000155cd1",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-000000155ccb",
+        "outMs": 6000,
+      },
+      "episodeNumber": 14,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Monday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-000000155ccb",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Tuesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-000000155cce",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Wednesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-000000155cd1",
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 14 June to 20 June.",
+      "targetDurationMs": 23800,
+      "title": "The week of 14 June",
+      "version": 1,
+      "weekEnd": "2027-06-20",
+      "weekStart": "2027-06-14",
+    },
+  },
+  {
+    "name": "unanswered questions",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-00000016e36d",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-00000016e36a",
+        "outMs": 6000,
+      },
+      "episodeNumber": 15,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Tuesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-00000016e36a",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Thursday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-00000016e36d",
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 21 June to 27 June.",
+      "targetDurationMs": 20000,
+      "title": "The week of 21 June",
+      "version": 1,
+      "weekEnd": "2027-06-27",
+      "weekStart": "2027-06-21",
+    },
+  },
+  {
+    "name": "every mood",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-000000186a16",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-000000186a0a",
+        "outMs": 6000,
+      },
+      "episodeNumber": 16,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Monday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-000000186a0a",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Tuesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-000000186a0d",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Wednesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-000000186a10",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Thursday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-000000186a13",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Friday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-000000186a16",
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 28 June to 4 July.",
+      "targetDurationMs": 36500,
+      "title": "The week of 28 June",
+      "version": 1,
+      "weekEnd": "2027-07-04",
+      "weekStart": "2027-06-28",
+    },
+  },
+  {
+    "name": "references to unknown storylines and cast",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-00000019f0ad",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-00000019f0aa",
+        "outMs": 6000,
+      },
+      "episodeNumber": 17,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Monday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-00000019f0aa",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Thursday",
+          "shots": [
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-00000019f0ad",
+              "outMs": 6000,
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 5 July to 11 July.",
+      "targetDurationMs": 20000,
+      "title": "The week of 5 July",
+      "version": 1,
+      "weekEnd": "2027-07-11",
+      "weekStart": "2027-07-05",
+    },
+  },
+  {
+    "name": "a busy weekend",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-0000001b775a",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-0000001b775a",
+        "outMs": 6800,
+      },
+      "episodeNumber": 18,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Saturday",
+          "shots": [
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000001b774a",
+              "outMs": 6000,
+            },
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000001b774c",
+              "outMs": 6000,
+            },
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000001b774e",
+              "outMs": 6000,
+            },
+            {
+              "kenBurns": {
+                "fromScale": 1,
+                "toScale": 1.06,
+              },
+              "momentId": "00000000-0000-4000-8000-0000001b7754",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Sunday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000001b775a",
+            },
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000001b7750",
+              "outMs": 6000,
+            },
+            {
+              "inMs": 0,
+              "momentId": "00000000-0000-4000-8000-0000001b7752",
+              "outMs": 6000,
+            },
+            {
+              "kenBurns": {
+                "fromScale": 1,
+                "toScale": 1.06,
+              },
+              "momentId": "00000000-0000-4000-8000-0000001b7756",
+            },
+            {
+              "kenBurns": {
+                "fromScale": 1,
+                "toScale": 1.06,
+              },
+              "momentId": "00000000-0000-4000-8000-0000001b7758",
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 12 July to 18 July.",
+      "targetDurationMs": 51300,
+      "title": "The week of 12 July",
+      "version": 1,
+      "weekEnd": "2027-07-18",
+      "weekStart": "2027-07-12",
+    },
+  },
+  {
+    "name": "places every day",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-0000001cfdfc",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-0000001cfdea",
+        "outMs": 6000,
+      },
+      "episodeNumber": 19,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Monday to Tuesday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000001cfdea",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000001cfded",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Wednesday to Thursday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000001cfdf0",
+            },
+            {
+              "momentId": "00000000-0000-4000-8000-0000001cfdf3",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Friday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000001cfdf6",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Saturday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000001cfdf9",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Sunday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000001cfdfc",
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 19 July to 25 July.",
+      "targetDurationMs": 49600,
+      "title": "The week of 19 July",
+      "version": 1,
+      "weekEnd": "2027-07-25",
+      "weekStart": "2027-07-19",
+    },
+  },
+  {
+    "name": "a first episode",
+    "plan": {
+      "closing": {
+        "momentId": "00000000-0000-4000-8000-0000001e848e",
+      },
+      "coldOpen": {
+        "inMs": 0,
+        "momentId": "00000000-0000-4000-8000-0000001e848a",
+        "outMs": 6000,
+      },
+      "episodeNumber": 1,
+      "lowerThirds": [],
+      "music": {
+        "mood": "calm",
+      },
+      "scenes": [
+        {
+          "captionsFromTranscript": true,
+          "heading": "Monday",
+          "shots": [
+            {
+              "momentId": "00000000-0000-4000-8000-0000001e848a",
+            },
+          ],
+        },
+        {
+          "captionsFromTranscript": true,
+          "heading": "Thursday",
+          "shots": [
+            {
+              "kenBurns": {
+                "fromScale": 1,
+                "toScale": 1.06,
+              },
+              "momentId": "00000000-0000-4000-8000-0000001e848e",
+            },
+          ],
+        },
+      ],
+      "summary": "A recap of your week, 4 January to 10 January.",
+      "targetDurationMs": 20000,
+      "title": "The week of 4 January",
+      "version": 1,
+      "weekEnd": "2027-01-10",
+      "weekStart": "2027-01-04",
+    },
+  },
+]
+`;

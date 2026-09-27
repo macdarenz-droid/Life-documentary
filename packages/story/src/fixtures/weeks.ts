@@ -12,7 +12,8 @@ import {
   type MomentKind,
   type MomentMood,
 } from '@life/contracts';
-import { addDays, type WeekBriefInput } from '../../src';
+import { addDays } from '../dates';
+import type { WeekBriefInput } from '../weekBrief';
 
 export type FixtureWeek = { name: string; input: WeekBriefInput };
 
@@ -170,6 +171,7 @@ function buildWeek(spec: WeekSpec): FixtureWeek {
       const isPhoto = m.kind === 'photo';
       derived.push(
         Derived.parse({
+          id: fixtureId(spec.week, 50_000 + i),
           momentId: id,
           ...(isPhoto
             ? { caption: sentence(12, i) }

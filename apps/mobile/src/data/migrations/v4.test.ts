@@ -1,9 +1,13 @@
 import { openMemoryDriver } from '../sqlite/testing/memoryDriver';
-import { migrate, migrations } from './index';
+import { migrate } from './index';
 import { SEED_NOW, seedIds, seedV1 } from './testing/seedV1';
 import { v1 } from './v1';
 import { v2 } from './v2';
 import { v3 } from './v3';
+import { v4 } from './v4';
+
+/** Up to this version only: later migrations have their own tests. */
+const migrations = [v1, v2, v3, v4];
 
 const OTHER_TABLES = [
   'documentaries',

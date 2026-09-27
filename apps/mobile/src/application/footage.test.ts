@@ -1,6 +1,7 @@
 import { addDays, words } from '@life/story';
 import type { LocalDate, Uuid } from '@life/contracts';
 import { fileWithHead, ftyp } from '../data/fileStore/testing/containerFixtures';
+import * as derivedRows from '../data/repositories/derived';
 import * as mediaAssets from '../data/repositories/mediaAssets';
 import * as moments from '../data/repositories/moments';
 import * as uploadJobs from '../data/repositories/uploadJobs';
@@ -169,6 +170,27 @@ describe('oneYearAgo', () => {
 });
 
 describe('editMoment', () => {
+  it('removes the derived text of a deleted moment', async () => {
+    const h = await todayHarness();
+    const moment = await captureMoment(h.store, h.ctx.clock, h.ctx.ids, {
+      kind: 'note',
+      text: 'Rain on the tram window.',
+      localOnly: false,
+    });
+    await derivedRows.put(h.store.driver, {
+      id: '00000000-0000-4000-8000-0000000000d1' as Uuid,
+      momentId: moment.id,
+      caption: 'A tram window with rain on it.',
+      language: 'en',
+      provider: 'anthropic',
+      modelVersion: 'fixture-1',
+      producedAt: '2027-03-21T18:00:00Z',
+    });
+    expect(await derivedRows.forMoment(h.store.driver, moment.id)).toHaveLength(1);
+    await deleteMoment(h.store, h.ctx.clock, moment.id);
+    expect(await derivedRows.forMoment(h.store.driver, moment.id)).toEqual([]);
+  });
+
   it('trims the text, sets and removes a mood, and bumps updatedAt', async () => {
     const h = await todayHarness();
     const note = await noteAt(h, '2027-03-15T09:30:00Z');
