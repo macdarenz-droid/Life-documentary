@@ -91,6 +91,42 @@ export async function listByDays(
   return moments;
 }
 
+/**
+ * Up to `limit` distinct local days with live moments, newest first, strictly before `beforeDay` when
+ * given.
+ */
+export async function daysBefore(
+  driver: SqlDriver,
+  documentaryId: string,
+  beforeDay: LocalDate | undefined,
+  limit: number,
+): Promise<LocalDate[]> {
+  const rows = await driver.all<{ day: LocalDate }>(
+    `SELECT DISTINCT local_day AS day FROM moments
+     WHERE documentary_id = ? AND deleted_at IS NULL ${beforeDay ? 'AND local_day < ?' : ''}
+     ORDER BY local_day DESC LIMIT ?`,
+    beforeDay ? [documentaryId, beforeDay, limit] : [documentaryId, limit],
+  );
+  return rows.map((r) => r.day);
+}
+
+/** Live moments tagged with a storyline, newest first. */
+export async function listByStoryline(
+  driver: SqlDriver,
+  documentaryId: string,
+  storylineId: string,
+): Promise<Moment[]> {
+  const rows = await driver.all<Row>(
+    `SELECT m.* FROM moments m JOIN moment_storylines ms ON ms.moment_id = m.id
+     WHERE m.documentary_id = ? AND ms.storyline_id = ? AND m.deleted_at IS NULL
+     ORDER BY m.captured_at DESC, m.id DESC`,
+    [documentaryId, storylineId],
+  );
+  const moments: Moment[] = [];
+  for (const row of rows) moments.push(await read(driver, row));
+  return moments;
+}
+
 export async function softDelete(
   driver: SqlDriver,
   id: string,

@@ -86,4 +86,46 @@ describe('checkFiles', () => {
       expect.objectContaining({ kind: 'missingMasterKey' }),
     ]);
   });
+
+  it('counts a poster as owned, and reports a missing poster of a live asset', async () => {
+    const { db, io, keyStore } = await store();
+    await mediaAssets.put(db, {
+      ...asset(10),
+      localPath: 'store/10.enc',
+      posterPath: 'store/10.poster.enc',
+      posterWrappedKey: 'cGs=',
+    });
+    io.files.set('store/10.poster.enc', new Uint8Array([3]));
+    expect(await checkFiles({ driver: db, io, keyStore, storeDir: 'store' })).toEqual({
+      ok: true,
+      problems: [],
+    });
+    io.files.delete('store/10.poster.enc');
+    expect((await checkFiles({ driver: db, io, keyStore, storeDir: 'store' })).problems).toEqual([
+      expect.objectContaining({
+        kind: 'missingFile',
+        id: id(10),
+        detail: 'store/10.poster.enc is missing',
+      }),
+    ]);
+  });
+
+  it("is ok when a deleted moment's original and poster are gone", async () => {
+    const { db, io, keyStore } = await store();
+    await mediaAssets.put(db, {
+      ...asset(10),
+      localPath: 'store/10.enc',
+      posterPath: 'store/10.poster.enc',
+      posterWrappedKey: 'cGs=',
+    });
+    await moments.put(
+      db,
+      note(50, NOW, { kind: 'clip', text: undefined, mediaAssetId: id(10), deletedAt: NOW }),
+    );
+    io.files.delete('store/10.enc');
+    expect(await checkFiles({ driver: db, io, keyStore, storeDir: 'store' })).toEqual({
+      ok: true,
+      problems: [],
+    });
+  });
 });

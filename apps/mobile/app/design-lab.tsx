@@ -9,7 +9,14 @@ import { Button, Field, Surface, Text, useMotionPreference } from '../src/design
 import { Dissolve } from '../src/design-system/motion/Dissolve';
 import { TextMorph } from '../src/design-system/motion/TextMorph';
 import { TitleCard } from '../src/design-system/motion/TitleCard';
+import type { FootageDay, FootageItem } from '../src/application/footage';
 import { CastScreen, type CastActions, type CastRow } from '../src/features/cast';
+import {
+  FootageScreen,
+  MomentViewer,
+  type FootageActions,
+  type ViewerActions,
+} from '../src/features/footage';
 import {
   SettingsScreen,
   type ReminderChoice,
@@ -18,6 +25,7 @@ import {
 import { StorylinesScreen, type StorylineActions } from '../src/features/storylines';
 import { TodayScreen, type TodayScreenProps } from '../src/features/today';
 import { fakeCameraView } from '../src/services/testing/FakeCameraView';
+import { fakePlayback } from '../src/services/testing/fakePlayback';
 import { fakeServices } from '../src/services/testing/fakeServices';
 
 /** Lab-only cadences and sample copy (T-003d); not product timing or product words. */
@@ -134,6 +142,82 @@ function labCastActions(): CastActions {
   };
 }
 
+/** Lab-only seed moments (not product words): three days, the first two with posters from the lab frames.
+ * The web preview has no device store, so the screens run on in-page lists. */
+const labId = (n: number) =>
+  Uuid.parse(`00000000-0000-4000-8000-${(0xf000 + n).toString(16).padStart(12, '0')}`);
+const LAB_ITEMS: FootageItem[] = [
+  {
+    id: labId(1),
+    kind: 'answer',
+    mediaKind: 'video',
+    assetId: labId(101),
+    timeLabel: '08:12',
+    durationLabel: '0:09',
+    questionText: 'What did the morning sound like?',
+    storylineIds: [labId(201)],
+    castIds: [],
+    localOnly: false,
+    hasPoster: true,
+  },
+  {
+    id: labId(2),
+    kind: 'note',
+    timeLabel: '13:40',
+    text: 'Lunch by the river, the first warm day.',
+    storylineIds: [],
+    castIds: [],
+    localOnly: true,
+    hasPoster: false,
+  },
+  {
+    id: labId(3),
+    kind: 'photo',
+    mediaKind: 'photo',
+    assetId: labId(103),
+    timeLabel: '19:05',
+    storylineIds: [labId(201)],
+    castIds: [],
+    localOnly: false,
+    hasPoster: true,
+  },
+  {
+    id: labId(4),
+    kind: 'answer',
+    mediaKind: 'audio',
+    assetId: labId(104),
+    timeLabel: '21:30',
+    durationLabel: '0:07',
+    questionText: 'Who made you laugh today?',
+    storylineIds: [],
+    castIds: [],
+    localOnly: false,
+    hasPoster: false,
+  },
+];
+const LAB_DAYS: FootageDay[] = [
+  { date: '2027-03-15', dayLabel: 'Monday 15 March', items: [LAB_ITEMS[0]!, LAB_ITEMS[1]!] },
+  { date: '2027-03-14', dayLabel: 'Sunday 14 March', items: [LAB_ITEMS[2]!] },
+  { date: '2027-03-12', dayLabel: 'Friday 12 March', items: [LAB_ITEMS[3]!] },
+];
+
+function labFootageActions(): FootageActions {
+  return {
+    loadDays: async (beforeDay) => LAB_DAYS.filter((d) => !beforeDay || d.date < beforeDay),
+    loadStorylines: async () => [{ id: labId(201), title: 'The new job', closed: false, count: 2 }],
+    loadStoryline: async (id) => LAB_ITEMS.filter((i) => i.storylineIds.includes(id)),
+    poster: async (assetId) => (assetId === labId(101) ? FRAMES[0].source : FRAMES[1].source),
+  };
+}
+
+function labViewerActions(): ViewerActions {
+  return {
+    load: async (id) => LAB_ITEMS.find((i) => i.id === id) ?? null,
+    openOriginal: async (assetId) => `lab://${assetId}`,
+    closeOriginal: async () => undefined,
+  };
+}
+
 /** The reminder as if notifications were allowed; nothing is scheduled in the web preview. */
 function labSettingsActions(): SettingsActions {
   let reminder: ReminderChoice = { enabled: true, hour: 8, minute: 0 };
@@ -198,6 +282,9 @@ export default function DesignLab() {
   const [storylineActions] = useState(labStorylineActions);
   const [castActions] = useState(labCastActions);
   const [settingsActions] = useState(labSettingsActions);
+  const [footage] = useState(labFootageActions);
+  const [viewer] = useState(labViewerActions);
+  const [openMoment, setOpenMoment] = useState<Uuid | null>(null);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -296,6 +383,27 @@ export default function DesignLab() {
       <Section title="Settings">
         <View style={styles.list}>
           <SettingsScreen actions={settingsActions} />
+        </View>
+      </Section>
+
+      <Section title="Footage">
+        <View style={styles.list}>
+          <FootageScreen actions={footage} onOpen={setOpenMoment} />
+        </View>
+      </Section>
+
+      {/* The viewer opens from a Footage row, as in the app. */}
+      <Section title="Moment">
+        <View style={styles.list}>
+          {openMoment ? (
+            <MomentViewer
+              key={openMoment}
+              id={openMoment}
+              actions={viewer}
+              Playback={fakePlayback}
+              onClose={() => setOpenMoment(null)}
+            />
+          ) : null}
         </View>
       </Section>
 

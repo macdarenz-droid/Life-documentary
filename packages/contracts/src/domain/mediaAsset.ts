@@ -14,11 +14,22 @@ export const MediaAsset = z
     localPath: z.string().min(1),
     /** The per-file key, wrapped by the master key, base64. */
     wrappedKey: z.string().min(1),
+    /** The encrypted poster (P10): photos and videos only, both fields or neither. */
+    posterPath: z.string().min(1).optional(),
+    /** The poster's per-file key, wrapped by the master key, base64. */
+    posterWrappedKey: z.string().min(1).optional(),
     cloudKey: z.string().min(1).optional(),
     uploadState: z.enum(['local', 'queued', 'uploading', 'uploaded']),
     createdAt: Timestamp,
   })
   .superRefine((a, ctx) => {
+    if ((a.posterPath === undefined) !== (a.posterWrappedKey === undefined)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [a.posterPath === undefined ? 'posterPath' : 'posterWrappedKey'],
+        message: 'A poster needs both its path and its wrapped key',
+      });
+    }
     if (a.kind !== 'photo' && a.durationMs === undefined) {
       ctx.addIssue({
         code: 'custom',

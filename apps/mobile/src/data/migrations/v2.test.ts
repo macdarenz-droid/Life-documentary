@@ -1,5 +1,7 @@
 import { openMemoryDriver } from '../sqlite/testing/memoryDriver';
-import { migrate, migrations } from './index';
+import { migrate } from './index';
+import { v1 } from './v1';
+import { v2 } from './v2';
 import { seedV1 } from './testing/seedV1';
 
 const V1_TABLES = [
@@ -22,7 +24,7 @@ describe('migration v2 (settings)', () => {
     const before: Record<string, unknown[]> = {};
     for (const t of V1_TABLES) before[t] = await db.all(`SELECT * FROM ${t} ORDER BY rowid`);
 
-    expect(await migrate(db, '2027-03-16T09:30:00Z', migrations)).toEqual({ from: 1, to: 2 });
+    expect(await migrate(db, '2027-03-16T09:30:00Z', [v1, v2])).toEqual({ from: 1, to: 2 });
 
     for (const t of V1_TABLES) {
       expect(await db.all(`SELECT * FROM ${t} ORDER BY rowid`)).toEqual(before[t]);
@@ -39,7 +41,7 @@ describe('migration v2 (settings)', () => {
 
   it('brings a fresh database straight to v2', async () => {
     const db = await openMemoryDriver();
-    expect(await migrate(db, '2027-03-16T09:30:00Z', migrations)).toEqual({ from: 0, to: 2 });
+    expect(await migrate(db, '2027-03-16T09:30:00Z', [v1, v2])).toEqual({ from: 0, to: 2 });
     const tables = await db.all<{ name: string }>(
       "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'settings'",
     );

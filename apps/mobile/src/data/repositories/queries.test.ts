@@ -91,3 +91,58 @@ describe('uploadJobs.listDue', () => {
     expect((await uploadJobs.listDue(db, NOW, 1)).map((j) => j.assetId)).toEqual([id(11)]);
   });
 });
+
+describe('moments.daysBefore and listByStoryline', () => {
+  it('lists distinct live days, newest first, strictly before a day, up to a limit', async () => {
+    const db = await freshDb();
+    await moments.put(db, note(50, '2027-03-13T08:00:00Z'));
+    await moments.put(db, note(51, '2027-03-14T08:00:00Z'));
+    await moments.put(db, note(52, '2027-03-14T12:00:00Z'));
+    await moments.put(db, note(53, '2027-03-15T08:00:00Z'));
+    await moments.put(db, note(54, '2027-03-16T08:00:00Z'));
+    await moments.softDelete(db, id(54), NOW);
+    expect(await moments.daysBefore(db, id(1), undefined, 10)).toEqual([
+      '2027-03-15',
+      '2027-03-14',
+      '2027-03-13',
+    ]);
+    expect(await moments.daysBefore(db, id(1), '2027-03-15', 1)).toEqual(['2027-03-14']);
+  });
+
+  it("lists a storyline's live moments newest first", async () => {
+    const db = await freshDb();
+    await storylines.put(db, storyline(30));
+    await moments.put(db, note(50, '2027-03-13T08:00:00Z', { storylineIds: [id(30)] }));
+    await moments.put(db, note(51, '2027-03-15T08:00:00Z', { storylineIds: [id(30)] }));
+    await moments.put(db, note(52, '2027-03-14T08:00:00Z'));
+    await moments.put(db, note(53, '2027-03-16T08:00:00Z', { storylineIds: [id(30)] }));
+    await moments.softDelete(db, id(53), NOW);
+    expect((await moments.listByStoryline(db, id(1), id(30))).map((m) => m.id)).toEqual([
+      id(51),
+      id(50),
+    ]);
+  });
+});
+
+describe('uploadJobs.remove and questions.clearAnswer', () => {
+  it('removes a job with its parts, and is quiet when there is none', async () => {
+    const db = await freshDb();
+    await mediaAssets.put(db, asset(10));
+    await uploadJobs.put(db, uploadJob(id(10), { parts: [{ partNumber: 1, etag: 'e1' }] }));
+    await uploadJobs.remove(db, id(10));
+    expect(await uploadJobs.get(db, id(10))).toBeUndefined();
+    expect(await db.all('SELECT * FROM upload_job_parts')).toEqual([]);
+    await expect(uploadJobs.remove(db, id(10))).resolves.toBeUndefined();
+  });
+
+  it("clears the answer only when it is the given moment's", async () => {
+    const db = await freshDb();
+    await questions.put(db, question(40, '2027-03-15'));
+    await moments.put(db, note(50, NOW));
+    await questions.markAnswered(db, id(40), id(50));
+    await questions.clearAnswer(db, id(40), id(51));
+    expect((await questions.get(db, id(40)))?.answeredByMomentId).toBe(id(50));
+    await questions.clearAnswer(db, id(40), id(50));
+    expect((await questions.get(db, id(40)))?.answeredByMomentId).toBeUndefined();
+  });
+});

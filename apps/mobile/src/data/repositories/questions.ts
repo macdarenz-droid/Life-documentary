@@ -78,3 +78,16 @@ export async function markAnswered(
     return put(tx, Question.parse({ ...question, answeredByMomentId: momentId }));
   });
 }
+
+/** Clears the answer when it is `momentId`'s, so the day's question can be answered again. */
+export async function clearAnswer(
+  driver: SqlDriver,
+  id: string,
+  momentId: string,
+): Promise<Question | undefined> {
+  return driver.transaction(async (tx) => {
+    const question = await get(tx, id);
+    if (!question || question.answeredByMomentId !== momentId) return question;
+    return put(tx, Question.parse({ ...question, answeredByMomentId: undefined }));
+  });
+}

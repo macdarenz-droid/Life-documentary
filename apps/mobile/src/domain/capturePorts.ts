@@ -66,6 +66,16 @@ export interface Reminders {
   cancel(id: string): Promise<void>;
 }
 
+export type Poster = { uri: string; width: number; height: number };
+
+/** Makes a small JPEG poster in the app cache; null when it cannot be made. */
+export interface PosterMaker {
+  /** The frame at `atMs`. */
+  fromVideo(uri: string, atMs: number): Promise<Poster | null>;
+  /** The photo with its longest side at most `maxSide`. */
+  fromPhoto(uri: string, maxSide: number): Promise<Poster | null>;
+}
+
 /** The props every camera view (the Expo one or a fake) accepts. */
 export type CameraViewProps = {
   onRecorder: (recorder: VideoRecorder | null) => void;
@@ -74,6 +84,22 @@ export type CameraViewProps = {
   facing?: 'front' | 'back';
   /** 'picture' for stills, 'video' (the default) for recordings. */
   mode?: 'picture' | 'video';
+};
+
+/** A video player view: plays `uri` once with sound while `playing`, and holds its last frame at the end. */
+export type VideoPlaybackProps = {
+  uri: string;
+  playing: boolean;
+  onEnd: () => void;
+  style?: unknown;
+};
+
+/** An audio player with no picture: plays `uri` while `playing` and reports its position. */
+export type AudioPlaybackProps = {
+  uri: string;
+  playing: boolean;
+  onEnd: () => void;
+  onProgress: (positionMs: number, durationMs: number) => void;
 };
 
 /** The services a capture screen uses, except the video recorder that comes from a mounted camera view. */
@@ -85,4 +111,5 @@ export type CaptureServices = {
   permissions: Permissions;
   settings: SettingsOpener;
   reminders: Reminders;
+  posters: PosterMaker;
 };

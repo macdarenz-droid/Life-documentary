@@ -13,6 +13,8 @@ const SECTIONS = [
   'Storylines',
   'Cast',
   'Settings',
+  'Footage',
+  'Moment',
   'Grain and Breath',
 ];
 /** Dwell per section so the recording walks the whole lab in about 20 s. */
@@ -83,6 +85,22 @@ test('the Design Lab shows every section without console errors', async ({ page 
         .getByRole('button', { name: `${words.reminders.minutes}, ${words.reminders.later}` })
         .click();
       await expect(page.getByText('08:15')).toBeVisible();
+    }
+    if (name === 'Footage') {
+      // Another day in the strip shows its moments; a row opens its moment.
+      await page.getByRole('button', { name: 'Sunday 14 March' }).click();
+      await expect(page.getByRole('button', { name: /^Photo, 19:05/ })).toBeVisible();
+      await page.waitForTimeout(1000);
+      await page.getByRole('button', { name: 'Monday 15 March' }).click();
+      await page.getByRole('button', { name: /^Answer, 08:12/ }).click();
+    }
+    if (name === 'Moment') {
+      // The video moment plays under its question; a tap pauses it.
+      await expect(page.getByText('What did the morning sound like?').last()).toBeVisible();
+      await page.getByRole('button', { name: words.footage.pause }).click();
+      await expect(
+        page.getByRole('button', { name: words.footage.play, exact: true }),
+      ).toBeVisible();
     }
     if (name === 'Title Card') {
       await page.getByRole('button', { name: REPLAY }).click();

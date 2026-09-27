@@ -10,6 +10,7 @@ import {
   shouldOfferReminder,
 } from '../../application/reminders';
 import { useOptionalCapture, type CaptureContextValue } from '../../application/captureContext';
+import { ensurePoster } from '../../application/posters';
 import { createStoryline, listOpenStorylines } from '../../application/storylines';
 import { tagMoment } from '../../application/tagMoment';
 import { todayQuestion } from '../../application/todayQuestion';
@@ -21,7 +22,14 @@ export function todayScreenProps(ctx: CaptureContextValue): Omit<TodayScreenProp
   const { store, clock, ids, documentary, services, CameraView } = ctx;
   return {
     loadQuestion: () => todayQuestion(store, documentary, clock, ids),
-    save: (input) => captureMoment(store, clock, ids, input),
+    save: async (input) => {
+      const moment = await captureMoment(store, clock, ids, input);
+      // The poster is extra: a capture never fails because of it.
+      if (moment.mediaAssetId) {
+        await ensurePoster(store, services.posters, moment.mediaAssetId).catch(() => false);
+      }
+      return moment;
+    },
     discard: async (path) => {
       if (await store.io.exists(path)) await store.io.remove(path);
     },
