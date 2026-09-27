@@ -1,7 +1,7 @@
 // The D1 tables, as Drizzle SQLite tables. The auth tables are the ones Better Auth needs for our options
 // (checked against getAuthTables in test/auth.test.ts); ids are UUID text, times are integer milliseconds.
 import { sql } from 'drizzle-orm';
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 const nowMs = sql`(cast(unixepoch('subsecond') * 1000 as integer))`;
 const createdAt = () => integer('created_at', { mode: 'timestamp_ms' }).default(nowMs).notNull();
@@ -238,4 +238,21 @@ export const changeLog = sqliteTable(
     updatedAt: text('updated_at').notNull(),
   },
   (t) => [index('change_log_documentary_seq_idx').on(t.documentaryId, t.seq)],
+);
+
+// Open multipart uploads into R2 (P6, D34): one per asset and purpose; the row goes when the upload is
+// completed or aborted.
+export const uploads = sqliteTable(
+  'uploads',
+  {
+    assetId: text('asset_id').notNull(),
+    purpose: text('purpose', { enum: ['answer', 'preview', 'original'] }).notNull(),
+    documentaryId: documentaryId(),
+    uploadId: text('upload_id').notNull(),
+    key: text('key').notNull(),
+    bytes: integer('bytes').notNull(),
+    partCount: integer('part_count').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.assetId, t.purpose] })],
 );
