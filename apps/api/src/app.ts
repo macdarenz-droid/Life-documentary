@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { createAuth } from './auth';
 import { recordingMail, type MailSender } from './providers/mail';
 import { account } from './routes/account';
+import { deletePage } from './routes/deletePage';
 import { devices } from './routes/devices';
 import { documentaries } from './routes/documentaries';
 import { health } from './routes/health';
@@ -20,6 +21,7 @@ export function createApp({ mail = defaultMail }: { mail?: MailSender } = {}) {
   });
   app.route('/', health);
   app.on(['GET', 'POST'], '/api/auth/*', (c) => c.var.auth().handler(c.req.raw));
+  app.route('/', deletePage);
   app.route('/', account);
   app.route('/', devices);
   app.route('/', documentaries);

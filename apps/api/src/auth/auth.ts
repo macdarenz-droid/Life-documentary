@@ -62,7 +62,12 @@ export function createAuth(env: Env, mail: MailSender) {
       schema: authSchema,
       transaction: false,
     }),
-    advanced: { database: { generateId: 'uuid', validateSchema: false } },
+    advanced: {
+      database: { generateId: 'uuid', validateSchema: false },
+      // Cloudflare sets this header and replaces any value the client sends; x-forwarded-for can be
+      // spoofed, and a list in it gives no IP, which skips the rate limiter.
+      ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] },
+    },
     rateLimit: authRateLimit,
     trustedOrigins: [APP_ORIGIN],
     user: { deleteUser: { enabled: false } },
