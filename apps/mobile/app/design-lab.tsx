@@ -9,6 +9,8 @@ import { Button, Field, Surface, Text, useMotionPreference } from '../src/design
 import { Dissolve } from '../src/design-system/motion/Dissolve';
 import { TextMorph } from '../src/design-system/motion/TextMorph';
 import { TitleCard } from '../src/design-system/motion/TitleCard';
+import { CastScreen, type CastActions, type CastRow } from '../src/features/cast';
+import { StorylinesScreen, type StorylineActions } from '../src/features/storylines';
 import { TodayScreen, type TodayScreenProps } from '../src/features/today';
 import { fakeCameraView } from '../src/services/testing/FakeCameraView';
 import { fakeServices } from '../src/services/testing/fakeServices';
@@ -65,6 +67,68 @@ function labTodayProps(): TodayScreenProps {
   };
 }
 
+/** Lab-only seed rows (not product words): the screens run on an in-page list, as the web preview has no
+ * device store. */
+function labStorylineActions(): StorylineActions {
+  let n = 0;
+  const id = () =>
+    Uuid.parse(`00000000-0000-4000-8000-${(0x5100 + (n += 1)).toString(16).padStart(12, '0')}`);
+  let rows = [
+    { id: id(), title: 'The new job', openedOn: '2027-01-11', closed: false, momentCount: 14 },
+    { id: id(), title: 'Half marathon', openedOn: '2027-02-02', closed: false, momentCount: 6 },
+    { id: id(), title: 'Moving house', openedOn: '2026-10-20', closed: true, momentCount: 22 },
+  ];
+  const set = (target: string, patch: Partial<(typeof rows)[number]>) => {
+    rows = rows.map((r) => (r.id === target ? { ...r, ...patch } : r));
+  };
+  return {
+    load: async () => [...rows.filter((r) => !r.closed), ...rows.filter((r) => r.closed)],
+    create: async (title) => {
+      rows = [
+        ...rows,
+        { id: id(), title: title.trim(), openedOn: LAB_DAY, closed: false, momentCount: 0 },
+      ];
+    },
+    rename: async (target, title) => set(target, { title: title.trim() }),
+    close: async (target) => set(target, { closed: true }),
+    reopen: async (target) => set(target, { closed: false }),
+    remove: async (target) => {
+      rows = rows.filter((r) => r.id !== target);
+    },
+  };
+}
+
+function labCastActions(): CastActions {
+  let n = 0;
+  const id = () =>
+    Uuid.parse(`00000000-0000-4000-8000-${(0xca00 + (n += 1)).toString(16).padStart(12, '0')}`);
+  let rows: CastRow[] = [
+    { id: id(), name: 'Mara', relation: 'sister' },
+    { id: id(), name: 'Sam' },
+  ];
+  return {
+    load: async () => [...rows],
+    add: async (name, relation) => {
+      const r = relation?.trim();
+      rows = [...rows, { id: id(), name: name.trim(), ...(r ? { relation: r } : {}) }];
+    },
+    rename: async (target, name) => {
+      rows = rows.map((r) => (r.id === target ? { ...r, name: name.trim() } : r));
+    },
+    setRelation: async (target, relation) => {
+      rows = rows.map((r) => {
+        if (r.id !== target) return r;
+        const next: CastRow = { id: r.id, name: r.name };
+        if (relation) next.relation = relation.trim();
+        return next;
+      });
+    },
+    remove: async (target) => {
+      rows = rows.filter((r) => r.id !== target);
+    },
+  };
+}
+
 const GrainBreath = lazy(async () => {
   if (Platform.OS === 'web') {
     const { LoadSkiaWeb } = await import('@shopify/react-native-skia/lib/module/web');
@@ -113,6 +177,8 @@ export default function DesignLab() {
   const morph = useCycle(MORPH_STEPS.length, MORPH_CYCLE_MS);
   const frame = FRAMES[useCycle(FRAMES.length, DISSOLVE_CYCLE_MS)] ?? FRAMES[0];
   const [todayProps] = useState(labTodayProps);
+  const [storylineActions] = useState(labStorylineActions);
+  const [castActions] = useState(labCastActions);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -192,7 +258,19 @@ export default function DesignLab() {
 
       <Section title="Today">
         <View style={styles.today}>
-          <TodayScreen {...todayProps} />
+          <TodayScreen {...todayProps} onNavigate={() => undefined} />
+        </View>
+      </Section>
+
+      <Section title="Storylines">
+        <View style={styles.list}>
+          <StorylinesScreen actions={storylineActions} />
+        </View>
+      </Section>
+
+      <Section title="Cast">
+        <View style={styles.list}>
+          <CastScreen actions={castActions} />
         </View>
       </Section>
 
@@ -212,6 +290,7 @@ const styles = StyleSheet.create({
   content: { padding: tokens.space[5], gap: tokens.space[6] },
   section: { gap: tokens.space[3] },
   today: { height: 1040, overflow: 'hidden', borderRadius: tokens.radius.md },
+  list: { height: 640, overflow: 'hidden', borderRadius: tokens.radius.md },
   sectionBody: { gap: tokens.space[3] },
   row: { flexDirection: 'row', alignItems: 'center', gap: tokens.space[3] },
   swatch: {

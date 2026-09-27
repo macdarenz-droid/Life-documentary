@@ -31,6 +31,8 @@ export type TodayScreenProps = {
   CameraView: ComponentType<CameraViewProps>;
   /** Storylines and cast for the Tag tray; without them no "Tag" is offered. */
   tags?: TagActions;
+  /** Opens a screen from the quiet top row; without it the row is not shown. */
+  onNavigate?: (to: 'storylines' | 'cast') => void;
   /** Changes when the screen comes into focus, so the question is loaded again. */
   reloadKey?: number;
 };
@@ -70,6 +72,7 @@ export function TodayScreen({
   services,
   CameraView,
   tags,
+  onNavigate,
   reloadKey = 0,
 }: TodayScreenProps) {
   const { reduced } = useMotionPreference();
@@ -529,6 +532,28 @@ export function TodayScreen({
           <CameraView onRecorder={onRecorder} style={StyleSheet.absoluteFill} />
         </View>
       ) : null}
+      {onNavigate ? (
+        // Hidden, not removed, while recording: the Record button must not move under the finger.
+        <View
+          style={[styles.topRow, recording && styles.hidden]}
+          pointerEvents={recording ? 'none' : 'auto'}
+          accessibilityElementsHidden={recording}
+          importantForAccessibility={recording ? 'no-hide-descendants' : 'auto'}
+        >
+          {(['storylines', 'cast'] as const).map((to) => (
+            <Pressable
+              key={to}
+              accessibilityRole="link"
+              onPress={() => onNavigate(to)}
+              style={styles.topLink}
+            >
+              <Text variant="label" tone="secondary" accessibilityRole="none">
+                {words.nav[to]}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
       <Record
         recording={recording}
         elapsedMs={elapsedMs}
@@ -588,4 +613,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: tokens.space[5],
   },
   photoLinks: { flexDirection: 'row', gap: tokens.space[4] },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: tokens.space[4],
+    paddingHorizontal: tokens.space[5],
+    paddingTop: tokens.space[3],
+  },
+  topLink: { minHeight: tokens.space[7], justifyContent: 'center' },
+  hidden: { opacity: 0 },
 });

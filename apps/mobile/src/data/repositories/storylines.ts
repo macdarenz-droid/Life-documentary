@@ -36,3 +36,12 @@ export async function listOpen(driver: SqlDriver, documentaryId: string): Promis
   );
   return rows.map((r) => fromRow(storylineSpec, r));
 }
+
+/** Storylines not deleted, open or closed, by when they opened. */
+export async function listLive(driver: SqlDriver, documentaryId: string): Promise<Storyline[]> {
+  const rows = await driver.all<Row>(
+    `SELECT * FROM storylines WHERE documentary_id = ? AND deleted_at IS NULL ORDER BY opened_at, id`,
+    [documentaryId],
+  );
+  return rows.map((r) => fromRow(storylineSpec, r));
+}

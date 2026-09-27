@@ -1,6 +1,6 @@
 // The Today route: the capture context turned into TodayScreen's props. Without a capture context (the
 // web preview) it shows the placeholder.
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { addCastMember, listCast } from '../../application/cast';
 import { captureMoment } from '../../application/captureMoment';
@@ -40,7 +40,14 @@ function ConnectedToday({ ctx }: { ctx: CaptureContextValue }) {
   const [reloadKey, setReloadKey] = useState(0);
   useFocusEffect(useCallback(() => setReloadKey((k) => k + 1), []));
   const [props] = useState(() => todayScreenProps(ctx));
-  return <TodayScreen {...props} reloadKey={reloadKey} />;
+  const router = useRouter();
+  return (
+    <TodayScreen
+      {...props}
+      reloadKey={reloadKey}
+      onNavigate={(to) => router.push(to === 'storylines' ? '/storylines' : '/cast')}
+    />
+  );
 }
 
 export function TodayRoute() {

@@ -1,7 +1,8 @@
 // The threads of a life, named by the person: create, rename, close, reopen and remove (soft delete).
 import { Storyline } from '@life/contracts';
-import type { Documentary, Uuid } from '@life/contracts';
-import { words } from '@life/story';
+import type { Documentary, LocalDate, Uuid } from '@life/contracts';
+import { localDay, words } from '@life/story';
+import * as moments from '../data/repositories/moments';
 import * as storylines from '../data/repositories/storylines';
 import type { SqlDriver } from '../data/sqlite/driver';
 import type { Clock, Ids, Store } from './ports';
@@ -41,6 +42,31 @@ export async function listOpenStorylines(
   documentary: Documentary,
 ): Promise<Storyline[]> {
   return storylines.listOpen(store.driver, documentary.id);
+}
+
+/** A storyline as the Storylines screen shows it: open ones first, each with its moment count. */
+export type StorylineSummary = {
+  id: Uuid;
+  title: string;
+  openedOn: LocalDate;
+  closed: boolean;
+  momentCount: number;
+};
+
+export async function listStorylineSummaries(
+  store: Store,
+  documentary: Documentary,
+): Promise<StorylineSummary[]> {
+  const live = await storylines.listLive(store.driver, documentary.id);
+  const counts = await moments.countByStoryline(store.driver, documentary.id);
+  const rows = live.map((s) => ({
+    id: s.id,
+    title: s.title,
+    openedOn: localDay(s.openedAt, documentary.timeZone),
+    closed: s.closedAt !== undefined,
+    momentCount: counts[s.id] ?? 0,
+  }));
+  return [...rows.filter((r) => !r.closed), ...rows.filter((r) => r.closed)];
 }
 
 export async function createStoryline(
