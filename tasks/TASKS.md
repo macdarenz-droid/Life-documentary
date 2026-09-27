@@ -198,7 +198,7 @@ Text: `tasks/p14/T-015.md`.
 ### T-015b · P14.2 · The ElevenLabs provider · done · needs: T-013c, T-015a
 Text: `tasks/p14/T-015.md`.
 
-### T-015c · P14.3 · EpisodePipeline step 3: narrate · todo · needs: T-014c, T-015a, T-015b
+### T-015c · P14.3 · EpisodePipeline step 3: narrate · done · needs: T-014c, T-015a, T-015b
 Text: `tasks/p14/T-015.md`.
 
 ## P15 — Render (the episode timeline, the compositions, the renderer)
