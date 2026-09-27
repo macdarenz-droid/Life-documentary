@@ -11,3 +11,4 @@ export * from './planValidation';
 export * from './recapPlan';
 export * from './motion/titleCardPlan';
 export * from './capture';
+export * from './footage';

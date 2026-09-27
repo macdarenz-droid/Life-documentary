@@ -123,6 +123,11 @@ export const words = {
     offerAccept: 'Remind me each morning',
     offerDismiss: 'Not now',
   },
+  footage: {
+    noteEmpty: 'A note needs a few words.',
+    noteTooLong: 'A note can be up to 280 characters.',
+    unavailable: 'This moment is no longer here.',
+  },
   lab: {
     title: 'Design lab',
     replay: 'Play again',

@@ -50,6 +50,14 @@ export async function get(driver: SqlDriver, assetId: string): Promise<UploadJob
   return row ? read(driver, row) : undefined;
 }
 
+/** Removes a job and its parts; nothing when there is none. */
+export async function remove(driver: SqlDriver, assetId: string): Promise<void> {
+  await driver.transaction(async (tx) => {
+    await tx.run('DELETE FROM upload_job_parts WHERE asset_id = ?', [assetId]);
+    await tx.run('DELETE FROM upload_jobs WHERE asset_id = ?', [assetId]);
+  });
+}
+
 /** Pending or failed jobs whose next attempt is due (or unset), oldest first. */
 export async function listDue(
   driver: SqlDriver,
