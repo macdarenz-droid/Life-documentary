@@ -137,15 +137,8 @@ Text: `tasks/p4/T-010.md`.
 ### T-010b · P4.2 · Product rows, devices and the first link · done · needs: T-010a
 Text: `tasks/p4/T-010.md`.
 
-### T-010c · P4.3 · The public deletion page · changes r1 · needs: T-010b
+### T-010c · P4.3 · The public deletion page · done · needs: T-010b
 Text: `tasks/p4/T-010.md`.
-**Fix list r1** (review of eb06030; everything else approved: no script, CSP, escaping, same-origin POSTs, the page-only cookie path, revoking sessions after the request).
-1. Rate limits can be skipped. Better Auth reads the client IP from `x-forwarded-for` by default, and in 1.7.6 `getIPFromHeader` gives no IP when that header holds more than one address (no trusted proxies are set), so the limiter is skipped. Behind Cloudflare a client only has to send its own `X-Forwarded-For`: Cloudflare appends to it, and the list is longer than one. In `apps/api/src/auth/auth.ts` set `advanced.ipAddress.ipAddressHeaders: ['cf-connecting-ip']` (Cloudflare sets that header and replaces any value the client sends).
-2. The page calls `auth.api.sendVerificationOTP` and `auth.api.signInEmailOTP` directly, and server-side calls skip Better Auth's rate limiter, so the page can mail codes to any address without limit. Limit the page itself: at most 3 codes per email address and 5 per client (`cf-connecting-ip`) in 10 minutes, counted in D1 (Better Auth's `rateLimit` table with your own keys, or a small table in the next migration). Over the limit: the page shows a plain line from `words` and sends nothing.
-3. The page must never create an account. `signInEmailOTP` signs up an unknown address. Send a code only when an account with that email exists, show the same code step either way (the page must not reveal whether an account exists), and treat a code for an unknown address as a wrong code.
-Tests: an API sign-in request with a spoofed `X-Forwarded-For` still counts against its `cf-connecting-ip`; the 4th code request for one address within 10 minutes sends no mail and shows the line; the 6th request from one client (different addresses) does the same; an unknown address gets the code step, no mail and no `user` row.
-Allowed test changes: tests that simulate clients with `x-forwarded-for` switch to `cf-connecting-ip`; no assertion is removed.
-Checks: API typecheck, tests, lint, format, boundaries, `deploy:dry`.
 
 ### T-010d · P4.4 · Sign in on the phone and the first link · todo · needs: T-010b, T-009d
 Text: `tasks/p4/T-010.md`.
