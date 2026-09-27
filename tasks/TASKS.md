@@ -190,8 +190,13 @@ Text: `tasks/p12/T-013.md`.
 Tests: `keptCaption` drops "A man's hand holding a cup.", "He's by the window." and "A child’s drawing on a fridge." and keeps "A person's hand holding a cup."; with three batches whose second delete fails, the first and third are deleted and the run completes; a retried delete step after a 404 completes; a transcribed answer's derived row carries its segments.
 Allowed test changes: none removed or loosened.
 Checks: API, contracts and story typecheck, tests, lint, format, boundaries, `deploy:dry`.
-### T-013e · P12.5 · What was understood, on the phone · review · needs: T-013b, T-011e
+### T-013e · P12.5 · What was understood, on the phone · changes r1 · needs: T-013b, T-011e
 Text: `tasks/p12/T-013.md`.
+**Fix list r1** (review of fc32f43; everything else approved: the v5 table, landing rules, tombstones, the viewer's transcript, the forced v4 test change).
+1. v5 clears `sync.cursor`, so every question is pulled again, and the server keeps a stored answer even after its moment is deleted (T-011b's rule). A question whose answer the person deleted therefore comes back answered by the deleted moment, and today's question shows as saved and can't be answered again. In `applyPulled`'s question case, a pulled `answeredByMomentId` that names a moment deleted on this phone never replaces the local row's answer (an empty local answer stays empty). Correct v5's comment (questions are not last-write-wins).
+2. The phone does not store transcript segments (T-013b fix r1 adds them to `Derived`): the device repository drops the field on write.
+Tests: answer Q with M, sync, delete M, then a full re-pull (cursor null) that returns Q answered by M leaves Q unanswered and today's question answerable; a pulled derived row with segments is stored without them.
+Checks: mobile typecheck, tests, lint, format, boundaries.
 
 ## P13 — Planner (step 2 of the episode pipeline)
 
