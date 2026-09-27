@@ -32,6 +32,7 @@ import { CameraRecorderView } from '../src/services/camera/CameraRecorderView';
 import { systemSettings } from '../src/services/settings/systemSettings';
 import { expoKeyStore } from '../src/services/secureStore/expoKeyStore';
 import { expoPosterMaker } from '../src/services/posters/expoPosterMaker';
+import { expoPlayback } from '../src/services/playback';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -70,7 +71,12 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
     [voice],
   );
   return (
-    <CaptureRoot open={openDeviceStore} services={services} CameraView={CameraRecorderView}>
+    <CaptureRoot
+      open={openDeviceStore}
+      services={services}
+      CameraView={CameraRecorderView}
+      Playback={expoPlayback}
+    >
       {children}
     </CaptureRoot>
   );

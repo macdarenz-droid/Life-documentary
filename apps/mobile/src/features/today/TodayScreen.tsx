@@ -32,7 +32,7 @@ export type TodayScreenProps = {
   /** Storylines and cast for the Tag tray; without them no "Tag" is offered. */
   tags?: TagActions;
   /** Opens a screen from the quiet top row; without it the row is not shown. */
-  onNavigate?: (to: 'storylines' | 'cast' | 'settings') => void;
+  onNavigate?: (to: 'footage' | 'storylines' | 'cast' | 'settings') => void;
   /** The one-time "Remind me each morning" card; without it no card is offered. */
   reminderOffer?: {
     shouldOffer(): Promise<boolean>;
@@ -576,7 +576,7 @@ export function TodayScreen({
           accessibilityElementsHidden={recording}
           importantForAccessibility={recording ? 'no-hide-descendants' : 'auto'}
         >
-          {(['storylines', 'cast', 'settings'] as const).map((to) => (
+          {(['footage', 'storylines', 'cast', 'settings'] as const).map((to) => (
             <Pressable
               key={to}
               accessibilityRole="link"

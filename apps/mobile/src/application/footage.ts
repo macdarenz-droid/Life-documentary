@@ -75,6 +75,12 @@ async function toItems(store: Store, list: Moment[]): Promise<FootageItem[]> {
   return items;
 }
 
+/** One live moment as the viewer shows it; null when it is gone. */
+export async function footageItem(store: Store, id: Uuid): Promise<FootageItem | null> {
+  const moment = await moments.get(store.driver, id);
+  return moment && !moment.deletedAt ? toItem(store, moment) : null;
+}
+
 /** Up to `days` days with live moments, newest first, strictly before `beforeDay` when given. */
 export async function footageDays(
   store: Store,

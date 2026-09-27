@@ -86,6 +86,22 @@ export type CameraViewProps = {
   mode?: 'picture' | 'video';
 };
 
+/** A video player view: plays `uri` once with sound while `playing`, and holds its last frame at the end. */
+export type VideoPlaybackProps = {
+  uri: string;
+  playing: boolean;
+  onEnd: () => void;
+  style?: unknown;
+};
+
+/** An audio player with no picture: plays `uri` while `playing` and reports its position. */
+export type AudioPlaybackProps = {
+  uri: string;
+  playing: boolean;
+  onEnd: () => void;
+  onProgress: (positionMs: number, durationMs: number) => void;
+};
+
 /** The services a capture screen uses, except the video recorder that comes from a mounted camera view. */
 export type CaptureServices = {
   voice: VoiceRecorder;
