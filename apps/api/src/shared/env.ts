@@ -18,4 +18,6 @@ export type Env = {
   ANTHROPIC_API_KEY?: string;
   /** `fixture` makes the pipeline use fixture providers; set only by the test pool and local dev. */
   PROVIDERS?: string;
+  /** The episode pipeline Workflow (P12). */
+  EPISODE_PIPELINE: Workflow<{ documentaryId: string; weekStart: string }>;
 };

@@ -15,4 +15,7 @@
   ],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "life-media" }],
   "ai": { "binding": "AI" },
+  "workflows": [
+    { "name": "episode-pipeline", "binding": "EPISODE_PIPELINE", "class_name": "EpisodePipeline" },
+  ],
 }
