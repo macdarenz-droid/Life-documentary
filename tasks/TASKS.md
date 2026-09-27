@@ -120,7 +120,7 @@ Text: `tasks/p10/T-009.md`.
 ### T-009c · P10.3 · The Footage screen and the viewer · done · needs: T-009b, T-008b
 Text: `tasks/p10/T-009.md`.
 
-### T-009d · P10.4 · Edit, delete and "One year ago today" · todo · needs: T-009c
+### T-009d · P10.4 · Edit, delete and "One year ago today" · done · needs: T-009c
 Text: `tasks/p10/T-009.md`.
 
 ## P4 — Account (Better Auth on Workers and D1)
