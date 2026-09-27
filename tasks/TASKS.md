@@ -164,17 +164,33 @@ Text: `tasks/p6/T-011.md`.
 ### T-013a · P12.1 · Keyframes leave the phone · done · needs: T-011e, T-011d
 Text: `tasks/p12/T-013.md`.
 
-### T-013b · P12.2 · Derived rows, episodes and the cost ledger · todo · needs: T-011d, T-011b, T-011c
+### T-013b · P12.2 · Derived rows, episodes and the cost ledger · changes r1 · needs: T-011d, T-011b, T-011c
 Text: `tasks/p12/T-013.md`.
 Note (2026-09-27): for P13, `CostLedgerRow.step` also allows `plan` and `unit` also allows `cacheWriteToken` and `cacheReadToken`; store `step`, `provider` and `unit` as plain text columns without CHECK lists so later steps need no table rebuild.
 
-### T-013c · P12.3 · Transcriber and captioner providers · todo · needs: T-011d
+**Fix list r1** (review of ecd098b; everything else approved: the migration, the repositories, pull-only derived rows, tombstones, costs, the brief's per-field merge).
+1. The note's contract half is missing: `CostLedgerRow.step` must also allow `plan` and `unit` must also allow `cacheWriteToken` and `cacheReadToken` (P13 writes those rows; today `upsert` would throw). Add a contract test that such a row parses and a ledger upsert of one.
+2. Captions need the timing of what the person said, and the server can't get it later (working copies are deleted after understanding, D40). `Derived` gains `segments?: { startMs: int ≥ 0, endMs: int, text: string 1..500 }[]` (at most 200, each `endMs` > `startMs`); a new D1 migration adds a `segments` JSON text column to `derived` (append-only, with its migration test); `derived.upsert` stores it; pulls carry it. The phone does not store segments (T-013e's repository drops the field); say so in a comment there only if T-013e is already merged, else T-013e's fix list covers it.
+Tests: a `plan` / `cacheReadToken` ledger row round-trips; a derived row with two segments round-trips through upsert and a pull; one with an `endMs` before its `startMs` is refused.
+Checks: contracts, API typecheck, tests, lint, format, boundaries, `deploy:dry`.
+### T-013c · P12.3 · Transcriber and captioner providers · changes r1 · needs: T-011d
 Text: `tasks/p12/T-013.md`.
 
-### T-013d · P12.4 · EpisodePipeline step 1: understand · todo · needs: T-013a, T-013b, T-013c
+**Fix list r1** (review of a6e57e8 found nothing to block; one item for P14, D40).
+1. `Transcription` gains `segments?: { startMs, endMs, text }[]`: the Workers AI adapter maps Whisper's `segments` (seconds to whole ms, text trimmed, empty ones dropped); none when Whisper gives none. Whether its times are relative to the original audio with `vad_filter: true` is UNVERIFIED until the owner's first real call; say so in the report.
+Tests: a stub result with two segments maps to ms; a result without segments gives none; an empty-text segment is dropped.
+Checks: API typecheck, tests, lint, format, boundaries.
+### T-013d · P12.4 · EpisodePipeline step 1: understand · changes r1 · needs: T-013a, T-013b, T-013c
 Text: `tasks/p12/T-013.md`.
 
-### T-013e · P12.5 · What was understood, on the phone · todo · needs: T-013b, T-011e
+**Fix list r1** (review of fde1b14; everything else approved: the inventory and `leavesDevice`, chunks, the wait and cancel rounds, working-copy deletion, costs, idempotent steps).
+1. Rule 7 leak: `keptCaption` splits on spaces, so "A man's hand", "He's holding a cup" and "A child’s drawing" pass. Split into words by letters only (`/\p{L}+/gu` on the lower-cased text), so a possessive or a contraction (straight or curly apostrophe) still yields the listed word.
+2. `captions-delete` is not idempotent: one failed delete stops the rest, and a retry fails on the already-deleted one. Delete each batch on its own (a failure of one is logged by id and the others go on), and the adapter treats a 404 on delete as already deleted.
+3. For P14 (D40): `transcribeAnswer` stores the transcription's `segments` on the `workersAi` derived row (each text cut to 500 characters, at most 200, clamped to the answer's length).
+Tests: `keptCaption` drops "A man's hand holding a cup.", "He's by the window." and "A child’s drawing on a fridge." and keeps "A person's hand holding a cup."; with three batches whose second delete fails, the first and third are deleted and the run completes; a retried delete step after a 404 completes; a transcribed answer's derived row carries its segments.
+Allowed test changes: none removed or loosened.
+Checks: API, contracts and story typecheck, tests, lint, format, boundaries, `deploy:dry`.
+### T-013e · P12.5 · What was understood, on the phone · review · needs: T-013b, T-011e
 Text: `tasks/p12/T-013.md`.
 
 ## P13 — Planner (step 2 of the episode pipeline)
