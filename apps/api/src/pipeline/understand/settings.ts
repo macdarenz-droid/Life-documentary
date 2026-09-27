@@ -10,6 +10,11 @@ export const CAPTION_MAX_TOKENS = 200;
 
 /** A transcript is cut to this many characters (the `Derived` contract's limit). */
 export const TRANSCRIPT_MAX = 4000;
+/** Limits of the timed transcript kept for captions (Derived.segments, D40). */
+export const SEGMENTS_MAX = 200;
+export const SEGMENT_WORDS_MAX = 60;
+export const SEGMENT_TEXT_MAX = 500;
+export const WORD_TEXT_MAX = 60;
 
 /** Caption batches: at most this many images and image bytes each; larger images are skipped. */
 export const CHUNK_MAX_IMAGES = 100;

@@ -89,7 +89,8 @@ export function keptCaption(
       .toLowerCase() === 'unclear'
   )
     return null;
-  const words = caption.toLowerCase().match(/[\p{L}]+(?:['’][\p{L}]+)*/gu) ?? [];
+  // Letters only, so a possessive or a contraction ("man's", "He's") still yields the listed word.
+  const words = caption.toLowerCase().match(/\p{L}+/gu) ?? [];
   if (words.some((word) => BANNED.has(word))) return null;
   return caption;
 }

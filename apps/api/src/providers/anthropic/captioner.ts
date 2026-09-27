@@ -21,6 +21,10 @@ export function anthropicBatches(apiKey: string): BatchApi {
   return new Anthropic({ apiKey }).messages.batches;
 }
 
+function isNotFound(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'status' in error && error.status === 404;
+}
+
 function toResult({ custom_id: id, result }: MessageBatchIndividualResponse): CaptionResult {
   if (result.type !== 'succeeded') {
     return { id, outcome: result.type, inputTokens: 0, outputTokens: 0 };
@@ -76,7 +80,12 @@ export function anthropicCaptioner(batches: BatchApi): Captioner {
       await batches.cancel(batchId);
     },
     async remove(batchId) {
-      await batches.delete(batchId);
+      try {
+        await batches.delete(batchId);
+      } catch (error) {
+        // Already deleted: a retried delete completes.
+        if (!isNotFound(error)) throw error;
+      }
     },
   };
 }

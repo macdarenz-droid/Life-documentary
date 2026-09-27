@@ -2,7 +2,8 @@
 // what `leavesDevice` allows is read, and only the working copies that are in R2; what is missing stays
 // missing (rules 8 and 10). Every function returns ids, keys, kinds and counts, never file bytes.
 import { Buffer } from 'node:buffer';
-import type { UploadPurpose, Uuid } from '@life/contracts';
+import { TranscriptSegment, type UploadPurpose, type Uuid } from '@life/contracts';
+import { z } from 'zod';
 import { mediaKey } from '../../data/mediaKeys';
 import * as costLedger from '../../data/repositories/costLedger';
 import * as derivedRepo from '../../data/repositories/derived';
@@ -20,9 +21,14 @@ import {
   CHUNK_MAX_BYTES,
   CHUNK_MAX_IMAGES,
   IMAGE_MAX_BYTES,
+  SEGMENTS_MAX,
+  SEGMENT_TEXT_MAX,
+  SEGMENT_WORDS_MAX,
   TRANSCRIBE_MODEL,
   TRANSCRIPT_MAX,
+  WORD_TEXT_MAX,
 } from './settings';
+import type { TimedSegment, TimedWord } from '../ports';
 
 /** One working copy found in R2. */
 export type WorkingCopy = {
@@ -79,6 +85,39 @@ export async function inventory(ctx: UnderstandContext, episode: EpisodeRef): Pr
   return found;
 }
 
+const Segments = z.array(TranscriptSegment).max(SEGMENTS_MAX);
+
+/**
+ * The timed transcript as it may be stored: texts cut to their limits, at most 200 segments of 60
+ * words, times clamped to the answer's length when it is known, and every piece whose end is not after
+ * its start dropped. None when nothing is left or it still does not parse; the transcript is never lost
+ * because of its timings.
+ */
+export function keptSegments(
+  segments: readonly TimedSegment[] | undefined,
+  durationMs: number | undefined,
+): TranscriptSegment[] | undefined {
+  if (!segments) return undefined;
+  const clamp = (ms: number) =>
+    Math.max(0, durationMs === undefined ? ms : Math.min(ms, durationMs));
+  const piece = (p: TimedWord, max: number): TimedWord | undefined => {
+    const text = p.text.slice(0, max);
+    const startMs = clamp(p.startMs);
+    const endMs = clamp(p.endMs);
+    return text !== '' && endMs > startMs ? { text, startMs, endMs } : undefined;
+  };
+  const kept = segments.flatMap((s) => {
+    const segment = piece(s, SEGMENT_TEXT_MAX);
+    if (!segment) return [];
+    const words = (s.words ?? [])
+      .flatMap((w) => piece(w, WORD_TEXT_MAX) ?? [])
+      .slice(0, SEGMENT_WORDS_MAX);
+    return [words.length > 0 ? { ...segment, words } : segment];
+  });
+  const parsed = Segments.safeParse(kept.slice(0, SEGMENTS_MAX));
+  return parsed.success && parsed.data.length > 0 ? parsed.data : undefined;
+}
+
 /**
  * Transcribes one answer and stores its `workersAi` row (text cut to 4,000 characters, the detected
  * language or `und`); an empty transcript stores nothing. Returns the seconds Whisper heard, or the
@@ -98,9 +137,11 @@ export async function transcribeAnswer(
   });
   const text = heard.text.trim();
   if (text !== '' && (await week.isLive(ctx.db, episode.documentaryId, item.momentId))) {
+    const segments = keptSegments(heard.segments, item.durationMs);
     await derivedRepo.upsert(ctx.db, episode.documentaryId, {
       momentId: item.momentId,
       transcript: text.slice(0, TRANSCRIPT_MAX),
+      ...(segments ? { segments } : {}),
       language: heard.language ?? 'und',
       provider: 'workersAi',
       modelVersion: TRANSCRIBE_MODEL,
@@ -207,6 +248,26 @@ export async function unfinished(
   const out: string[] = [];
   for (const id of batchIds) if ((await ctx.captioner.status(id)) !== 'ended') out.push(id);
   return out;
+}
+
+/**
+ * Deletes each ended caption batch on its own: a failure is logged by id and the others go on, and a
+ * batch already deleted counts as deleted, so the step can run again. Returns how many were deleted.
+ */
+export async function removeCaptionBatches(
+  ctx: UnderstandContext,
+  batchIds: readonly string[],
+): Promise<number> {
+  let removed = 0;
+  for (const id of batchIds) {
+    try {
+      await ctx.captioner.remove(id);
+      removed += 1;
+    } catch (error) {
+      console.error(`Caption batch ${id} could not be deleted.`, error);
+    }
+  }
+  return removed;
 }
 
 /** Deletes the working copies the run looked at. */

@@ -24,6 +24,8 @@ export type FixtureCaptioner = Captioner & {
   answer: (item: CaptionItem) => Omit<CaptionResult, 'id'>;
   /** Sending throws this when set. */
   failSubmit: Error | null;
+  /** Batch ids whose next delete throws once. */
+  failRemove: string[];
   /** New batches stay `in_progress` until cancelled. */
   stayInProgress: boolean;
   reset(): void;
@@ -52,6 +54,7 @@ export function fixtureCaptioner(): FixtureCaptioner {
     calls: [],
     answer: DEFAULT_ANSWER,
     failSubmit: null,
+    failRemove: [],
     stayInProgress: false,
     submit(items, request) {
       return later(() => {
@@ -107,6 +110,13 @@ export function fixtureCaptioner(): FixtureCaptioner {
     remove(batchId) {
       return later(() => {
         fixture.calls.push(`remove:${batchId}`);
+        const failAt = fixture.failRemove.indexOf(batchId);
+        if (failAt >= 0) {
+          fixture.failRemove.splice(failAt, 1);
+          throw new Error(`Batch ${batchId} could not be deleted.`);
+        }
+        // Like the real adapter, a batch already deleted counts as deleted.
+        if (!fixture.batches.has(batchId)) return;
         if (batchOf(batchId).status !== 'ended')
           throw new Error('A batch is removed once it ended.');
         fixture.batches.delete(batchId);
@@ -117,6 +127,7 @@ export function fixtureCaptioner(): FixtureCaptioner {
       fixture.calls.length = 0;
       fixture.answer = DEFAULT_ANSWER;
       fixture.failSubmit = null;
+      fixture.failRemove = [];
       fixture.stayInProgress = false;
     },
   };

@@ -17,6 +17,7 @@ import {
   recordCosts,
   removeWorkingCopies,
   submitCaptions,
+  removeCaptionBatches,
   transcribeAnswer,
   unfinished,
   type CaptionUsage,
@@ -115,10 +116,9 @@ export class EpisodePipeline extends WorkflowEntrypoint<Env, EpisodePipelinePara
       const stillOpen = pending;
       try {
         await step.do('captions-delete', async () => {
-          for (const id of ended) await ctx.captioner.remove(id);
           for (const id of stillOpen)
             console.error(`Caption batch ${id} had not ended; not deleted.`);
-          return ended.length;
+          return removeCaptionBatches(ctx, ended);
         });
       } catch (error) {
         console.error('The caption batches could not all be deleted.', error);

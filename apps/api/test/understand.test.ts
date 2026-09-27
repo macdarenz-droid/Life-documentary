@@ -1,6 +1,7 @@
 import type { Uuid } from '@life/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 import * as costLedger from '../src/data/repositories/costLedger';
+import * as derivedRepo from '../src/data/repositories/derived';
 import * as episodes from '../src/data/repositories/episodes';
 import type { EpisodeRef, UnderstandContext } from '../src/pipeline/understand/context';
 import {
@@ -8,6 +9,7 @@ import {
   inventory,
   readCaptions,
   recordCosts,
+  removeCaptionBatches,
   removeWorkingCopies,
   submitCaptions,
   transcribeAnswer,
@@ -178,6 +180,87 @@ describe('understanding a week', () => {
   });
 });
 
+describe('timed transcripts', () => {
+  it("stores a transcribed answer's segments with their words", async () => {
+    const { seed, ctx, episode } = await setup();
+    const week = await seed.fullWeek();
+    fixtures.transcriber.answer = {
+      text: 'We walked down to the lake.',
+      language: 'en',
+      seconds: 9,
+      segments: [
+        {
+          text: 'We walked',
+          startMs: 0,
+          endMs: 1200,
+          words: [
+            { text: 'We', startMs: 0, endMs: 400 },
+            { text: 'walked', startMs: 400, endMs: 1200 },
+          ],
+        },
+        { text: 'down to the lake.', startMs: 1200, endMs: 3000 },
+      ],
+    };
+    await understand(ctx, episode);
+    const [row] = (await derivedRepo.forMoments(seed.db, [week.voiceAnswer.momentId])).filter(
+      (r) => r.provider === 'workersAi',
+    );
+    expect(row?.segments).toEqual(fixtures.transcriber.answer.segments);
+  });
+
+  it('keeps the transcript when a word has no length and a segment runs past the answer', async () => {
+    const { seed, ctx, episode } = await setup();
+    const week = await seed.fullWeek();
+    // The seeded answers are 9 s long.
+    fixtures.transcriber.answer = {
+      text: 'We walked down to the lake after work.',
+      segments: [
+        {
+          text: 'We walked',
+          startMs: 0,
+          endMs: 1200,
+          words: [
+            { text: 'We', startMs: 300, endMs: 300 },
+            { text: 'walked', startMs: 300, endMs: 1200 },
+          ],
+        },
+        { text: 'down to the lake', startMs: 8500, endMs: 9500 },
+        { text: 'after work.', startMs: 9500, endMs: 10_000 },
+      ],
+    };
+    await understand(ctx, episode);
+    const [row] = (await derivedRepo.forMoments(seed.db, [week.voiceAnswer.momentId])).filter(
+      (r) => r.provider === 'workersAi',
+    );
+    expect(row?.transcript).toBe('We walked down to the lake after work.');
+    expect(row?.segments).toEqual([
+      {
+        text: 'We walked',
+        startMs: 0,
+        endMs: 1200,
+        words: [{ text: 'walked', startMs: 300, endMs: 1200 }],
+      },
+      { text: 'down to the lake', startMs: 8500, endMs: 9000 },
+    ]);
+  });
+});
+
+describe('removeCaptionBatches', () => {
+  const request = { model: 'm', system: 's', userText: 'u', maxTokens: 200 };
+  const send = (id: string) => fixtures.captioner.submit([{ id, jpegBase64: 'QUJD' }], request);
+
+  it('deletes the others when one delete fails, and completes when run again', async () => {
+    const { ctx } = await setup();
+    const ids = [await send('a'), await send('b'), await send('c')];
+    fixtures.captioner.failRemove = [ids[1]!];
+    expect(await removeCaptionBatches(ctx, ids)).toBe(2);
+    expect([...fixtures.captioner.batches.keys()]).toEqual([ids[1]]);
+    // A retry meets two batches already deleted and the one that failed.
+    expect(await removeCaptionBatches(ctx, ids)).toBe(3);
+    expect(fixtures.captioner.batches.size).toBe(0);
+  });
+});
+
 describe('captionChunks', () => {
   const images = (n: number, bytes: number) =>
     Array.from({ length: n }, (_, i) => ({ id: `m${i}` as Uuid, bytes }));
@@ -206,6 +289,19 @@ describe('keptCaption', () => {
   it.each(CAPTION_BANNED_WORDS)('drops a caption with "%s"', (word) => {
     expect(keptCaption(`A person and ${word} by a window.`, 'end_turn')).toBeNull();
     expect(keptCaption(`${word.toUpperCase()} at the door.`, 'end_turn')).toBeNull();
+  });
+
+  it.each(["A man's hand holding a cup.", "He's by the window.", 'A child’s drawing on a fridge.'])(
+    'drops "%s"',
+    (caption) => {
+      expect(keptCaption(caption, 'end_turn')).toBeNull();
+    },
+  );
+
+  it('keeps "A person\'s hand holding a cup."', () => {
+    expect(keptCaption("A person's hand holding a cup.", 'end_turn')).toBe(
+      "A person's hand holding a cup.",
+    );
   });
 
   it('keeps words that only contain a listed one', () => {

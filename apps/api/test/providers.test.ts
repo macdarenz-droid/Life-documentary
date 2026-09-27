@@ -242,6 +242,16 @@ describe('the Anthropic captioner', () => {
     );
   });
 
+  it('treats a 404 on delete as already deleted and passes other failures on', async () => {
+    let failure: Error = Object.assign(new Error('Not found'), { status: 404 });
+    const api = {
+      delete: () => Promise.reject(failure),
+    } as unknown as BatchApi;
+    await expect(anthropicCaptioner(api).remove('msgbatch_1')).resolves.toBeUndefined();
+    failure = Object.assign(new Error('Overloaded'), { status: 529 });
+    await expect(anthropicCaptioner(api).remove('msgbatch_1')).rejects.toThrow('Overloaded');
+  });
+
   it('maps results in any order with their token counts and keeps what came back', async () => {
     const { api, calls } = stub([
       succeeded('c', 'I cannot help with that.', 'refusal', 900, 8),
