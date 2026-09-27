@@ -1,4 +1,5 @@
 import { UPLOAD_PART_SIZE } from '@life/contracts';
+import * as moments from '../data/repositories/moments';
 import * as uploadJobs from '../data/repositories/uploadJobs';
 import type { Network, PosterMaker } from '../domain/capturePorts';
 import { openLocalDocumentary } from './bootstrap';
@@ -279,6 +280,37 @@ describe('enqueueUploads and drainUploads', () => {
     expect(await uploadJobs.listForAsset(t.store.driver, moment.mediaAssetId!)).toMatchObject([
       { purpose: 'keyframe' },
     ]);
+  });
+
+  it('stops sending when the moment is deleted between parts and leaves nothing behind', async () => {
+    const t = await setup(original(2 * UPLOAD_PART_SIZE + 10));
+    const moment = await t.answer();
+    const send = t.api.uploadPart;
+    t.api.uploadPart = async (assetId, purpose, n, bytes) => {
+      const part = await send(assetId, purpose, n, bytes);
+      if (n === 1) await deleteMoment(t.store, t.clock, moment.id);
+      return part;
+    };
+    expect(await t.drain()).toEqual({ uploaded: 0, failed: 0, waiting: 0 });
+    expect(t.api.calls).toEqual(['create:answer', 'part:1']);
+    expect(await uploadJobs.listForAsset(t.store.driver, moment.mediaAssetId!)).toEqual([]);
+    expect(t.plainCopies()).toEqual([]);
+  });
+
+  it('removes the job of a deleted moment without calling the Api', async () => {
+    const t = await setup();
+    const moment = await captureMoment(t.store, t.clock, t.ids, {
+      kind: 'photo',
+      media: photo,
+      localOnly: false,
+    });
+    const [job] = await enqueueUploads(t.store, t.clock, t.posters, moment.id);
+    // As a tombstone pulled from another phone: the moment is deleted, its job is still here.
+    await moments.softDelete(t.store.driver, moment.id, t.clock.now());
+    expect(await t.drain()).toEqual({ uploaded: 0, failed: 0, waiting: 0 });
+    expect(t.api.calls).toEqual([]);
+    expect(await uploadJobs.listForAsset(t.store.driver, moment.mediaAssetId!)).toEqual([]);
+    expect(t.store.io.files.has(job!.sourcePath!)).toBe(false);
   });
 
   it('removes a waiting preview with its job when the moment is deleted', async () => {

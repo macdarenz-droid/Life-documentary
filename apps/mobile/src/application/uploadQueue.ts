@@ -2,11 +2,13 @@
 // sends them one by one: video waits for Wi-Fi, the source is decrypted to the cache, the upload is
 // created or resumed, only the parts not yet recorded go up (each etag recorded as it succeeds), then
 // it completes. A failure waits min(2^attempts minutes, 6 hours); after 8 attempts the job is failed
-// and kept, tried again only by a foreground drain. The plain copy never outlives the attempt.
+// and kept, tried again only by a foreground drain. The plain copy never outlives the attempt. A job
+// removed while it is sent (its moment was deleted) stops the send and is never written back.
 import { UploadJob, type MediaAsset, type Timestamp } from '@life/contracts';
 import { decryptFile } from '../data/fileStore/fileStore';
 import { CONTAINER_HEAD_BYTES, containerOf, type Container } from '../data/fileStore/container';
 import * as mediaAssets from '../data/repositories/mediaAssets';
+import * as moments from '../data/repositories/moments';
 import * as uploadJobs from '../data/repositories/uploadJobs';
 import type { Api, Network } from '../domain/capturePorts';
 import type { Clock, Store } from './ports';
@@ -62,6 +64,16 @@ async function removeIfThere(store: Store, path: string | undefined) {
   if (path && (await store.io.exists(path))) await store.io.remove(path);
 }
 
+const uploadsDir = (store: Store) => `${store.cacheDir}/uploads`;
+
+/** Removes plain copies a killed run left behind; called at start, before any drain or enqueue. */
+export async function clearUploadCache(store: Store): Promise<void> {
+  for (const path of await store.io.list(uploadsDir(store))) await store.io.remove(path);
+}
+
+/** Thrown when the job row was removed while its file was being sent. */
+class JobGone extends Error {}
+
 async function runDrain(
   store: Store,
   clock: Clock,
@@ -82,6 +94,12 @@ async function runDrain(
     if (job.state === 'failed' && !options.retryFailed) continue;
     const asset = await mediaAssets.get(store.driver, job.assetId);
     if (!asset) continue;
+    // A deleted moment's job goes, with its working copy, and nothing is sent.
+    if ((await moments.forMediaAsset(store.driver, asset.id))?.deletedAt) {
+      await uploadJobs.remove(store.driver, job.assetId, job.purpose);
+      await removeIfThere(store, job.sourcePath);
+      continue;
+    }
     if (asset.kind === 'video' && connection !== 'wifi') {
       outcome.waiting += 1;
       continue;
@@ -89,12 +107,15 @@ async function runDrain(
     const result = await sendJob(store, clock, api, job, asset, outOfTime);
     if (result === 'done') outcome.uploaded += 1;
     else if (result === 'failed') outcome.failed += 1;
-    else break;
+    else if (result === 'stopped') break;
   }
   return outcome;
 }
 
-/** Sends one job: 'done', 'failed' (the wait is recorded) or 'stopped' (out of time, nothing lost). */
+/**
+ * Sends one job: 'done', 'failed' (the wait is recorded), 'stopped' (out of time, nothing lost) or
+ * 'gone' (the job was removed meanwhile).
+ */
 async function sendJob(
   store: Store,
   clock: Clock,
@@ -102,14 +123,21 @@ async function sendJob(
   job: UploadJob,
   asset: MediaAsset,
   outOfTime: () => boolean,
-): Promise<'done' | 'failed' | 'stopped'> {
+): Promise<'done' | 'failed' | 'stopped' | 'gone'> {
   const { io } = store;
   const purpose = job.purpose ?? 'answer';
-  const dir = `${store.cacheDir}/uploads`;
+  const dir = uploadsDir(store);
   const plain = `${dir}/${job.assetId}.${purpose}.upload`;
   let current = job;
+  // Each save first checks the row is still there, so a deleted moment's job never comes back.
   const save = async (next: UploadJob) => {
-    current = await uploadJobs.put(store.driver, UploadJob.parse(next));
+    const saved = await store.driver.transaction(async (tx) =>
+      (await uploadJobs.get(tx, job.assetId, purpose))
+        ? uploadJobs.put(tx, UploadJob.parse(next))
+        : null,
+    );
+    if (!saved) throw new JobGone();
+    current = saved;
   };
   try {
     await io.ensureDir(dir);
@@ -172,19 +200,25 @@ async function sendJob(
     await removeIfThere(store, job.sourcePath);
     return 'done';
   } catch (error) {
+    if (error instanceof JobGone) return 'gone';
     console.error('An upload failed.', error);
     const attempts = current.attempts + 1;
     const failed = attempts >= MAX_ATTEMPTS;
     const now: Timestamp = clock.now();
-    await save({
-      ...current,
-      state: failed ? 'failed' : 'pending',
-      attempts,
-      nextAttemptAt: failed
-        ? undefined
-        : new Date(Date.parse(now) + backoffMs(attempts)).toISOString(),
-      updatedAt: now,
-    });
+    try {
+      await save({
+        ...current,
+        state: failed ? 'failed' : 'pending',
+        attempts,
+        nextAttemptAt: failed
+          ? undefined
+          : new Date(Date.parse(now) + backoffMs(attempts)).toISOString(),
+        updatedAt: now,
+      });
+    } catch (saveError) {
+      if (saveError instanceof JobGone) return 'gone';
+      throw saveError;
+    }
     return 'failed';
   } finally {
     await removeIfThere(store, plain);

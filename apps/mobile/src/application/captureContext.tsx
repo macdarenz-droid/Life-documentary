@@ -26,7 +26,7 @@ import { enqueueExisting } from './enqueueUploads';
 import { clearPlaybackCache } from './playback';
 import type { Clock, Ids, Store } from './ports';
 import { syncIfSignedIn } from './sync';
-import { drainUploads } from './uploadQueue';
+import { clearUploadCache, drainUploads } from './uploadQueue';
 
 export type CaptureContextValue = {
   store: Store;
@@ -100,6 +100,8 @@ export function CaptureRoot({
     (async () => {
       const { store, clock, ids, timeZone } = await open();
       await clearPlaybackCache(store);
+      // Plain copies a killed upload left behind go before any drain or enqueue.
+      await clearUploadCache(store);
       const documentary = await openLocalDocumentary(store, clock, ids, timeZone);
       let current = documentary;
       const setDocumentary = (next: Documentary) => {

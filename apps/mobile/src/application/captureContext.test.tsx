@@ -30,6 +30,25 @@ describe('CaptureRoot', () => {
     expect(await screen.findByText(words.documentary.defaultTitle)).toBeOnTheScreen();
   });
 
+  it('removes plain upload copies a killed run left behind', async () => {
+    const store = await memoryStore();
+    store.io.files.set('cache/uploads/left-over.answer.upload', new Uint8Array([1, 2, 3]));
+    const open = async (): Promise<OpenedStore> => ({
+      store,
+      clock: fixedClock('2027-03-15T09:30:00Z'),
+      ids: sequentialIds(),
+      timeZone: 'Europe/Berlin',
+    });
+    const services = fakeServices();
+    await render(
+      <CaptureRoot open={open} services={services} CameraView={fakeCameraView(services.video)}>
+        <Title />
+      </CaptureRoot>,
+    );
+    expect(await screen.findByText(words.documentary.defaultTitle)).toBeOnTheScreen();
+    expect(store.io.files.has('cache/uploads/left-over.answer.upload')).toBe(false);
+  });
+
   it('shows the opening error words when migrate throws', async () => {
     const error = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const open = async (): Promise<OpenedStore> => {
