@@ -7,11 +7,12 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ComponentType,
   type ReactNode,
 } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { AppState, StyleSheet, View } from 'react-native';
 import { Text } from '../design-system';
 import type {
   AppleButtonProps,
@@ -23,6 +24,7 @@ import type {
 import { openLocalDocumentary } from './bootstrap';
 import { clearPlaybackCache } from './playback';
 import type { Clock, Ids, Store } from './ports';
+import { syncIfSignedIn } from './sync';
 
 export type CaptureContextValue = {
   store: Store;
@@ -38,6 +40,8 @@ export type CaptureContextValue = {
   AppleButton?: ComponentType<AppleButtonProps>;
   /** Replaces the documentary every screen reads, after the account link changed its owner id (P4). */
   setDocumentary?: (documentary: Documentary) => void;
+  /** Starts a sync round in the background when signed in (P6); it never blocks the screen. */
+  requestSync?: () => void;
 };
 
 /** Video and audio player views: the Expo ones on a device, fakes in tests and the Design Lab. */
@@ -84,6 +88,7 @@ export function CaptureRoot({
   const [state, setState] = useState<
     { status: 'opening' } | { status: 'ready'; value: CaptureContextValue } | { status: 'failed' }
   >({ status: 'opening' });
+  const sync = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -91,6 +96,25 @@ export function CaptureRoot({
       const { store, clock, ids, timeZone } = await open();
       await clearPlaybackCache(store);
       const documentary = await openLocalDocumentary(store, clock, ids, timeZone);
+      let current = documentary;
+      const setDocumentary = (next: Documentary) => {
+        current = next;
+        setState((state) =>
+          state.status === 'ready'
+            ? { status: 'ready', value: { ...state.value, documentary: next } }
+            : state,
+        );
+      };
+      const requestSync = () => {
+        void syncIfSignedIn(store, clock, services.account, services.api, current).then(
+          (outcome) => {
+            if (outcome?.status === 'synced' && outcome.documentary) {
+              setDocumentary(outcome.documentary);
+            }
+          },
+        );
+      };
+      if (active) sync.current = requestSync;
       if (active)
         setState({
           status: 'ready',
@@ -103,22 +127,28 @@ export function CaptureRoot({
             CameraView,
             ...(Playback ? { Playback } : {}),
             ...(AppleButton ? { AppleButton } : {}),
-            setDocumentary: (next) =>
-              setState((current) =>
-                current.status === 'ready'
-                  ? { status: 'ready', value: { ...current.value, documentary: next } }
-                  : current,
-              ),
+            setDocumentary,
+            requestSync,
           },
         });
+      if (active) requestSync();
     })().catch((error: unknown) => {
       console.error('The store could not open.', error);
       if (active) setState({ status: 'failed' });
     });
     return () => {
       active = false;
+      sync.current = null;
     };
   }, [open, services, CameraView, Playback, AppleButton]);
+
+  // Every return to the foreground starts a round (the app start is the first one).
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next === 'active') sync.current?.();
+    });
+    return () => subscription.remove();
+  }, []);
 
   if (state.status === 'opening') return null;
   if (state.status === 'failed') {

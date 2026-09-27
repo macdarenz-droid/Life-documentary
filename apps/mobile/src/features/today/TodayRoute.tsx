@@ -26,6 +26,7 @@ export function todayScreenProps(ctx: CaptureContextValue): Omit<TodayScreenProp
     loadQuestion: () => todayQuestion(store, documentary, clock, ids),
     save: async (input) => {
       const moment = await captureMoment(store, clock, ids, input);
+      ctx.requestSync?.();
       // The poster is extra: a capture never fails because of it.
       if (moment.mediaAssetId) {
         await ensurePoster(store, services.posters, moment.mediaAssetId).catch(() => false);
@@ -58,6 +59,7 @@ export function todayScreenProps(ctx: CaptureContextValue): Omit<TodayScreenProp
       addCastMember: (name) => addCastMember(store, clock, ids, documentary, name),
       tag: async (momentId, tags) => {
         await tagMoment(store, clock, momentId, tags);
+        ctx.requestSync?.();
       },
     },
   };

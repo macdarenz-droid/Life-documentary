@@ -47,6 +47,8 @@ export function accountActions(ctx: CaptureContextValue): AccountActions {
       documentary = outcome.documentary;
       ctx.setDocumentary?.(outcome.documentary);
     }
+    // Signed in and linked: the first sync round.
+    if (outcome.user && !outcome.line) ctx.requestSync?.();
     return { email: outcome.user?.email ?? null, ...(outcome.line ? { line: outcome.line } : {}) };
   };
   return {

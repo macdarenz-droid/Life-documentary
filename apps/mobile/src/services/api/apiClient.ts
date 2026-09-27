@@ -1,6 +1,14 @@
 // The Worker's account API over fetch, with the session cookie. Every response is parsed with the
 // contracts (CLAUDE.md rule 3); a response that is not 2xx throws with the server's error code.
-import { ApiError, Documentary, LinkDocumentaryResult, Me, RegisterDevice } from '@life/contracts';
+import {
+  ApiError,
+  Documentary,
+  LinkDocumentaryResult,
+  Me,
+  RegisterDevice,
+  SyncRequest,
+  SyncResponse,
+} from '@life/contracts';
 import type { Api } from '../../domain/capturePorts';
 
 type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
@@ -41,5 +49,7 @@ export function createApiClient(
     cancelDeletion: async () => {
       await call('/account/delete/cancel', {});
     },
+    sync: async (request) =>
+      SyncResponse.parse(await (await call('/sync', SyncRequest.parse(request))).json()),
   };
 }

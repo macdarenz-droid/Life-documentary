@@ -5,6 +5,7 @@ import {
   type LinkDocumentaryResult,
   type Me,
   type RegisterDevice,
+  type SyncRequest,
 } from '@life/contracts';
 import type {
   Account,
@@ -59,6 +60,8 @@ export type FakeServices = CaptureServices & {
     devices: RegisterDevice[];
     linked: Documentary[];
     deletionRequests: number;
+    /** Every sync request, in order; the fake server has nothing to send back. */
+    syncs: SyncRequest[];
   };
   /** Called with the source path a recording "writes"; the test puts fixture bytes there. */
   onRecordingFile?: (path: string) => void;
@@ -231,6 +234,11 @@ export function fakeServices(
         services.account.signedIn = null;
       },
       cancelDeletion: async () => undefined,
+      syncs: [],
+      sync: async (request) => {
+        services.api.syncs.push(request);
+        return { cursor: services.api.syncs.length, changes: [], refused: [] };
+      },
     },
     device: { platform: 'ios', appVersion: '0.0.0' },
     permissions: {

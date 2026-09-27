@@ -1,5 +1,12 @@
 // Capture ports (types only). Adapters live in src/services/; screens get them through the capture context.
-import type { Documentary, LinkDocumentaryResult, Me, RegisterDevice } from '@life/contracts';
+import type {
+  Documentary,
+  LinkDocumentaryResult,
+  Me,
+  RegisterDevice,
+  SyncRequest,
+  SyncResponse,
+} from '@life/contracts';
 
 /** Provided by a mounted camera view (CameraRecorderView). */
 export interface VideoRecorder {
@@ -128,6 +135,8 @@ export interface Api {
   linkDocumentary(documentary: Documentary): Promise<LinkDocumentaryResult>;
   requestDeletion(): Promise<void>;
   cancelDeletion(): Promise<void>;
+  /** POST /sync: pushes changed rows and pulls what changed after the cursor (P6). */
+  sync(request: SyncRequest): Promise<SyncResponse>;
 }
 
 /** What the phone says about itself when it registers. */
