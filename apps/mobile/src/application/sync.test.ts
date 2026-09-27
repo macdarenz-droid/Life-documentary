@@ -1,7 +1,8 @@
-import { Moment, type Documentary, type SyncChange, type SyncRequest } from '@life/contracts';
+import { Moment, Uuid, type Documentary, type SyncChange, type SyncRequest } from '@life/contracts';
 import * as mediaAssets from '../data/repositories/mediaAssets';
 import * as moments from '../data/repositories/moments';
 import * as syncState from '../data/repositories/syncState';
+import { afterSignIn } from './account';
 import { openLocalDocumentary } from './bootstrap';
 import { captureMoment, type MediaInput } from './captureMoment';
 import { syncIfSignedIn, syncNow } from './sync';
@@ -19,6 +20,17 @@ const video: MediaInput = {
   height: 1920,
 };
 const OTHER_ID = '00000000-0000-4000-8000-00000000ff01';
+const ACCOUNT_ID = Uuid.parse('00000000-0000-4000-8000-00000000aa01');
+
+function storylineRow(documentary: Documentary) {
+  return {
+    id: Uuid.parse('00000000-0000-4000-8000-00000000bb01'),
+    documentaryId: documentary.id,
+    title: 'The new job',
+    openedAt: '2027-03-15T08:00:00Z',
+    updatedAt: '2027-03-15T08:00:00Z',
+  };
+}
 
 async function setup() {
   const store = await memoryStore();
@@ -243,6 +255,82 @@ describe('syncNow', () => {
     for (const change of api.rows.values()) restarted.seed(change);
     await syncNow(store, clock, restarted, documentary);
     expect(requests(restarted.sent)[0]?.cursor).toBe(cursor);
+  });
+
+  it('syncs after a restart once the account reads its session', async () => {
+    const { store, clock, ids, documentary, api } = await setup();
+    const moment = await captureMoment(store, clock, ids, {
+      kind: 'note',
+      text: 'After a restart',
+      localOnly: false,
+    });
+    // As the Better Auth adapter: the cookie cache fills only when the session is read.
+    let cookie: string | null = null;
+    const account = {
+      cookie: () => cookie,
+      session: async () => {
+        cookie = 'better-auth.session_token=tok';
+        return { userId: ACCOUNT_ID, email: 'sam@example.com' };
+      },
+    } as unknown as Parameters<typeof syncIfSignedIn>[2];
+    api.seed({ entity: 'storyline', row: storylineRow(documentary) });
+
+    const outcome = await syncIfSignedIn(store, clock, account, api, documentary);
+    expect(outcome).toMatchObject({ status: 'synced', pulled: 1 });
+    expect(pushedIds(api.sent)).toContain(`moment:${moment.id}`);
+  });
+
+  it('makes no call for a signed-out account whose session is empty too', async () => {
+    const { store, clock, documentary, api } = await setup();
+    const account = { cookie: () => null, session: async () => null } as unknown as Parameters<
+      typeof syncIfSignedIn
+    >[2];
+    expect(await syncIfSignedIn(store, clock, account, api, documentary)).toBeNull();
+    expect(api.sent).toHaveLength(0);
+  });
+
+  it('pushes a photo and an answer captured before sign-in under the account id', async () => {
+    const { store, clock, ids, documentary } = await setup();
+    const api = fakeSyncApi({ userId: ACCOUNT_ID });
+    const refused: unknown[] = [];
+    const sync = api.sync;
+    api.sync = async (request) => {
+      const response = await sync(request);
+      refused.push(...response.refused);
+      return response;
+    };
+    const shot = await captureMoment(store, clock, ids, {
+      kind: 'photo',
+      media: photo,
+      localOnly: false,
+    });
+    store.io.files.set(
+      SOURCE,
+      new Uint8Array(2000).map((_, i) => i & 255),
+    );
+    const question = await todayQuestion(store, documentary, clock, ids);
+    const answer = await captureMoment(store, clock, ids, {
+      kind: 'answer',
+      questionId: question.id,
+      media: video,
+      localOnly: false,
+    });
+
+    clock.set('2027-03-15T10:00:00Z');
+    api.registerDevice = async (device) => device;
+    api.linkDocumentary = async (d) => ({ documentary: { ...d, ownerUserId: ACCOUNT_ID } });
+    const device = { platform: 'ios' as const, appVersion: '0.0.0', newId: () => ids.newId() };
+    const link = await afterSignIn(store, clock, api, documentary, device);
+    if (!link.ok) throw new Error('The link failed');
+    await syncNow(store, clock, api, link.documentary);
+
+    expect(refused).toEqual([]);
+    for (const moment of [shot, answer]) {
+      const pushed = api.rows.get(`moment:${moment.id}`);
+      expect(pushed?.row).toMatchObject({ authorUserId: ACCOUNT_ID });
+      const asset = api.rows.get(`mediaAsset:${moment.mediaAssetId}`);
+      expect(asset?.row).toMatchObject({ ownerUserId: ACCOUNT_ID });
+    }
   });
 
   it('does nothing when signed out', async () => {

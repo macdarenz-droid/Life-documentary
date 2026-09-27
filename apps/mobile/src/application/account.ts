@@ -25,7 +25,8 @@ export async function deviceId(store: Store, newId: () => Uuid): Promise<Uuid> {
 
 /**
  * Registers the phone and links its documentary. When the account owns it under another id, the local
- * row takes the account's id (updatedAt moves), so every later row carries it. Running it again changes
+ * row takes the account's id (updatedAt moves), and so do the moments and media captured before the
+ * sign-in, so every row the phone pushes carries it. Running it again changes
  * nothing.
  */
 export async function afterSignIn(
@@ -46,7 +47,7 @@ export async function afterSignIn(
       ownerUserId: linked.ownerUserId,
       updatedAt: clock.now(),
     });
-    await documentaries.put(store.driver, updated);
+    await documentaries.takeOwner(store.driver, updated, local.ownerUserId);
     return { ok: true, documentary: updated };
   } catch (error) {
     console.error('The documentary was not linked.', error);

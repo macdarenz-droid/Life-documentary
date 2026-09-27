@@ -1,5 +1,5 @@
 // An in-memory copy of the server's POST /sync rule for sync tests: last-write-wins per row (ties keep
-// the stored row), `leavesDevice` refusals, a change log with a cursor, and pages of pulled changes.
+// the stored row), `leavesDevice` refusals, `not_yours` for a media asset of another user, a change log with a cursor, and pages of pulled changes.
 import { SyncRequest, SyncResponse, type SyncChange, type SyncRefusal } from '@life/contracts';
 import { leavesDevice } from '@life/story';
 import type { Api } from '../../domain/capturePorts';
@@ -17,7 +17,8 @@ export type FakeSyncApi = Api & {
 
 const key = (c: SyncChange) => `${c.entity}:${c.row.id}`;
 
-export function fakeSyncApi(options: { page?: number } = {}): FakeSyncApi {
+/** `userId` is the signed-in account; media assets owned by anyone else are refused `not_yours`. */
+export function fakeSyncApi(options: { page?: number; userId?: string } = {}): FakeSyncApi {
   const page = options.page ?? 500;
   const rows = new Map<string, SyncChange>();
   const log: { seq: number; key: string }[] = [];
@@ -59,6 +60,14 @@ export function fakeSyncApi(options: { page?: number } = {}): FakeSyncApi {
         const prior = rows.get(key(change));
         const refuse = (reason: SyncRefusal['reason']) =>
           refused.push({ entity: change.entity, id: change.row.id, reason });
+        if (
+          options.userId !== undefined &&
+          change.entity === 'mediaAsset' &&
+          change.row.ownerUserId !== options.userId
+        ) {
+          refuse('not_yours');
+          continue;
+        }
         if (
           (change.entity === 'moment' && !leavesDevice(change.row, { cloudBackup: false }).row) ||
           (change.entity === 'mediaAsset' && keptAssets.has(change.row.id))

@@ -71,7 +71,10 @@ export function syncNow(
   return round;
 }
 
-/** Syncs when an account is signed in; signed out, it does nothing. */
+/**
+ * Syncs when an account is signed in; signed out, it does nothing. After a restart the cookie cache is
+ * empty until the session is read, so a missing cookie asks the account once before giving up.
+ */
 export async function syncIfSignedIn(
   store: Store,
   clock: Clock,
@@ -79,7 +82,15 @@ export async function syncIfSignedIn(
   api: Api,
   documentary: Documentary,
 ): Promise<SyncOutcome | null> {
-  if (account.cookie() === null) return null;
+  if (account.cookie() === null) {
+    let user: Awaited<ReturnType<Account['session']>> = null;
+    try {
+      user = await account.session();
+    } catch {
+      user = null;
+    }
+    if (!user) return null;
+  }
   return syncNow(store, clock, api, documentary);
 }
 
