@@ -18,6 +18,12 @@ export default defineConfig({
           BETTER_AUTH_SECRET: 'test-only-secret-not-used-anywhere-else-0123456789',
           TEST_MIGRATIONS: migrations,
           PROVIDERS: 'fixture',
+          NARRATOR_VOICES: JSON.stringify({
+            'narrator-1': 'fixture-voice-1',
+            'narrator-2': 'fixture-voice-2',
+            'narrator-3': 'fixture-voice-3',
+            'narrator-4': 'fixture-voice-4',
+          }),
         },
       },
     }),

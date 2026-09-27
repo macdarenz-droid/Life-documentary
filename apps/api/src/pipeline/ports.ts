@@ -77,8 +77,33 @@ export interface Planner {
   plan(request: PlanRequest): Promise<PlanAnswer>;
 }
 
+export type SpeakRequest = {
+  /** The vendor's voice id (from `vendorVoice`), never our own id. */
+  voiceId: string;
+  text: string;
+  modelId: string;
+  outputFormat: string;
+  languageCode: string;
+};
+
+/** When each character of the spoken text starts and ends, in seconds. */
+export type SpeechAlignment = {
+  characters: string[];
+  startSeconds: number[];
+  endSeconds: number[];
+};
+
+/** The audio, its character alignment when the vendor gave one, and the characters it billed. */
+export type Speech = { audio: Uint8Array; alignment: SpeechAlignment | null; characters: number };
+
+/** Speaks one narrator line (P14, D40). The answer is reported as it came back. */
+export interface Narrator {
+  speak(request: SpeakRequest): Promise<Speech>;
+}
+
 export type PipelineProviders = {
   transcriber: Transcriber;
   captioner: Captioner;
   planner: Planner;
+  narrator: Narrator;
 };

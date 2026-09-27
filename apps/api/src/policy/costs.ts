@@ -1,6 +1,7 @@
-// What understanding and planning cost (P12, D38; P13, D39), in micro-dollars (µUSD) and whole numbers
-// only: a transcript by audio second, a caption by input and output token at the Haiku 4.5 batch prices,
-// a plan by token at the Sonnet 5 prices. An episode's cost in cents rounds its ledger's sum up.
+// What understanding, planning and narration cost (P12, D38; P13, D39; P14, D40), in micro-dollars (µUSD)
+// and whole numbers only: a transcript by audio second, a caption by input and output token at the Haiku
+// 4.5 batch prices, a plan by token at the Sonnet 5 prices, narration by character. An episode's cost in
+// cents rounds its ledger's sum up.
 import type { CostLedgerRow } from '@life/contracts';
 import type { PlanUsage } from '../pipeline/ports';
 
@@ -67,6 +68,14 @@ export function planCostRows(usage: PlanUsage): PlanCostRow[] {
       units,
       microUsd: ceilDiv(units * PLAN_MICRO_USD_PER_TEN_TOKENS[unit], 10),
     }));
+}
+
+/** ElevenLabs Flash: µUSD per character ($0.05 per 1,000). */
+const NARRATE_MICRO_USD_PER_CHARACTER = 50;
+
+/** 50 µUSD per character ElevenLabs billed. */
+export function narrateMicroUsd(characters: number): number {
+  return wholeUnits(characters) * NARRATE_MICRO_USD_PER_CHARACTER;
 }
 
 /** ⌈Σ µUSD / 10,000⌉ cents. */

@@ -16,6 +16,10 @@ export type Env = {
   AI: Ai;
   /** Worker secret: the Anthropic key for captions (P12). */
   ANTHROPIC_API_KEY?: string;
+  /** Worker secret: the ElevenLabs key for narration (P14). */
+  ELEVENLABS_API_KEY?: string;
+  /** Worker secret: our narrator ids (`narrator-1` … `narrator-4`) to ElevenLabs voice ids, as JSON (P14). */
+  NARRATOR_VOICES?: string;
   /** `fixture` makes the pipeline use fixture providers; set only by the test pool and local dev. */
   PROVIDERS?: string;
   /** The episode pipeline Workflow (P12). */

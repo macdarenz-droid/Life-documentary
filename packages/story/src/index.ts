@@ -14,3 +14,4 @@ export * from './motion/titleCardPlan';
 export * from './capture';
 export * from './footage';
 export * from './plan';
+export * from './narration';

@@ -6,3 +6,4 @@ export * from './costLedger';
 export * from './editOp';
 export * from './plannerOutput';
 export * from './storedPlan';
+export * from './narration';
