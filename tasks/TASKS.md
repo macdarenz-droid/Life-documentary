@@ -177,6 +177,23 @@ Checks: API typecheck, tests, lint, format, boundaries, `deploy:dry`.
 ### T-011e · P6.5 · The upload queue on the phone · todo · needs: T-011d, T-011c, T-009a
 Text: `tasks/p6/T-011.md`.
 
+## P12 — Understanding (step 1 of the episode pipeline)
+
+### T-013a · P12.1 · Keyframes leave the phone · todo · needs: T-011e, T-011d
+Text: `tasks/p12/T-013.md`.
+
+### T-013b · P12.2 · Derived rows, episodes and the cost ledger · todo · needs: T-011d, T-011b
+Text: `tasks/p12/T-013.md`.
+
+### T-013c · P12.3 · Transcriber and captioner providers · todo · needs: T-011d
+Text: `tasks/p12/T-013.md`.
+
+### T-013d · P12.4 · EpisodePipeline step 1: understand · todo · needs: T-013a, T-013b, T-013c
+Text: `tasks/p12/T-013.md`.
+
+### T-013e · P12.5 · What was understood, on the phone · todo · needs: T-013b, T-011e
+Text: `tasks/p12/T-013.md`.
+
 ## Blocked on the owner
 
 ### P-B · Capture and upload proof on real devices · blocked · needs: P3, P5, P6 tasks (not yet written)

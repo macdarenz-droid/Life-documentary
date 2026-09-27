@@ -98,17 +98,17 @@ Routes call `policy` and `data`; `pipeline` calls `providers` through ports; `pr
 | `Question` | id, templateId, documentaryId, askedOn (local date), storylineId?, text, answeredByMomentId? | Device, from `packages/story/questionEngine` (deterministic) |
 | `Storyline` | id, documentaryId, title, openedAt, closedAt?, summary? (server-written after episodes) | Device creates; API writes `summary` |
 | `CastMember` | id, documentaryId, name, relation?, createdAt | Device; names typed by the user; no media reference other than manual tags |
-| `Derived` | momentId, transcript?, caption?, language, provider, modelVersion, producedAt | API `pipeline/understand` (process then delete) |
+| `Derived` | id, momentId, transcript?, caption?, language, provider, modelVersion, producedAt (one row per moment and provider; synced down only) | API `pipeline/understand` (process then delete) |
 | `Episode` | id, documentaryId, number, weekStart, weekEnd, state (`scheduled` → `understanding` → `planning` → `narrating` → `rendering` → `ready`, or `failed`, or `recap`), planVersion, renderVersion, mp4Key?, posterKey?, durationMs?, costCents, deliveredAt? | API `pipeline/EpisodePipeline` |
 | `EpisodePlan` | episodeId, version, plan (EpisodePlan v1 JSON), createdBy `model` or `edit` | API; validated by `packages/story/planValidation` |
 | `EditOp` | id, episodeId, seq, op `retitle` / `swapLine` / `dropClip` / `closingShot` / `musicMood`, payload, appliedToVersion | Device creates; API applies with `packages/story/editOps` (pure) |
 | `Season` | documentaryId, year, state, trailerKey?, filmKey?, premiereAt? | API `pipeline/SeasonPipeline` |
 | `Entitlement` | userId, tier `free` / `documentary` / `family`, storageQuotaBytes, crewLimit, source, validUntil | API `policy/entitlements` from RevenueCat webhooks |
-| `CostLedger` | episodeId or seasonId, step, provider, units, cents, at | API pipeline steps |
+| `CostLedger` | id, episodeId (seasonId from P22), step, provider, unit, units, microUsd, at (one row per episode, step and unit) | API pipeline steps |
 | `ChangeLog` | documentaryId, seq, entity, id, changedAt | API `data/` for sync cursors |
 | `UploadJob` (device only) | assetId, state, uploadId, parts (etag per part), bytesDone, attempts, nextAttemptAt | Device `data/uploadQueue` |
 
-Media key layout in R2: `users/{uid}/originals/{assetId}` (kept only when in an episode or Cloud backup is on) · `tmp/{uid}/previews/{assetId}` (lifecycle rule: delete after 2 days; the pipeline deletes sooner) · `users/{uid}/narration/{episodeId}/{n}.mp3` · `users/{uid}/episodes/{episodeId}/v{renderVersion}.mp4` and `poster.jpg` · `users/{uid}/exports/{jobId}.zip` (7 days).
+Media key layout in R2 (D37, D38): `u/{uid}/{documentaryId}/{assetId}/original` (kept only when in an episode or Cloud backup is on) · working copies `tmp/{uid}/{documentaryId}/{assetId}/{answer|preview|keyframe}` (lifecycle rule on `tmp/`: delete after 2 days; the pipeline deletes them when its run ends) · `users/{uid}/narration/{episodeId}/{n}.mp3` · `users/{uid}/episodes/{episodeId}/v{renderVersion}.mp4` and `poster.jpg` · `users/{uid}/exports/{jobId}.zip` (7 days).
 
 ## 4. The story engine
 
