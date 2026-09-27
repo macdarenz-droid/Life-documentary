@@ -127,13 +127,14 @@ Text: `tasks/p10/T-009.md`.
 
 ### T-012a · W.1 · Words in a real person's voice · todo · needs: T-009d
 Text: `tasks/words/T-012.md`. Taken before the rest of P4 because T-010c and T-010d use the words it adds.
+Note (2026-09-27): T-010c was built just before this task was published, so its page has its own words. In T-012a, replace them with table D's deletion-page lines (keep the keys T-010c made or move them to `words.deletePage`), and include the page's strings in the voice test.
 
 ## P4 — Account (Better Auth on Workers and D1)
 
 ### T-010a · P4.1 · Better Auth on Workers and D1, proved in the test pool · done · needs: T-001c
 Text: `tasks/p4/T-010.md`.
 
-### T-010b · P4.2 · Product rows, devices and the first link · todo · needs: T-010a
+### T-010b · P4.2 · Product rows, devices and the first link · done · needs: T-010a
 Text: `tasks/p4/T-010.md`.
 
 ### T-010c · P4.3 · The public deletion page · todo · needs: T-010b
