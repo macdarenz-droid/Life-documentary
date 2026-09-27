@@ -4,12 +4,13 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-08-22",
   "compatibility_flags": ["nodejs_compat"],
-  "vars": { "BUILD": "dev" },
+  "vars": { "BUILD": "dev", "BETTER_AUTH_URL": "http://localhost:8787" },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "life-db",
       "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations",
     },
   ],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "life-media" }],

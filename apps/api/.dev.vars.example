@@ -1,0 +1,8 @@
+# Copy to .dev.vars for `wrangler dev`; put real values only in .dev.vars (git-ignored) or Worker secrets.
+BETTER_AUTH_SECRET=replace-with-a-long-random-string
+# Optional: Sign in with Apple and Google are offered only when these are set.
+APPLE_CLIENT_ID=
+APPLE_CLIENT_SECRET=
+APPLE_APP_BUNDLE_IDENTIFIER=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
