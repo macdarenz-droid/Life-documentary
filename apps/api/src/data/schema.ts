@@ -126,3 +126,116 @@ export const deletionRequests = sqliteTable('deletion_requests', {
   purgeAfter: text('purge_after').notNull(),
   cancelledAt: text('cancelled_at'),
 });
+
+// Synced rows (P6, D37): keyed by the phone's UUIDs, last-write-wins per row on `updated_at`. Media
+// assets and questions have no `updatedAt` in their contracts, so theirs is the server's write time.
+// Device-only fields (local paths, keys, posters, upload state) have no column.
+
+const documentaryId = () =>
+  text('documentary_id')
+    .notNull()
+    .references(() => documentaries.id, { onDelete: 'cascade' });
+
+export const moments = sqliteTable(
+  'moments',
+  {
+    id: text('id').primaryKey(),
+    documentaryId: documentaryId(),
+    authorUserId: text('author_user_id').notNull(),
+    capturedAt: text('captured_at').notNull(),
+    timeZone: text('time_zone').notNull(),
+    kind: text('kind', { enum: ['answer', 'clip', 'photo', 'note'] }).notNull(),
+    questionId: text('question_id'),
+    mediaAssetId: text('media_asset_id'),
+    text: text('text'),
+    mood: text('mood', { enum: ['bright', 'calm', 'tender', 'tired', 'heavy'] }),
+    placeName: text('place_name'),
+    localOnly: integer('local_only', { mode: 'boolean' }).notNull(),
+    storylineIds: text('storyline_ids', { mode: 'json' }).$type<string[]>().notNull(),
+    castIds: text('cast_ids', { mode: 'json' }).$type<string[]>().notNull(),
+    updatedAt: text('updated_at').notNull(),
+    deletedAt: text('deleted_at'),
+  },
+  (t) => [index('moments_documentary_idx').on(t.documentaryId)],
+);
+
+export const mediaAssets = sqliteTable(
+  'media_assets',
+  {
+    id: text('id').primaryKey(),
+    documentaryId: documentaryId(),
+    ownerUserId: text('owner_user_id').notNull(),
+    kind: text('kind', { enum: ['video', 'photo', 'audio'] }).notNull(),
+    durationMs: integer('duration_ms'),
+    width: integer('width'),
+    height: integer('height'),
+    bytes: integer('bytes').notNull(),
+    sha256: text('sha256').notNull(),
+    cloudKey: text('cloud_key'),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+    deletedAt: text('deleted_at'),
+  },
+  (t) => [index('media_assets_documentary_idx').on(t.documentaryId)],
+);
+
+export const questions = sqliteTable(
+  'questions',
+  {
+    id: text('id').primaryKey(),
+    documentaryId: documentaryId(),
+    templateId: text('template_id').notNull(),
+    reason: text('reason').notNull(),
+    askedOn: text('asked_on').notNull(),
+    storylineId: text('storyline_id'),
+    text: text('text').notNull(),
+    answeredByMomentId: text('answered_by_moment_id'),
+    updatedAt: text('updated_at').notNull(),
+    deletedAt: text('deleted_at'),
+  },
+  (t) => [index('questions_documentary_idx').on(t.documentaryId)],
+);
+
+export const storylines = sqliteTable(
+  'storylines',
+  {
+    id: text('id').primaryKey(),
+    documentaryId: documentaryId(),
+    title: text('title').notNull(),
+    openedAt: text('opened_at').notNull(),
+    closedAt: text('closed_at'),
+    summary: text('summary'),
+    updatedAt: text('updated_at').notNull(),
+    deletedAt: text('deleted_at'),
+  },
+  (t) => [index('storylines_documentary_idx').on(t.documentaryId)],
+);
+
+export const castMembers = sqliteTable(
+  'cast_members',
+  {
+    id: text('id').primaryKey(),
+    documentaryId: documentaryId(),
+    name: text('name').notNull(),
+    relation: text('relation'),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+    deletedAt: text('deleted_at'),
+  },
+  (t) => [index('cast_members_documentary_idx').on(t.documentaryId)],
+);
+
+/** One row per accepted change; a phone pulls what changed after its cursor (`seq`). */
+export const changeLog = sqliteTable(
+  'change_log',
+  {
+    seq: integer('seq').primaryKey({ autoIncrement: true }),
+    documentaryId: documentaryId(),
+    entity: text('entity', {
+      enum: ['documentary', 'moment', 'mediaAsset', 'question', 'storyline', 'castMember'],
+    }).notNull(),
+    entityId: text('entity_id').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (t) => [index('change_log_documentary_seq_idx').on(t.documentaryId, t.seq)],
+);

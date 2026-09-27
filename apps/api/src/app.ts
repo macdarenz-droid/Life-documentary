@@ -6,6 +6,7 @@ import { deletePage } from './routes/deletePage';
 import { devices } from './routes/devices';
 import { documentaries } from './routes/documentaries';
 import { health } from './routes/health';
+import { sync } from './routes/sync';
 import type { AppEnv } from './routes/middleware/session';
 import { apiError } from './shared/errors';
 
@@ -25,6 +26,7 @@ export function createApp({ mail = defaultMail }: { mail?: MailSender } = {}) {
   app.route('/', account);
   app.route('/', devices);
   app.route('/', documentaries);
+  app.route('/', sync);
   app.notFound((c) => apiError(c, 404, 'not_found', 'Not found.'));
   app.onError((err, c) => {
     console.error(err);
