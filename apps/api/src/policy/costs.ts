@@ -1,7 +1,8 @@
-// What understanding costs (P12, D38), in micro-dollars (µUSD) and whole numbers only: a transcript by
-// audio second, a caption by input and output token at the Haiku 4.5 batch prices. An episode's cost in
-// cents rounds its ledger's sum up.
+// What understanding and planning cost (P12, D38; P13, D39), in micro-dollars (µUSD) and whole numbers
+// only: a transcript by audio second, a caption by input and output token at the Haiku 4.5 batch prices,
+// a plan by token at the Sonnet 5 prices. An episode's cost in cents rounds its ledger's sum up.
 import type { CostLedgerRow } from '@life/contracts';
+import type { PlanUsage } from '../pipeline/ports';
 
 /** Workers AI whisper-large-v3-turbo: µUSD per audio minute. */
 export const TRANSCRIBE_MICRO_USD_PER_MINUTE = 513;
@@ -32,6 +33,40 @@ export function captionMicroUsd(inputTokens: number, outputTokens: number): numb
     ceilDiv(wholeUnits(inputTokens) * CAPTION_MICRO_USD_PER_TWO_INPUT_TOKENS, 2) +
     ceilDiv(wholeUnits(outputTokens) * CAPTION_MICRO_USD_PER_TWO_OUTPUT_TOKENS, 2)
   );
+}
+
+/**
+ * Claude Sonnet 5, in µUSD per ten tokens: input 2, output 10 (thinking included), a 1-hour cache write 4
+ * and a cache read 0.2 each.
+ */
+const PLAN_MICRO_USD_PER_TEN_TOKENS = {
+  inputToken: 20,
+  outputToken: 100,
+  cacheWriteToken: 40,
+  cacheReadToken: 2,
+} as const;
+
+export type PlanCostRow = {
+  unit: keyof typeof PLAN_MICRO_USD_PER_TEN_TOKENS;
+  units: number;
+  microUsd: number;
+};
+
+/** One row per unit used, `usage` summed over the step's calls; each row rounds up once. */
+export function planCostRows(usage: PlanUsage): PlanCostRow[] {
+  const counts: [PlanCostRow['unit'], number][] = [
+    ['inputToken', usage.inputTokens],
+    ['outputToken', usage.outputTokens],
+    ['cacheWriteToken', usage.cacheWriteTokens],
+    ['cacheReadToken', usage.cacheReadTokens],
+  ];
+  return counts
+    .filter(([, units]) => wholeUnits(units) > 0)
+    .map(([unit, units]) => ({
+      unit,
+      units,
+      microUsd: ceilDiv(units * PLAN_MICRO_USD_PER_TEN_TOKENS[unit], 10),
+    }));
 }
 
 /** ⌈Σ µUSD / 10,000⌉ cents. */

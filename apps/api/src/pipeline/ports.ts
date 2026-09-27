@@ -51,4 +51,34 @@ export interface Captioner {
   remove(batchId: string): Promise<void>;
 }
 
-export type PipelineProviders = { transcriber: Transcriber; captioner: Captioner };
+/** One turn of the planning conversation: the brief, an earlier answer, or its errors. */
+export type PlanMessage = { role: 'user' | 'assistant'; text: string };
+
+export type PlanRequest = {
+  model: string;
+  system: string;
+  messages: PlanMessage[];
+  effort: 'low' | 'medium' | 'high';
+  maxTokens: number;
+};
+
+export type PlanUsage = {
+  inputTokens: number;
+  outputTokens: number;
+  cacheWriteTokens: number;
+  cacheReadTokens: number;
+};
+
+/** The model's raw answer: its text when it wrote any, why it stopped, and what it used. */
+export type PlanAnswer = { text?: string; stopReason: string; usage: PlanUsage };
+
+/** Plans an episode (P13, D39). The answer is reported as it came back; the pipeline checks it. */
+export interface Planner {
+  plan(request: PlanRequest): Promise<PlanAnswer>;
+}
+
+export type PipelineProviders = {
+  transcriber: Transcriber;
+  captioner: Captioner;
+  planner: Planner;
+};
