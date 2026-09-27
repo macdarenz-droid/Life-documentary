@@ -9,7 +9,7 @@ import type { PosterMaker } from '../../domain/capturePorts';
 export const POSTER_MAX_SIDE = 480;
 const COMPRESS = 0.7;
 
-async function resized(uri: string, maxSide: number) {
+async function resized(uri: string, maxSide: number, compress = COMPRESS) {
   const image = await ImageManipulator.manipulate(uri).renderAsync();
   const context = ImageManipulator.manipulate(image);
   if (Math.max(image.width, image.height) > maxSide) {
@@ -18,7 +18,7 @@ async function resized(uri: string, maxSide: number) {
   const saved = await (
     await context.renderAsync()
   ).saveAsync({
-    compress: COMPRESS,
+    compress,
     format: SaveFormat.JPEG,
   });
   return { uri: saved.uri, width: saved.width, height: saved.height };
@@ -46,9 +46,9 @@ export const expoPosterMaker: PosterMaker = {
       if (frame) removeQuietly(frame);
     }
   },
-  fromPhoto: async (uri, maxSide) => {
+  fromPhoto: async (uri, maxSide, quality) => {
     try {
-      return await resized(uri, maxSide);
+      return await resized(uri, maxSide, quality);
     } catch {
       return null;
     }

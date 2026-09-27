@@ -1,7 +1,9 @@
 // Fake capture services for screen tests and the Design Lab: scripted, recorded, no device.
 import {
   Documentary,
+  UPLOAD_PART_SIZE,
   Uuid,
+  partCountFor,
   type LinkDocumentaryResult,
   type Me,
   type RegisterDevice,
@@ -14,6 +16,7 @@ import type {
   CaptureServices,
   Haptics,
   LibraryPicker,
+  Network,
   PermissionState,
   Permissions,
   PickedMedia,
@@ -65,7 +68,10 @@ export type FakeServices = CaptureServices & {
     deletionCancels: number;
     /** Every sync request, in order; the fake server has nothing to send back. */
     syncs: SyncRequest[];
+    /** Every upload call, in order, as `create:<asset>:<purpose>`, `part:<n>` or `complete`. */
+    uploads: string[];
   };
+  network: Network & { kind: 'wifi' | 'cellular' | 'none' };
   /** Called with the source path a recording "writes"; the test puts fixture bytes there. */
   onRecordingFile?: (path: string) => void;
   /** Called with the path a poster "writes"; the test puts fixture bytes there. */
@@ -247,6 +253,27 @@ export function fakeServices(
         services.api.syncs.push(request);
         return { cursor: services.api.syncs.length, changes: [], refused: [] };
       },
+      uploads: [],
+      createUpload: async (input) => {
+        services.api.uploads.push(`create:${input.assetId}:${input.purpose}`);
+        return {
+          uploadId: `upload-${input.assetId}`,
+          partSize: UPLOAD_PART_SIZE,
+          partCount: partCountFor(input.bytes),
+        };
+      },
+      uploadPart: async (_assetId, _purpose, partNumber) => {
+        services.api.uploads.push(`part:${partNumber}`);
+        return { partNumber, etag: `etag-${partNumber}` };
+      },
+      completeUpload: async (assetId, purpose) => {
+        services.api.uploads.push('complete');
+        return { cloudKey: `tmp/${assetId}/${purpose}` };
+      },
+    },
+    network: {
+      kind: 'wifi',
+      connection: async () => services.network.kind,
     },
     device: { platform: 'ios', appVersion: '0.0.0' },
     permissions: {

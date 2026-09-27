@@ -17,6 +17,12 @@ export const UploadJob = z.object({
   bytesDone: z.number().int().min(0),
   attempts: z.number().int().min(0),
   nextAttemptAt: Timestamp.optional(),
+  /**
+   * Device-only: the encrypted working copy made for this upload (a photo's preview) and its wrapped key,
+   * set together. Absent when the asset's own file goes up (an answer).
+   */
+  sourcePath: z.string().min(1).optional(),
+  sourceWrappedKey: z.string().min(1).optional(),
   updatedAt: Timestamp,
 });
 export type UploadJob = z.infer<typeof UploadJob>;

@@ -38,12 +38,21 @@ import { createApiClient } from '../src/services/api/apiClient';
 import { createLifeAuthClient } from '../src/services/auth/authClient';
 import { betterAuthAccount } from '../src/services/auth/betterAuthAccount';
 import { AppleSignInButton } from '../src/services/auth/AppleSignInButton';
+import { expoBackgroundUploads } from '../src/services/background/uploadTask';
+import { expoNetwork } from '../src/services/network/expoNetwork';
+import { fetch as expoFetch } from 'expo/fetch';
 
 void SplashScreen.preventAutoHideAsync();
 
 const reminders = expoReminders(words.reminders.channelName);
 const account = betterAuthAccount(createLifeAuthClient(apiBaseUrl()));
-const api = createApiClient(apiBaseUrl(), () => account.cookie());
+// Part bytes go through expo/fetch (P6); its types take a BufferSource body.
+const api = createApiClient(
+  apiBaseUrl(),
+  () => account.cookie(),
+  fetch,
+  expoFetch as unknown as typeof fetch,
+);
 const device = {
   platform: Platform.OS === 'ios' ? 'ios' : 'android',
   appVersion: appVersion(),
@@ -81,6 +90,8 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       account,
       api,
       device,
+      network: expoNetwork,
+      background: expoBackgroundUploads,
     }),
     [voice],
   );

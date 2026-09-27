@@ -1,11 +1,16 @@
 // Capture ports (types only). Adapters live in src/services/; screens get them through the capture context.
 import type {
+  CreateUpload,
+  CreateUploadResult,
   Documentary,
   LinkDocumentaryResult,
   Me,
   RegisterDevice,
   SyncRequest,
   SyncResponse,
+  UploadDone,
+  UploadPurpose,
+  UploadedPart,
 } from '@life/contracts';
 
 /** Provided by a mounted camera view (CameraRecorderView). */
@@ -80,8 +85,8 @@ export type Poster = { uri: string; width: number; height: number };
 export interface PosterMaker {
   /** The frame at `atMs`. */
   fromVideo(uri: string, atMs: number): Promise<Poster | null>;
-  /** The photo with its longest side at most `maxSide`. */
-  fromPhoto(uri: string, maxSide: number): Promise<Poster | null>;
+  /** The photo with its longest side at most `maxSide`, as a JPEG of `quality` (0 to 1). */
+  fromPhoto(uri: string, maxSide: number, quality?: number): Promise<Poster | null>;
 }
 
 /** The props every camera view (the Expo one or a fake) accepts. */
@@ -137,6 +142,32 @@ export interface Api {
   cancelDeletion(): Promise<void>;
   /** POST /sync: pushes changed rows and pulls what changed after the cursor (P6). */
   sync(request: SyncRequest): Promise<SyncResponse>;
+  /** POST /uploads: starts an upload, or gives back the one already open for this asset and purpose. */
+  createUpload(input: CreateUpload): Promise<CreateUploadResult>;
+  /** PUT one part's bytes. */
+  uploadPart(
+    assetId: string,
+    purpose: UploadPurpose,
+    partNumber: number,
+    bytes: Uint8Array,
+  ): Promise<UploadedPart>;
+  completeUpload(
+    assetId: string,
+    purpose: UploadPurpose,
+    parts: UploadedPart[],
+  ): Promise<UploadDone>;
+}
+
+/** How the phone is connected right now; uploads of video wait for Wi-Fi. */
+export interface Network {
+  connection(): Promise<'wifi' | 'cellular' | 'none'>;
+}
+
+/** The system's background task for uploads: registered after sign-in, it runs `run` when it fires. */
+export interface BackgroundUploads {
+  /** What one background run does, with its time budget in milliseconds. */
+  setRunner(run: (budgetMs: number) => Promise<void>): void;
+  register(): Promise<void>;
 }
 
 /** What the phone says about itself when it registers. */
@@ -158,4 +189,7 @@ export type CaptureServices = {
   account: Account;
   api: Api;
   device: DeviceInfo;
+  network: Network;
+  /** Absent where there is no background task (tests, the Design Lab). */
+  background?: BackgroundUploads;
 };
