@@ -125,7 +125,7 @@ Text: `tasks/p10/T-009.md`.
 
 ## P4 — Account (Better Auth on Workers and D1)
 
-### T-010a · P4.1 · Better Auth on Workers and D1, proved in the test pool · todo · needs: T-001c
+### T-010a · P4.1 · Better Auth on Workers and D1, proved in the test pool · done · needs: T-001c
 Text: `tasks/p4/T-010.md`.
 
 ### T-010b · P4.2 · Product rows, devices and the first link · todo · needs: T-010a
