@@ -139,7 +139,7 @@ Text: `tasks/p4/T-010.md`.
 ### T-010c · P4.3 · The public deletion page · done · needs: T-010b
 Text: `tasks/p4/T-010.md`.
 
-### T-010d · P4.4 · Sign in on the phone and the first link · changes r1 · needs: T-010b, T-009d
+### T-010d · P4.4 · Sign in on the phone and the first link · approved (fix r1 97651f9; merged with P6) · needs: T-010b, T-009d
 Text: `tasks/p4/T-010.md`.
 **Fix list r1** (review of 7a301cf; everything else approved: the section, the code step, Apple only on iOS, the first link, the owner id update, the purge date line).
 1. Signing in again must cancel an open deletion. The words say "To cancel, sign in again before then", but nothing on the phone calls `cancelDeletion`, so the request stays open and P21 would purge the account. In `signInAndLink` (`application/account.ts`), after the session is confirmed: `api.me()`, and when `deletion` is not null, `api.cancelDeletion()`. A failure there shows `signInFailed` like any other sign-in failure.
@@ -153,24 +153,38 @@ Checks: mobile typecheck, tests, lint, format, boundaries.
 ### T-011a · P6.1 · `leavesDevice` and the sync and upload contracts · done · needs: T-001a
 Text: `tasks/p6/T-011.md`.
 
-### T-011b · P6.2 · `POST /sync` on the server · changes r1 · needs: T-011a, T-010b
+### T-011b · P6.2 · `POST /sync` on the server · approved (fix r1 f064305; merged with P6) · needs: T-011a, T-010b
 Text: `tasks/p6/T-011.md`.
 **Fix list r1** (review of fd29352; everything else approved: ownership, `leavesDevice` on the server, the change log, paging, tombstones).
 1. Questions have no `updatedAt`, so today an incoming question that differs from the stored one simply replaces it, and an older unanswered copy from a second phone clears a stored answer (that phone never lands the answer, because the answer's media is not on it, and it re-pushes the question every round). Merge rule for questions: a new question is stored; a stored one is replaced only when the incoming row has an `answeredByMomentId` and the stored row has none or points at a moment the server holds as deleted. A stored answer is never cleared. Anything else is refused as `stale`.
 2. `/sync` must not trust `cloudKey`. A phone can send any string (another account's key, or an old key), and P12 reads and deletes the object at that key. On `/sync`: a new media asset row is stored with `cloud_key` null, a stored `cloud_key` is always kept, and `cloudKey` plays no part in the stale comparison. Only upload completion (T-011d) sets it.
-Tests: phone A pushes Q answered by M, then phone B pushes Q unanswered → the stored Q still has M and B's change is refused `stale`; after M is deleted (tombstone pushed), a push of Q answered by M2 stores M2; a push of an asset with `cloudKey: 'u/other/…'` stores null, and after a completed upload a later push with a different `cloudKey` leaves the completed key in place.
+Tests: phone A pushes Q answered by M, then phone B pushes Q unanswered → the stored Q still has M and B's change is refused `stale`; after M is deleted (tombstone pushed), a push of Q answered by M2 stores M2; a push of a new asset with `cloudKey: 'u/other/…'` stores null, and when the stored asset has a `cloud_key` (seeded in D1 by the test, as an original's completion would set it) a later push with a different `cloudKey` leaves the stored key in place.
 Allowed test changes: tests that pushed a `cloudKey` and expected it back now expect the server's value; none removed.
 Checks: API and contracts typecheck, tests, lint, format, boundaries, `deploy:dry`.
 
-### T-011c · P6.3 · Sync on the phone · review · needs: T-011b, T-010d
+### T-011c · P6.3 · Sync on the phone · changes r1 · needs: T-011b, T-010d
 Text: `tasks/p6/T-011.md`.
+**Fix list r1** (review of 0e92dda; everything else approved: what leaves, paging, last-write-wins on pull, the marks, one round at a time, the triggers).
+1. After a restart the phone never syncs until Settings is opened. `syncIfSignedIn` treats `account.cookie() === null` as signed out, but the Better Auth adapter fills its cookie cache only inside `session()` or a sign-in, and nothing calls `session()` at start. When `cookie()` is null, `syncIfSignedIn` awaits `account.session()` (it refreshes the cache) and treats the person as signed out only when that is null too.
+2. Photos and answers taken before sign-in are refused. Their media assets carry the placeholder owner id from `openLocalDocumentary`; the server refuses them `not_yours`, the phone ignores the refusal and moves its mark past them, so they never reach the server and can never upload. When the first link replaces the local owner id (`afterSignIn` in `application/account.ts`), rewrite the placeholder in the same transaction: `ownerUserId` on this documentary's media assets and `authorUserId` on its moments (moments get `updatedAt` = now). The fake Api's sync applies the server's `not_yours` rule for media assets.
+Tests: with an Account fake whose cookie exists only after `session()` is called, a round after a "restart" pushes and pulls; a photo and an answer captured before sign-in are, after sign-in and a round, stored by the fake server with the account's id and nothing is refused; a signed-out Account still makes no call.
+Allowed test changes: none removed or loosened.
+Checks: mobile typecheck, tests, lint, format, boundaries.
 
-### T-011d · P6.4 · Uploads through the Worker · changes r1 · needs: T-011b
+### T-011d · P6.4 · Uploads through the Worker · changes r2 · needs: T-011b
 Text: `tasks/p6/T-011.md`.
 **Fix list r1** (a review of 09d77e2 is running; more items may be added here before you reach this entry, so read it again when you start it).
 1. Working copies need their own prefix. D14's backstop is an R2 lifecycle rule that deletes working copies after 2 days, and lifecycle rules match by key prefix only. With `purpose` last in the key, no rule can pick out answers and previews without also deleting originals. Keys: `tmp/{userId}/{documentaryId}/{assetId}/{purpose}` for `answer` and `preview` (and any later working-copy purpose); `u/{userId}/{documentaryId}/{assetId}/original` for originals. One function in `routes/uploads.ts` makes the key; the purpose decides the prefix.
-Tests: a completed answer upload's `cloudKey` and stored object key start with `tmp/{userId}/`; a completed photo preview's too.
+2. A working copy is not the asset's lasting copy, so completing one must not set `media_assets.cloud_key` (in P12 a video answer uploads two working copies, its sound and a keyframe, and one field cannot point at both). Completing an `original` sets `cloud_key` and writes the `change_log` row as now; completing a working copy leaves the asset row alone, and P12 finds working copies by their key, which is fixed by (user, documentary, asset, purpose). `UploadDone` still returns the object's key.
+Tests: a completed answer upload's stored object key starts with `tmp/{userId}/`, and so does a completed photo preview's; after an answer completes, the asset's `cloudKey` is still unset and a sync from the earlier cursor returns no new change for it.
+Allowed test changes: the test that expected the answer's `cloudKey` after completion now expects the object at the `tmp/` key and no `cloudKey`.
 Checks: API typecheck, tests, lint, format, boundaries, `deploy:dry`.
+**Fix list r2** (r1 approved at da4cc41; these come from the review of 09d77e2).
+1. `assetForUpload` (`data/repositories/uploads.ts`) reads the asset's moments from every documentary, so a moment another person pushes into their own documentary pointing at your asset id can change what your asset may upload (and each part scans the whole moments table). Look up only moments of the asset's own documentary (`moments.documentary_id` = the asset's, which uses the existing index).
+2. The part response is not a contract. Add `UploadedPart { partNumber, etag (non-empty) }` to `packages/contracts/src/api/uploads.ts` (`CompleteUpload.parts` uses it); the part route returns it parsed. T-011e parses it on the phone.
+3. The `localOnly` test does not prove that no multipart upload starts. Give the app a `MEDIA` binding that wraps the real one and counts `createMultipartUpload` calls; the `localOnly` create asserts none, a normal create asserts one.
+Tests: another user's moment pointing at your photo's asset id does not change your result (your `preview` is allowed, an `answer` for it is refused); the part response parses with `UploadedPart`; the counting assertions above.
+Checks: API and contracts typecheck, tests, lint, format, boundaries, `deploy:dry`.
 
 ### T-011e · P6.5 · The upload queue on the phone · todo · needs: T-011d, T-011c, T-009a
 Text: `tasks/p6/T-011.md`.
