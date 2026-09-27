@@ -186,6 +186,7 @@ Note (2026-09-27, from a second check of the text): (1) Add `planMomentErrors(ou
 ### T-014b · P13.2 · The planner provider and the style prompt · todo · needs: T-013c, T-014a
 Text: `tasks/p13/T-014.md`.
 Note (2026-09-27): the style prompt gains one sentence at the end of the "How an episode goes" paragraph, right after "and that must be an answer.": "It can play again, whole, in its scene." (Three fixture weeks reach 30 s only when it does, and the recap already reuses it.)
+Note (2026-09-27, for P14): the style prompt's "Words." paragraph gains, after "British spelling.": "Write numbers, dates and times in words, such as three weeks or half past six." (The narrator's voice reads digits badly, D40.)
 
 ### T-014c · P13.3 · EpisodePipeline step 2: plan · todo · needs: T-013d, T-014a, T-014b
 Text: `tasks/p13/T-014.md`.
@@ -193,6 +194,17 @@ Note (2026-09-27): (1) When the first answer had no text, the retry sends no ass
 
 ### T-014d · P13.4 · The planner evaluation · todo · needs: T-014c
 Text: `tasks/p13/T-014.md`.
+
+## P14 — Narration (step 3 of the episode pipeline)
+
+### T-015a · P14.1 · Narration shapes and rules · todo · needs: T-014a
+Text: `tasks/p14/T-015.md`.
+
+### T-015b · P14.2 · The ElevenLabs provider · todo · needs: T-013c, T-015a
+Text: `tasks/p14/T-015.md`.
+
+### T-015c · P14.3 · EpisodePipeline step 3: narrate · todo · needs: T-014c, T-015a, T-015b
+Text: `tasks/p14/T-015.md`.
 
 ## Blocked on the owner
 
