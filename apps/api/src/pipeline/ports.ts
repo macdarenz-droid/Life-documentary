@@ -8,7 +8,15 @@ export type TranscribeInput = {
 };
 
 /** What the model heard; `language` and `seconds` only when it said so. */
-export type Transcription = { text: string; language?: string; seconds?: number };
+/** A timed word or stretch of speech, in whole ms. */
+export type TimedWord = { text: string; startMs: number; endMs: number };
+export type TimedSegment = TimedWord & { words?: TimedWord[] };
+export type Transcription = {
+  text: string;
+  language?: string;
+  seconds?: number;
+  segments?: TimedSegment[];
+};
 
 export interface Transcriber {
   transcribe(input: TranscribeInput): Promise<Transcription>;

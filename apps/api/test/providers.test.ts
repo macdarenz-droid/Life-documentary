@@ -48,6 +48,92 @@ describe('the Workers AI transcriber', () => {
     expect(out).toEqual({ text: 'We walked to the lake.', language: 'de', seconds: 9.4 });
   });
 
+  it('maps two segments, one with words, from seconds to whole ms', async () => {
+    const ai: WhisperBinding = {
+      run: () =>
+        Promise.resolve({
+          text: 'We walked. To the lake.',
+          segments: [
+            {
+              text: ' We walked.',
+              start: 0,
+              end: 1.2345,
+              words: [
+                { word: ' We', start: 0, end: 0.4 },
+                { word: ' walked.', start: 0.4, end: 1.2345 },
+              ],
+            },
+            { text: ' To the lake. ', start: 1.5, end: 2.75 },
+          ],
+        }),
+    };
+    const out = await workersAiTranscriber(ai).transcribe({
+      model: 'm',
+      body: stream(),
+      contentType: 'audio/mp4',
+    });
+    expect(out.segments).toEqual([
+      {
+        text: 'We walked.',
+        startMs: 0,
+        endMs: 1235,
+        words: [
+          { text: 'We', startMs: 0, endMs: 400 },
+          { text: 'walked.', startMs: 400, endMs: 1235 },
+        ],
+      },
+      { text: 'To the lake.', startMs: 1500, endMs: 2750 },
+    ]);
+  });
+
+  it('gives no segments when the model gives none', async () => {
+    const ai: WhisperBinding = { run: () => Promise.resolve({ text: 'Hi.' }) };
+    const out = await workersAiTranscriber(ai).transcribe({
+      model: 'm',
+      body: stream(),
+      contentType: 'audio/mp4',
+    });
+    expect(out.segments).toBeUndefined();
+  });
+
+  it('drops an empty segment and an empty word', async () => {
+    const ai: WhisperBinding = {
+      run: () =>
+        Promise.resolve({
+          text: 'Hi there.',
+          segments: [
+            { text: '   ', start: 0, end: 0.5 },
+            {
+              text: 'Hi there.',
+              start: 0.5,
+              end: 1.5,
+              words: [
+                { word: ' ', start: 0.5, end: 0.6 },
+                { word: 'Hi', start: 0.6, end: 1 },
+                { word: 'there.', start: 1, end: 1.5 },
+              ],
+            },
+          ],
+        }),
+    };
+    const out = await workersAiTranscriber(ai).transcribe({
+      model: 'm',
+      body: stream(),
+      contentType: 'audio/mp4',
+    });
+    expect(out.segments).toEqual([
+      {
+        text: 'Hi there.',
+        startMs: 500,
+        endMs: 1500,
+        words: [
+          { text: 'Hi', startMs: 600, endMs: 1000 },
+          { text: 'there.', startMs: 1000, endMs: 1500 },
+        ],
+      },
+    ]);
+  });
+
   it('leaves out a language and a duration the model did not give', async () => {
     const ai: WhisperBinding = { run: () => Promise.resolve({ text: '' }) };
     const out = await workersAiTranscriber(ai).transcribe({
