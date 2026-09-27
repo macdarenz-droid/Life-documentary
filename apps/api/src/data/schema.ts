@@ -82,3 +82,47 @@ export const rateLimit = sqliteTable('rate_limit', {
 
 /** The tables Better Auth reads and writes, keyed by its model names. */
 export const authSchema = { user, session, account, verification, rateLimit };
+
+// Product tables (P4). Times are ISO-8601 text, as in the contracts; rows are parsed by the repositories.
+
+export const documentaries = sqliteTable(
+  'documentaries',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    kind: text('kind', { enum: ['solo', 'shared'] }).notNull(),
+    timeZone: text('time_zone').notNull(),
+    episodeDay: integer('episode_day').notNull(),
+    episodeHour: integer('episode_hour').notNull(),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (t) => [index('documentaries_owner_idx').on(t.ownerUserId)],
+);
+
+export const devices = sqliteTable(
+  'devices',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    platform: text('platform', { enum: ['ios', 'android'] }).notNull(),
+    appVersion: text('app_version').notNull(),
+    createdAt: text('created_at').notNull(),
+    lastSeenAt: text('last_seen_at').notNull(),
+  },
+  (t) => [index('devices_user_idx').on(t.userId)],
+);
+
+export const deletionRequests = sqliteTable('deletion_requests', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  requestedAt: text('requested_at').notNull(),
+  purgeAfter: text('purge_after').notNull(),
+  cancelledAt: text('cancelled_at'),
+});

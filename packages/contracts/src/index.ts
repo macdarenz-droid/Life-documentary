@@ -6,3 +6,4 @@ export * from './render/renderManifest';
 export * from './question';
 export * from './domain';
 export * from './episode';
+export * from './api';
