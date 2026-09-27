@@ -3,8 +3,11 @@
 import { z } from 'zod';
 import { Uuid } from '../ids';
 
-/** What a file is uploaded for: the service's working copies (answer, preview) or a full original. */
-export const UploadPurpose = z.enum(['answer', 'preview', 'original']);
+/**
+ * What a file is uploaded for: the service's working copies (answer, preview, keyframe) or a full
+ * original.
+ */
+export const UploadPurpose = z.enum(['answer', 'preview', 'keyframe', 'original']);
 export type UploadPurpose = z.infer<typeof UploadPurpose>;
 
 /** Every part but the last is exactly this size; R2 needs at least 5 MiB for them. */

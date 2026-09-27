@@ -22,9 +22,11 @@ import type {
   VideoPlaybackProps,
 } from '../domain/capturePorts';
 import { openLocalDocumentary } from './bootstrap';
+import { enqueueExisting } from './enqueueUploads';
 import { clearPlaybackCache } from './playback';
 import type { Clock, Ids, Store } from './ports';
 import { syncIfSignedIn } from './sync';
+import { clearUploadCache, drainUploads } from './uploadQueue';
 
 export type CaptureContextValue = {
   store: Store;
@@ -40,7 +42,10 @@ export type CaptureContextValue = {
   AppleButton?: ComponentType<AppleButtonProps>;
   /** Replaces the documentary every screen reads, after the account link changed its owner id (P4). */
   setDocumentary?: (documentary: Documentary) => void;
-  /** Starts a sync round in the background when signed in (P6); it never blocks the screen. */
+  /**
+   * Starts a sync round in the background when signed in, then drains the upload queue (P6); it never
+   * blocks the screen.
+   */
   requestSync?: () => void;
 };
 
@@ -95,6 +100,8 @@ export function CaptureRoot({
     (async () => {
       const { store, clock, ids, timeZone } = await open();
       await clearPlaybackCache(store);
+      // Plain copies a killed upload left behind go before any drain or enqueue.
+      await clearUploadCache(store);
       const documentary = await openLocalDocumentary(store, clock, ids, timeZone);
       let current = documentary;
       const setDocumentary = (next: Documentary) => {
@@ -105,16 +112,26 @@ export function CaptureRoot({
             : state,
         );
       };
-      const requestSync = () => {
-        void syncIfSignedIn(store, clock, services.account, services.api, current).then(
-          (outcome) => {
-            if (outcome?.status === 'synced' && outcome.documentary) {
-              setDocumentary(outcome.documentary);
-            }
-          },
-        );
+      // Uploads follow a round that worked: the server needs the rows before it takes their files.
+      const syncAndUpload = async (options: { budgetMs?: number; retryFailed?: boolean }) => {
+        const outcome = await syncIfSignedIn(store, clock, services.account, services.api, current);
+        if (outcome?.status !== 'synced') return;
+        if (outcome.documentary) setDocumentary(outcome.documentary);
+        await services.background?.register().catch((error: unknown) => {
+          console.error('The background upload task was not registered.', error);
+        });
+        await drainUploads(store, clock, services.api, services.network, options);
       };
-      if (active) sync.current = requestSync;
+      const run = (options: { retryFailed?: boolean }) => {
+        void syncAndUpload(options).catch((error: unknown) => {
+          console.error('The uploads did not run.', error);
+        });
+      };
+      const requestSync = () => run({});
+      // Jobs that failed 8 times are tried again only when the app comes to the foreground.
+      const onForeground = () => run({ retryFailed: true });
+      services.background?.setRunner((budgetMs) => syncAndUpload({ budgetMs }));
+      if (active) sync.current = onForeground;
       if (active)
         setState({
           status: 'ready',
@@ -131,7 +148,12 @@ export function CaptureRoot({
             requestSync,
           },
         });
-      if (active) requestSync();
+      if (!active) return;
+      // Captures from before the upload queue are enqueued once, after the screen is up.
+      await enqueueExisting(store, clock, services.posters).catch((error: unknown) => {
+        console.error('Earlier captures were not enqueued.', error);
+      });
+      if (active) onForeground();
     })().catch((error: unknown) => {
       console.error('The store could not open.', error);
       if (active) setState({ status: 'failed' });

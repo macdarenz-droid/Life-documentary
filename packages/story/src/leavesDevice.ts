@@ -1,6 +1,6 @@
 // The one rule for what may leave the phone (P6, D37). The phone calls it before a row goes into a sync
 // payload and before an upload is queued; the server calls it again before it accepts a row or a part.
-import type { MediaAsset, Moment } from '@life/contracts';
+import type { MediaAsset, Moment, UploadPurpose } from '@life/contracts';
 
 /** A moment and, when it has media, its asset's kind. */
 export type LeavingMoment = Moment & { assetKind?: MediaAsset['kind'] };
@@ -8,32 +8,36 @@ export type LeavingMoment = Moment & { assetKind?: MediaAsset['kind'] };
 export type LeavesDevice = {
   /** Whether the moment's row may sync. */
   row: boolean;
-  /** Which file may upload: none, the answer as recorded, a small preview, or the full original. */
-  media: 'none' | 'answer' | 'preview' | 'original';
+  /** Which files may upload, each for its purpose; empty when nothing goes up. */
+  uploads: UploadPurpose[];
 };
 
 /**
  * - `localOnly`: nothing leaves, not the row and not the media.
- * - Otherwise the row syncs. An answer uploads as recorded (the service needs its sound). A photo uploads
- *   a preview, or its original with Cloud backup. A library clip uploads nothing yet, or its original
- *   with Cloud backup. A note has no media.
+ * - Otherwise the row syncs. An answer uploads as recorded (the service needs its sound), a video answer
+ *   also a keyframe. A photo uploads a preview. A library clip uploads a keyframe. Cloud backup adds
+ *   the original to a photo and a clip, never instead of their working copy. A note has no media.
  */
 export function leavesDevice(
   moment: LeavingMoment,
   { cloudBackup }: { cloudBackup: boolean },
 ): LeavesDevice {
-  if (moment.localOnly) return { row: false, media: 'none' };
+  if (moment.localOnly) return { row: false, uploads: [] };
   if (moment.mediaAssetId === undefined || moment.assetKind === undefined) {
-    return { row: true, media: 'none' };
+    return { row: true, uploads: [] };
   }
+  const original: UploadPurpose[] = cloudBackup ? ['original'] : [];
   switch (moment.kind) {
     case 'answer':
-      return { row: true, media: 'answer' };
+      return {
+        row: true,
+        uploads: moment.assetKind === 'video' ? ['answer', 'keyframe'] : ['answer'],
+      };
     case 'photo':
-      return { row: true, media: cloudBackup ? 'original' : 'preview' };
+      return { row: true, uploads: ['preview', ...original] };
     case 'clip':
-      return { row: true, media: cloudBackup ? 'original' : 'none' };
+      return { row: true, uploads: ['keyframe', ...original] };
     case 'note':
-      return { row: true, media: 'none' };
+      return { row: true, uploads: [] };
   }
 }

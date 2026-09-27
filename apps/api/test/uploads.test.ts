@@ -8,6 +8,7 @@ import {
   UPLOAD_PART_SIZE,
   UploadDone,
   UploadedPart,
+  type UploadPurpose,
 } from '@life/contracts';
 import { applyD1Migrations } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
@@ -28,7 +29,12 @@ async function sha256(bytes: ArrayBuffer | Uint8Array<ArrayBuffer>): Promise<str
 /** A signed-in person with a linked documentary and one synced answer (a video) or photo. */
 async function person(
   email: string,
-  options: { localOnly?: boolean; kind?: 'answer' | 'photo'; media?: R2Bucket } = {},
+  options: {
+    localOnly?: boolean;
+    kind?: 'answer' | 'photo' | 'clip';
+    purpose?: UploadPurpose;
+    media?: R2Bucket;
+  } = {},
 ) {
   const phone = testApp(options.media ? { MEDIA: options.media } : {});
   const cookie = await phone.signIn(email);
@@ -53,8 +59,8 @@ async function person(
     row: {
       id: assetId,
       ownerUserId: me.userId,
-      kind: kind === 'answer' ? 'video' : 'photo',
-      ...(kind === 'answer' ? { durationMs: 9000 } : {}),
+      kind: kind === 'photo' ? 'photo' : 'video',
+      ...(kind === 'photo' ? {} : { durationMs: 9000 }),
       width: 1080,
       height: 1920,
       bytes: FIXTURE.byteLength,
@@ -86,7 +92,8 @@ async function person(
   );
   const { cursor } = SyncResponse.parse(await synced.json());
 
-  const purpose = kind === 'answer' ? 'answer' : 'preview';
+  const purpose =
+    options.purpose ?? (kind === 'answer' ? 'answer' : kind === 'photo' ? 'preview' : 'keyframe');
   const base = `/uploads/${assetId}/${purpose}`;
   const create = (bytes = FIXTURE.byteLength, as = cookie) =>
     phone.post('/uploads', { assetId, purpose, contentType: 'video/mp4', bytes }, as);
@@ -299,6 +306,38 @@ describe('uploads', () => {
     const done = UploadDone.parse(await (await p.complete(await sendAll(p))).json());
     expect(done.cloudKey).toBe(`tmp/${p.me.userId}/${p.documentary.id}/${p.assetId}/preview`);
     expect(await bindings.MEDIA.get(done.cloudKey)).not.toBeNull();
+  });
+
+  it('accepts a keyframe for a library clip and keeps it under tmp/', async () => {
+    const p = await person('ada.clip@example.com', { kind: 'clip' });
+    expect((await p.create()).status).toBe(200);
+    const done = UploadDone.parse(await (await p.complete(await sendAll(p))).json());
+    expect(done.cloudKey.startsWith(`tmp/${p.me.userId}/`)).toBe(true);
+    expect(done.cloudKey).toBe(`tmp/${p.me.userId}/${p.documentary.id}/${p.assetId}/keyframe`);
+    expect(await bindings.MEDIA.get(done.cloudKey)).not.toBeNull();
+  });
+
+  it('refuses an answer upload for a library clip', async () => {
+    const p = await person('ada.clipanswer@example.com', { kind: 'clip', purpose: 'answer' });
+    const res = await p.create();
+    expect(res.status).toBe(403);
+    expect(ApiError.parse(await res.json()).error.code).toBe('forbidden');
+    expect(await openUploads(p.assetId)).toBe(0);
+  });
+
+  it('refuses every purpose for a local-only moment', async () => {
+    const { media, counter } = countingMedia();
+    const p = await person('ada.keptall@example.com', { localOnly: true, media });
+    for (const purpose of ['answer', 'preview', 'keyframe', 'original'] as const) {
+      const res = await p.phone.post(
+        '/uploads',
+        { assetId: p.assetId, purpose, contentType: 'image/jpeg', bytes: 1000 },
+        p.cookie,
+      );
+      expect(res.status).toBe(403);
+    }
+    expect(counter.starts).toBe(0);
+    expect(await openUploads(p.assetId)).toBe(0);
   });
 
   it('keeps the completed cloud key when a later sync sends another', async () => {

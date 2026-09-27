@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { addCastMember, listCast } from '../../application/cast';
 import { captureMoment } from '../../application/captureMoment';
+import { enqueueUploads } from '../../application/enqueueUploads';
 import {
   acceptReminderOffer,
   dismissReminderOffer,
@@ -26,6 +27,8 @@ export function todayScreenProps(ctx: CaptureContextValue): Omit<TodayScreenProp
     loadQuestion: () => todayQuestion(store, documentary, clock, ids),
     save: async (input) => {
       const moment = await captureMoment(store, clock, ids, input);
+      // A photo's preview is made here; like the poster, it never fails the capture.
+      await enqueueUploads(store, clock, services.posters, moment.id).catch(() => null);
       ctx.requestSync?.();
       // The poster is extra: a capture never fails because of it.
       if (moment.mediaAssetId) {

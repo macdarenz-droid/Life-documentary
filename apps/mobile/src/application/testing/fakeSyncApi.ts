@@ -40,6 +40,9 @@ export function fakeSyncApi(options: { page?: number; userId?: string } = {}): F
     linkDocumentary: unused,
     requestDeletion: unused,
     cancelDeletion: unused,
+    createUpload: unused,
+    uploadPart: unused,
+    completeUpload: unused,
     sync: async (input) => {
       api.sent.push(JSON.stringify(input));
       if (api.failNext) {

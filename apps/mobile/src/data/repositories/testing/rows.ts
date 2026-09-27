@@ -102,6 +102,7 @@ export const episode = (n: number, number: number): Episode =>
 export const uploadJob = (assetId: Uuid, patch: Partial<UploadJob> = {}): UploadJob =>
   UploadJob.parse({
     assetId,
+    purpose: 'answer',
     state: 'pending',
     parts: [],
     bytesDone: 0,

@@ -50,7 +50,7 @@ describe('ensurePoster', () => {
     expect(asset?.posterPath).toBe(`store/${assetId}.poster.lde`);
     expect(asset?.posterWrappedKey).toEqual(expect.any(String));
     expect(h.services.posters.calls).toEqual([
-      { kind: 'video', uri: `cache/playback/${assetId}.source.mov`, at: 500 },
+      { kind: 'video', uri: `cache/playback/${assetId}.source.mov`, at: 500, maxSide: 480 },
     ]);
     const stored = h.store.io.files.get(asset!.posterPath!)!;
     expect(Buffer.from(stored).includes(Buffer.from(POSTER_BYTES))).toBe(false);

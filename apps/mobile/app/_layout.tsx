@@ -12,60 +12,29 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Directory, Paths } from 'expo-file-system';
-import { CaptureRoot, type OpenedStore } from '../src/application';
+import { CaptureRoot } from '../src/application';
+import { account, api, device, openDeviceStore } from '../src/composition/device';
 import type { CaptureServices } from '../src/domain/capturePorts';
-import { loadOrCreateMasterKey } from '../src/data/fileStore/masterKey';
-import { migrate, migrations } from '../src/data/migrations';
-import { openExpoDriver } from '../src/data/sqlite/expoDriver';
 import { useExpoVoiceRecorder } from '../src/services/audio/expoVoiceRecorder';
-import { systemClock } from '../src/services/clock/systemClock';
-import { expoCipher } from '../src/services/crypto/expoCipher';
-import { expoFileIO } from '../src/services/files/expoFileIO';
 import { expoHaptics } from '../src/services/haptics/expoHaptics';
-import { expoIds } from '../src/services/ids/expoIds';
 import { expoPermissions } from '../src/services/permissions/expoPermissions';
 import { expoReminders } from '../src/services/notifications/expoReminders';
 import { expoLibraryPicker } from '../src/services/picker/expoLibraryPicker';
 import { expoPlaceFinder } from '../src/services/place/expoPlaceFinder';
 import { CameraRecorderView } from '../src/services/camera/CameraRecorderView';
 import { systemSettings } from '../src/services/settings/systemSettings';
-import { expoKeyStore } from '../src/services/secureStore/expoKeyStore';
 import { expoPosterMaker } from '../src/services/posters/expoPosterMaker';
 import { expoPlayback } from '../src/services/playback';
-import { apiBaseUrl, appVersion } from '../src/services/api/config';
-import { createApiClient } from '../src/services/api/apiClient';
-import { createLifeAuthClient } from '../src/services/auth/authClient';
-import { betterAuthAccount } from '../src/services/auth/betterAuthAccount';
 import { AppleSignInButton } from '../src/services/auth/AppleSignInButton';
+import { expoBackgroundUploads } from '../src/services/background/uploadTask';
+import { expoNetwork } from '../src/services/network/expoNetwork';
 
 void SplashScreen.preventAutoHideAsync();
 
 const reminders = expoReminders(words.reminders.channelName);
-const account = betterAuthAccount(createLifeAuthClient(apiBaseUrl()));
-const api = createApiClient(apiBaseUrl(), () => account.cookie());
-const device = {
-  platform: Platform.OS === 'ios' ? 'ios' : 'android',
-  appVersion: appVersion(),
-} as const;
 
-// Composition root for capture: the real database, file store, keychain and device services. It lives
-// here because nothing may import from app/ (the routes folder).
-async function openDeviceStore(): Promise<OpenedStore> {
-  const driver = await openExpoDriver('life.db');
-  await migrate(driver, systemClock.now(), migrations);
-  const masterKey = await loadOrCreateMasterKey(expoKeyStore, expoCipher);
-  const storeDir = new Directory(Paths.document, 'media').uri;
-  await expoFileIO.ensureDir(storeDir);
-  const cacheDir = Paths.cache.uri;
-  return {
-    store: { driver, io: expoFileIO, cipher: expoCipher, masterKey, storeDir, cacheDir },
-    clock: systemClock,
-    ids: expoIds,
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  };
-}
-
+// Composition root for capture: the device store and services (src/composition/device.ts) and the
+// device-only views.
 export function CaptureProvider({ children }: { children: ReactNode }) {
   const voice = useExpoVoiceRecorder();
   const services = useMemo<CaptureServices>(
@@ -81,6 +50,8 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       account,
       api,
       device,
+      network: expoNetwork,
+      background: expoBackgroundUploads,
     }),
     [voice],
   );

@@ -246,7 +246,7 @@ export const uploads = sqliteTable(
   'uploads',
   {
     assetId: text('asset_id').notNull(),
-    purpose: text('purpose', { enum: ['answer', 'preview', 'original'] }).notNull(),
+    purpose: text('purpose', { enum: ['answer', 'preview', 'keyframe', 'original'] }).notNull(),
     documentaryId: documentaryId(),
     uploadId: text('upload_id').notNull(),
     key: text('key').notNull(),
