@@ -1,3 +1,4 @@
+import { tokens } from '@life/design';
 import { words } from '@life/story';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { readDailyReminder } from '../../application/reminders';
@@ -24,6 +25,17 @@ async function press(name: string) {
 }
 
 describe('SettingsScreen', () => {
+  it('draws the daily switch in the design-system colours', async () => {
+    await setup('granted');
+    expect(dailySwitch().props.tintColor).toBe(tokens.color.surface);
+    expect(dailySwitch().props.thumbTintColor).toBe(tokens.color.text);
+    await act(async () => {
+      fireEvent(dailySwitch(), 'valueChange', true);
+    });
+    expect(dailySwitch().props.onTintColor).toBe(tokens.color.text);
+    expect(dailySwitch().props.thumbTintColor).toBe(tokens.color.background);
+  });
+
   it('asks for permission from the switch and turns the reminder on at 08:00', async () => {
     const h = await setup('undetermined');
     expect(dailySwitch().props.value).toBe(false);

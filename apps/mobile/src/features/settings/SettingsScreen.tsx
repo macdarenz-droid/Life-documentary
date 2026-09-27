@@ -7,12 +7,11 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   View,
   type AccessibilityActionEvent,
 } from 'react-native';
 import type { PermissionState } from '../../domain/capturePorts';
-import { Button, Text } from '../../design-system';
+import { Button, Switch, Text } from '../../design-system';
 
 export type ReminderChoice = { enabled: boolean; hour: number; minute: number };
 
@@ -149,7 +148,6 @@ export function SettingsScreen({ actions, onBack }: SettingsScreenProps) {
                 value={choice.enabled && !denied}
                 disabled={denied}
                 onValueChange={(on) => void toggle(on)}
-                trackColor={{ false: tokens.color.surface, true: tokens.color.text }}
               />
             </View>
 
