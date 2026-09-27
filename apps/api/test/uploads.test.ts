@@ -135,7 +135,7 @@ describe('uploads', () => {
     const done = await p.complete(await sendAll(p));
     expect(done.status).toBe(200);
     const { cloudKey } = UploadDone.parse(await done.json());
-    expect(cloudKey).toBe(`u/${p.me.userId}/${p.documentary.id}/${p.assetId}/answer`);
+    expect(cloudKey).toBe(`tmp/${p.me.userId}/${p.documentary.id}/${p.assetId}/answer`);
     const object = await bindings.MEDIA.get(cloudKey);
     expect(await sha256(await object!.arrayBuffer())).toBe(await sha256(FIXTURE));
     expect(await openUploads(p.assetId)).toBe(0);
@@ -214,27 +214,41 @@ describe('uploads', () => {
     expect((await ada.put(1, part(1), boCookie)).status).toBe(403);
   });
 
-  it('lets the next sync from the cursor bring the cloud key', async () => {
+  it('keeps a completed answer under tmp/ and leaves the asset without a cloud key', async () => {
     const p = await person('ada.cloudkey@example.com');
     await p.create();
     const done = UploadDone.parse(await (await p.complete(await sendAll(p))).json());
+    expect(done.cloudKey.startsWith(`tmp/${p.me.userId}/`)).toBe(true);
+    expect(await bindings.MEDIA.get(done.cloudKey)).not.toBeNull();
+    const stored = await bindings.DB.prepare('SELECT cloud_key FROM media_assets WHERE id = ?')
+      .bind(p.assetId)
+      .first<{ cloud_key: string | null }>();
+    expect(stored?.cloud_key).toBeNull();
     const res = await p.phone.post(
       '/sync',
       { documentaryId: p.documentary.id, cursor: p.cursor, changes: [] },
       p.cookie,
     );
     const pulled = SyncResponse.parse(await res.json());
-    const asset = pulled.changes.find((c) => c.entity === 'mediaAsset' && c.row.id === p.assetId);
-    expect(asset?.row).toMatchObject({ cloudKey: done.cloudKey });
+    expect(pulled.changes.filter((c) => c.row.id === p.assetId)).toEqual([]);
+  });
+
+  it('keeps a completed photo preview under tmp/', async () => {
+    const p = await person('ada.preview@example.com', { kind: 'photo' });
+    await p.create();
+    const done = UploadDone.parse(await (await p.complete(await sendAll(p))).json());
+    expect(done.cloudKey).toBe(`tmp/${p.me.userId}/${p.documentary.id}/${p.assetId}/preview`);
+    expect(await bindings.MEDIA.get(done.cloudKey)).not.toBeNull();
   });
 
   it('keeps the completed cloud key when a later sync sends another', async () => {
     const p = await person('ada.keepkey@example.com');
-    await p.create();
-    const done = UploadDone.parse(await (await p.complete(await sendAll(p))).json());
-    const stored = await bindings.DB.prepare('SELECT * FROM media_assets WHERE id = ?')
-      .bind(p.assetId)
-      .first<Record<string, unknown>>();
+    // Only a completed original sets the key, and originals wait for Cloud backup (P23), so the test
+    // writes the key the completion would.
+    const done = { cloudKey: `u/${p.me.userId}/${p.documentary.id}/${p.assetId}/original` };
+    await bindings.DB.prepare('UPDATE media_assets SET cloud_key = ? WHERE id = ?')
+      .bind(done.cloudKey, p.assetId)
+      .run();
     const asset = SyncChange.parse({
       entity: 'mediaAsset',
       row: {
@@ -250,7 +264,6 @@ describe('uploads', () => {
         cloudKey: 'u/other/x/y/answer',
       },
     });
-    expect(stored?.cloud_key).toBe(done.cloudKey);
     const res = await p.phone.post(
       '/sync',
       { documentaryId: p.documentary.id, cursor: null, changes: [asset] },

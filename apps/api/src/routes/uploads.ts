@@ -25,9 +25,18 @@ import { requireSession, type AppEnv } from './middleware/session';
 /** A part's body may be at most this long; anything longer is refused before it is read. */
 export const MAX_PART_BYTES = UPLOAD_PART_SIZE + 1024;
 
-/** The R2 key of an asset's file for one purpose (D37). */
-export function uploadKey(userId: string, documentaryId: string, assetId: string, purpose: string) {
-  return `u/${userId}/${documentaryId}/${assetId}/${purpose}`;
+/**
+ * The R2 key of an asset's file for one purpose (D37). Working copies live under `tmp/` so D14's
+ * lifecycle rule can delete them by prefix; only an original lives under `u/`.
+ */
+export function uploadKey(
+  userId: string,
+  documentaryId: string,
+  assetId: string,
+  purpose: UploadPurpose,
+) {
+  const prefix = purpose === 'original' ? 'u' : 'tmp';
+  return `${prefix}/${userId}/${documentaryId}/${assetId}/${purpose}`;
 }
 
 /** Whether the person may upload this asset for this purpose: it is theirs and may leave the phone. */
@@ -165,12 +174,18 @@ export const uploads = new Hono<AppEnv>()
       console.error('The upload did not complete.', error);
       return apiError(c, 400, 'bad_request', 'Some parts are missing.');
     }
-    const now = new Date().toISOString();
-    await db.batch([
-      uploadsRepo.setCloudKey(db, assetId, upload.key, now),
-      changes.record(db, upload.documentaryId as Uuid, 'mediaAsset', assetId, now),
-      uploadsRepo.remove(db, assetId, purpose),
-    ]);
+    // Only an original is the asset's lasting copy; a working copy leaves the asset row alone and is
+    // found later by its key.
+    if (purpose === 'original') {
+      const now = new Date().toISOString();
+      await db.batch([
+        uploadsRepo.setCloudKey(db, assetId, upload.key, now),
+        changes.record(db, upload.documentaryId as Uuid, 'mediaAsset', assetId, now),
+        uploadsRepo.remove(db, assetId, purpose),
+      ]);
+    } else {
+      await db.batch([uploadsRepo.remove(db, assetId, purpose)]);
+    }
     return c.json(UploadDone.parse({ cloudKey: upload.key }), 200);
   })
   .delete('/uploads/:assetId/:purpose', requireSession, async (c) => {
