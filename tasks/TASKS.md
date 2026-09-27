@@ -156,20 +156,12 @@ Text: `tasks/p6/T-011.md`.
 ### T-011d · P6.4 · Uploads through the Worker · done · needs: T-011b
 Text: `tasks/p6/T-011.md`.
 
-### T-011e · P6.5 · The upload queue on the phone · changes r1 · needs: T-011d, T-011c, T-009a
+### T-011e · P6.5 · The upload queue on the phone · done · needs: T-011d, T-011c, T-009a
 Text: `tasks/p6/T-011.md`.
-Note (2026-09-27): `upload_jobs.purpose` gets no CHECK list (the `UploadJob` contract guards it), so P12 can add the `keyframe` purpose without rebuilding the table. The part response is parsed with `UploadedPart` (T-011d fix r2).
-**Fix list r1** (review of cb55c73; everything else approved: what is enqueued, the migration, resume by part, backoff, the Wi-Fi rule, one drain at a time).
-1. The background task does nothing when the system launches the app to run it. `runner` is set only inside `CaptureRoot` after fonts load and the store opens, and the task module is imported only from `app/_layout.tsx`, so in a background launch (no views mounted) the task is not even defined, or finds no runner and returns Success. Give the app a small entry file (`apps/mobile/index.ts`, `package.json` `main` pointing at it) that imports the task module and then `expo-router/entry`. The task body must work on its own: when no mounted runner is set, it opens the store the way the app does, builds the account, Api and network services, runs `syncIfSignedIn` then `drainUploads` within the time budget, and closes what it opened.
-2. A running drain brings back a job that `deleteMoment` removed. Before each save of a job, check that the job row still exists; when it is gone, stop sending, remove the plain copy and move on. `drainUploads` skips (and removes) a job whose moment is deleted.
-3. Plain copies left by a kill are never removed, including the plain copy of a video the person then deletes. At start, empty `cache/uploads` beside `clearPlaybackCache`, before any drain or enqueue.
-Tests: the task body with no mounted runner opens a (memory) store, syncs and drains one due job; deleting the moment while its upload is between parts stops the send, leaves no job row and no plain copy; a job whose moment is deleted is removed without an Api call; a file left in `cache/uploads` is gone after start.
-Allowed test changes: none removed or loosened.
-Checks: mobile typecheck, tests, lint, format, boundaries; `npx expo-doctor` no new failures. UNVERIFIED on a device: a background launch uploading.
 
 ## P12 — Understanding (step 1 of the episode pipeline)
 
-### T-013a · P12.1 · Keyframes leave the phone · approved (40261e2; merges after T-011e fix r1) · needs: T-011e, T-011d
+### T-013a · P12.1 · Keyframes leave the phone · done · needs: T-011e, T-011d
 Text: `tasks/p12/T-013.md`.
 
 ### T-013b · P12.2 · Derived rows, episodes and the cost ledger · todo · needs: T-011d, T-011b, T-011c
