@@ -101,6 +101,14 @@ test('the Design Lab shows every section without console errors', async ({ page 
       await expect(
         page.getByRole('button', { name: words.footage.play, exact: true }),
       ).toBeVisible();
+      // "Edit" opens the tray with the note, the mood and the tags.
+      await page.getByRole('button', { name: words.footage.edit, exact: true }).click();
+      await expect(
+        page.getByRole('textbox', { name: words.footage.noteLabel }).last(),
+      ).toBeVisible();
+      await page.getByRole('button', { name: words.moods.calm }).last().click();
+      await page.waitForTimeout(1000);
+      await page.getByRole('button', { name: words.footage.done, exact: true }).last().click();
     }
     if (name === 'Title Card') {
       await page.getByRole('button', { name: REPLAY }).click();

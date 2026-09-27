@@ -1,7 +1,7 @@
 // The moment viewer (P10): one moment full screen on theatre black. A video plays once with sound and
 // holds its last frame (a tap plays or pauses); a voice answer plays under its question with a timecode;
 // a photo shows still; a note shows its text. Until transcripts exist, the caption is the question or the
-// note, over a scrim; nothing is invented (CLAUDE.md rule 10).
+// note, over a scrim; nothing is invented (CLAUDE.md rule 10). A quiet "Edit" opens the edit tray (T-009d).
 import type { Uuid } from '@life/contracts';
 import { rgba, tokens } from '@life/design';
 import { durationLabel, words } from '@life/story';
@@ -11,6 +11,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import type { PlaybackViews } from '../../application/captureContext';
 import type { FootageItem } from '../../application/footage';
 import { Text } from '../../design-system';
+import { EditTray, type EditActions } from './EditTray';
 
 export type ViewerActions = {
   load(id: Uuid): Promise<FootageItem | null>;
@@ -23,6 +24,10 @@ export type MomentViewerProps = {
   id: Uuid;
   actions: ViewerActions;
   Playback?: PlaybackViews;
+  /** The edit tray's actions; without them no "Edit" is offered. */
+  edit?: EditActions;
+  /** Moves to the next moment of the same day; without it no "Next" is offered. */
+  onNext?: () => void;
   onClose: () => void;
 };
 
@@ -31,10 +36,21 @@ type State =
   | { status: 'failed' }
   | { status: 'ready'; item: FootageItem; uri: string | null };
 
-export function MomentViewer({ id, actions, Playback, onClose }: MomentViewerProps) {
+function Link({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.link}>
+      <Text variant="label" tone="secondary" accessibilityRole="none">
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+export function MomentViewer({ id, actions, Playback, edit, onNext, onClose }: MomentViewerProps) {
   const [state, setState] = useState<State>({ status: 'loading' });
   const [playing, setPlaying] = useState(true);
   const [progress, setProgress] = useState({ at: 0, of: 0 });
+  const [editing, setEditing] = useState(false);
   const opened = useRef<Uuid | null>(null);
 
   useEffect(() => {
@@ -71,12 +87,17 @@ export function MomentViewer({ id, actions, Playback, onClose }: MomentViewerPro
     onClose();
   };
 
+  const reload = async () => {
+    setEditing(false);
+    const item = await actions.load(id);
+    if (item) setState((s) => (s.status === 'ready' ? { ...s, item } : s));
+  };
+
   const close = (
-    <Pressable accessibilityRole="button" onPress={closeNow} style={styles.close}>
-      <Text variant="label" tone="secondary" accessibilityRole="none">
-        {words.footage.close}
-      </Text>
-    </Pressable>
+    <View style={styles.close}>
+      {onNext ? <Link label={words.footage.next} onPress={onNext} /> : null}
+      <Link label={words.footage.close} onPress={closeNow} />
+    </View>
   );
 
   if (state.status === 'loading') return <View style={styles.screen}>{close}</View>;
@@ -161,7 +182,22 @@ export function MomentViewer({ id, actions, Playback, onClose }: MomentViewerPro
         </View>
       ) : null}
 
+      {edit ? (
+        <View style={styles.edit}>
+          <Link label={words.footage.edit} onPress={() => setEditing(true)} />
+        </View>
+      ) : null}
       {close}
+      {edit ? (
+        <EditTray
+          open={editing}
+          item={item}
+          actions={edit}
+          onClose={() => setEditing(false)}
+          onSaved={() => void reload()}
+          onDeleted={closeNow}
+        />
+      ) : null}
     </View>
   );
 }
@@ -189,7 +225,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: tokens.space[7],
     right: tokens.space[5],
-    minHeight: 44,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: tokens.space[5],
   },
+  edit: { position: 'absolute', top: tokens.space[7], left: tokens.space[5] },
+  link: { minHeight: 44, justifyContent: 'center' },
 });

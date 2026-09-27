@@ -6,7 +6,7 @@ import { capture, dayLabel, secondsLeft, words } from '@life/story';
 import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react';
 import { Pressable, StyleSheet, View, type AccessibilityActionEvent } from 'react-native';
 import type { CaptureInput, MediaInput } from '../../application/captureMoment';
-import { Button, Text, useMotionPreference } from '../../design-system';
+import { Button, MoodChips, Text, useMotionPreference } from '../../design-system';
 import { Record } from '../../design-system/motion/Record';
 import { recordPlan } from '../../design-system/motion/recordPlan';
 import { TextMorph } from '../../design-system/motion/TextMorph';
@@ -18,7 +18,8 @@ import type {
   VideoRecorder,
   VoiceRecorder,
 } from '../../domain/capturePorts';
-import { AddRow, MoodChips, NoteTray, PlaceToggle, Toggle, type AddAction } from './extras';
+import { AddRow, NoteTray, PlaceToggle, Toggle, type AddAction } from './extras';
+import { OneYearAgo, type OneYearAgoActions } from './OneYearAgo';
 import { TagTray, type TagActions } from './TagTray';
 
 export type TodayScreenProps = {
@@ -39,6 +40,10 @@ export type TodayScreenProps = {
     accept(): Promise<unknown>;
     dismiss(): Promise<unknown>;
   };
+  /** The "One year ago today" card; without it, or without onOpenMoments, no card is offered. */
+  oneYearAgo?: OneYearAgoActions;
+  /** Opens the viewer on these moments, the first one shown. */
+  onOpenMoments?: (ids: Uuid[]) => void;
   /** Changes when the screen comes into focus, so the question is loaded again. */
   reloadKey?: number;
 };
@@ -79,6 +84,8 @@ export function TodayScreen({
   CameraView,
   tags,
   onNavigate,
+  oneYearAgo,
+  onOpenMoments,
   reminderOffer,
   reloadKey = 0,
 }: TodayScreenProps) {
@@ -525,6 +532,9 @@ export function TodayScreen({
             value={keepOnPhone}
             onChange={setKeepOnPhone}
           />
+          {oneYearAgo && onOpenMoments ? (
+            <OneYearAgo actions={oneYearAgo} onOpen={onOpenMoments} reloadKey={reloadKey} />
+          ) : null}
         </View>
       ) : null}
     </View>

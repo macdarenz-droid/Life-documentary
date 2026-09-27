@@ -14,6 +14,7 @@ import { CastScreen, type CastActions, type CastRow } from '../src/features/cast
 import {
   FootageScreen,
   MomentViewer,
+  type EditActions,
   type FootageActions,
   type ViewerActions,
 } from '../src/features/footage';
@@ -218,6 +219,22 @@ function labViewerActions(): ViewerActions {
   };
 }
 
+/** The edit tray's choices; changes are kept in memory for the page's life. */
+function labEditActions(): EditActions {
+  return {
+    loadTags: async () => ({
+      storylines: [
+        { id: labId(201), title: 'The new job' },
+        { id: labId(202), title: 'Half marathon' },
+      ],
+      cast: [{ id: labId(301), name: 'Mara', relation: 'sister' }],
+    }),
+    edit: async () => undefined,
+    tag: async () => undefined,
+    remove: async () => undefined,
+  };
+}
+
 /** The reminder as if notifications were allowed; nothing is scheduled in the web preview. */
 function labSettingsActions(): SettingsActions {
   let reminder: ReminderChoice = { enabled: true, hour: 8, minute: 0 };
@@ -284,6 +301,7 @@ export default function DesignLab() {
   const [settingsActions] = useState(labSettingsActions);
   const [footage] = useState(labFootageActions);
   const [viewer] = useState(labViewerActions);
+  const [edit] = useState(labEditActions);
   const [openMoment, setOpenMoment] = useState<Uuid | null>(null);
 
   return (
@@ -401,6 +419,7 @@ export default function DesignLab() {
               id={openMoment}
               actions={viewer}
               Playback={fakePlayback}
+              edit={edit}
               onClose={() => setOpenMoment(null)}
             />
           ) : null}

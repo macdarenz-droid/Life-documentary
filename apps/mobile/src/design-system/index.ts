@@ -10,3 +10,5 @@ export { Surface } from './Surface';
 export { Switch, switchColors, type SwitchProps } from './Switch';
 export { Tray, type TrayProps } from './Tray';
 export { Text, isDisplayVariant, type TextProps, type TextTone, type TextVariant } from './Text';
+export { ChipList, type ChipListProps, type ChipOption } from './ChipList';
+export { MoodChips } from './MoodChips';

@@ -10,6 +10,8 @@ import {
   shouldOfferReminder,
 } from '../../application/reminders';
 import { useOptionalCapture, type CaptureContextValue } from '../../application/captureContext';
+import { oneYearAgo } from '../../application/footage';
+import { openPoster } from '../../application/playback';
 import { ensurePoster } from '../../application/posters';
 import { createStoryline, listOpenStorylines } from '../../application/storylines';
 import { tagMoment } from '../../application/tagMoment';
@@ -40,6 +42,13 @@ export function todayScreenProps(ctx: CaptureContextValue): Omit<TodayScreenProp
       accept: () => acceptReminderOffer(store, services.reminders),
       dismiss: () => dismissReminderOffer(store),
     },
+    oneYearAgo: {
+      load: () => oneYearAgo(store, documentary, clock.today(documentary.timeZone)),
+      poster: async (assetId) => {
+        const uri = await openPoster(store, assetId);
+        return uri ? { uri } : null;
+      },
+    },
     tags: {
       load: async () => ({
         storylines: await listOpenStorylines(store, documentary),
@@ -60,7 +69,14 @@ function ConnectedToday({ ctx }: { ctx: CaptureContextValue }) {
   const [props] = useState(() => todayScreenProps(ctx));
   const router = useRouter();
   return (
-    <TodayScreen {...props} reloadKey={reloadKey} onNavigate={(to) => router.push(`/${to}`)} />
+    <TodayScreen
+      {...props}
+      reloadKey={reloadKey}
+      onNavigate={(to) => router.push(`/${to}`)}
+      onOpenMoments={([id, ...rest]) =>
+        router.push({ pathname: '/moment/[id]', params: { id: id!, next: rest.join(',') } })
+      }
+    />
   );
 }
 

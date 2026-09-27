@@ -4,7 +4,7 @@ import type { LocalDate, Uuid } from '@life/contracts';
 import { tokens } from '@life/design';
 import { words } from '@life/story';
 import { Image, type ImageProps } from 'expo-image';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeIn, ReduceMotion } from 'react-native-reanimated';
 import type { FootageDay, FootageItem, FootageStoryline } from '../../application/footage';
@@ -27,6 +27,8 @@ export type FootageScreenProps = {
   onOpen?: (momentId: Uuid) => void;
   /** Back to Today; absent in the Design Lab. */
   onBack?: () => void;
+  /** Changes when the screen comes into focus again, so an edit or a delete shows at once. */
+  reloadKey?: number;
 };
 
 export const DAYS_PER_PAGE = 14;
@@ -42,6 +44,7 @@ function rowLabel(item: FootageItem): string {
     item.timeLabel,
     item.durationLabel,
     item.questionText ?? item.text,
+    item.mood ? words.moods[item.mood] : undefined,
     item.localOnly ? words.footage.onThisPhone : undefined,
   ]
     .filter(Boolean)
@@ -87,9 +90,14 @@ function Row({
             {line}
           </Text>
         ) : null}
-        {item.localOnly ? (
+        {item.mood || item.localOnly ? (
           <Text variant="caption" tone="secondary" accessibilityRole="none">
-            {words.footage.onThisPhone}
+            {[
+              item.mood ? words.moods[item.mood] : undefined,
+              item.localOnly ? words.footage.onThisPhone : undefined,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </Text>
         ) : null}
       </View>
@@ -120,7 +128,7 @@ function ModeLink({
   );
 }
 
-export function FootageScreen({ actions, onOpen, onBack }: FootageScreenProps) {
+export function FootageScreen({ actions, onOpen, onBack, reloadKey = 0 }: FootageScreenProps) {
   const [mode, setMode] = useState<'days' | 'storylines'>('days');
   const [days, setDays] = useState<FootageDay[] | null>(null);
   const [more, setMore] = useState(true);
@@ -131,6 +139,8 @@ export function FootageScreen({ actions, onOpen, onBack }: FootageScreenProps) {
     row: FootageStoryline;
     items: FootageItem[];
   } | null>(null);
+  const openStoryline = useRef<FootageStoryline | null>(null);
+  openStoryline.current = storyline?.row ?? null;
   const [posters, setPosters] = useState<Record<string, PosterSource | null>>({});
 
   useEffect(() => {
@@ -138,9 +148,13 @@ export function FootageScreen({ actions, onOpen, onBack }: FootageScreenProps) {
       const first = await actions.loadDays();
       setDays(first);
       setMore(first.length === DAYS_PER_PAGE);
-      setSelected(first[0]?.date);
+      // A reload keeps the chosen day while it still has moments.
+      setSelected((was) => (first.some((d) => d.date === was) ? was : first[0]?.date));
+      setStorylines(null);
+      const open = openStoryline.current;
+      if (open) setStoryline({ row: open, items: await actions.loadStoryline(open.id) });
     })();
-  }, [actions]);
+  }, [actions, reloadKey]);
 
   useEffect(() => {
     if (mode !== 'storylines' || storylines !== null) return;
