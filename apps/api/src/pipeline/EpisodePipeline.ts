@@ -1,5 +1,5 @@
 // The episode pipeline (P12, D38): a Cloudflare Workflow, one instance per documentary and week. Step 1,
-// understand, then step 2, plan (P13, D39). Step results hold ids, keys, outcomes and counts only.
+// understand, step 2, plan (P13, D39), then step 3, narrate (P14, D40). Step results hold ids, keys, outcomes and counts only.
 // Sending a caption batch is never retried (a failure can leave no second, forgotten batch), a failed
 // transcript leaves that answer without one, and batches that do not end in 2 hours are cancelled: the
 // run goes on with what it has.
@@ -8,6 +8,7 @@ import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from 'cloud
 import { z } from 'zod';
 import * as episodes from '../data/repositories/episodes';
 import type { Env } from '../shared/env';
+import { fitStep, lineStep, linesStep, narrateContext, recordNarrateCosts } from './narrate/steps';
 import {
   planContext,
   planStep,
@@ -173,8 +174,30 @@ export class EpisodePipeline extends WorkflowEntrypoint<Env, EpisodePipelinePara
       if (plan === 'empty') return { ...understood, costCents: 0, plan };
     }
     const planUsage = planned && 'usage' in planned ? planned.usage : NO_PLAN_USAGE;
-    const total = await step.do('plan-costs', () =>
-      recordPlanCosts(planCtx, episode.id, planUsage),
+    let total = await step.do('plan-costs', () => recordPlanCosts(planCtx, episode.id, planUsage));
+    if (plan !== 'model') return { ...understood, costCents: total, plan };
+
+    // Step 3: narrate. A line that still fails after its retries is left out and the run goes on; a
+    // 429 is common when many episodes start together, hence the long backoff.
+    const narrateCtx = narrateContext(this.env);
+    const lines = await step.do('narrate-lines', () => linesStep(narrateCtx, episode.id));
+    if (lines.indices.length === 0) return { ...understood, costCents: total, plan };
+    let characters = 0;
+    for (const index of lines.indices) {
+      try {
+        const spoken = await step.do(
+          `narrate-${index}`,
+          { retries: { limit: 5, delay: '30 seconds', backoff: 'exponential' } },
+          () => lineStep(narrateCtx, episode.id, lines.planVersion, index),
+        );
+        if ('characters' in spoken) characters += spoken.characters;
+      } catch (error) {
+        console.error(`Narration line ${index} was not spoken; it is left out.`, error);
+      }
+    }
+    await step.do('narrate-fit', () => fitStep(narrateCtx, episode.id, lines.planVersion));
+    total = await step.do('narrate-costs', () =>
+      recordNarrateCosts(narrateCtx, episode.id, characters),
     );
     return { ...understood, costCents: total, plan };
   }

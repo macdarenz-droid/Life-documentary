@@ -349,3 +349,36 @@ export const episodePlans = sqliteTable(
   },
   (t) => [uniqueIndex('episode_plans_episode_version_idx').on(t.episodeId, t.version)],
 );
+
+/**
+ * One synthesised narrator line of an episode's plan version (P14, D40): the MP3 in R2 under `key`, cached
+ * by `hash`, with its length and word timings (`words` as JSON). `kept` is false when the cap left it out.
+ */
+export const narrationClips = sqliteTable(
+  'narration_clips',
+  {
+    episodeId: text('episode_id')
+      .notNull()
+      .references(() => episodes.id, { onDelete: 'cascade' }),
+    planVersion: integer('plan_version').notNull(),
+    index: integer('index').notNull(),
+    kind: text('kind').notNull(),
+    sceneIndex: integer('scene_index'),
+    text: text('text').notNull(),
+    voiceId: text('voice_id').notNull(),
+    key: text('key').notNull(),
+    hash: text('hash').notNull(),
+    durationMs: integer('duration_ms').notNull(),
+    words: text('words').notNull(),
+    kept: integer('kept', { mode: 'boolean' }).notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [
+    uniqueIndex('narration_clips_episode_version_index_idx').on(
+      t.episodeId,
+      t.planVersion,
+      t.index,
+    ),
+    index('narration_clips_episode_hash_idx').on(t.episodeId, t.hash),
+  ],
+);
