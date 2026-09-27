@@ -33,6 +33,12 @@ export function dayAndMonth(date: string): string {
   return `${d ?? ''} ${MONTHS[(m ?? 1) - 1] ?? ''}`;
 }
 
+/** "March 2027" for a LocalDate. */
+export function monthAndYear(date: string): string {
+  const [y, m] = date.split('-').map(Number);
+  return `${MONTHS[(m ?? 1) - 1] ?? ''} ${y ?? ''}`;
+}
+
 export const recapWords = {
   title: (weekStart: string) => `The week of ${dayAndMonth(weekStart)}`,
   summary: (weekStart: string, weekEnd: string) =>

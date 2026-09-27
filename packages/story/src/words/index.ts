@@ -1,4 +1,5 @@
 import { permissionWords } from './permissions';
+import { monthAndYear } from './recap';
 
 /** Every user-facing string. Plain and warm; never game words or exclamation marks (CLAUDE.md rule 11). */
 export const words = {
@@ -46,6 +47,63 @@ export const words = {
     tender: 'Tender',
     tired: 'Tired',
     heavy: 'Heavy',
+  },
+  tags: {
+    tag: 'Tag',
+    trayLabel: 'Tag this moment',
+    storylines: 'Storylines',
+    cast: 'Cast',
+    newStoryline: 'New storyline',
+    namePerson: 'Name a person',
+    addStoryline: 'Add storyline',
+    addPerson: 'Add person',
+    done: 'Done',
+    titleEmpty: 'Give the storyline a name.',
+    titleTooLong: 'A storyline name can be up to 60 characters.',
+    titleTaken: 'An open storyline already has this name.',
+    nameInvalid: 'A name can be 1 to 40 characters.',
+    relationInvalid: 'A relation can be up to 40 characters.',
+    tooManyStorylines: 'A moment can hold up to 10 storylines.',
+    tooManyCast: 'A moment can hold up to 20 people.',
+    unavailable: 'Something here is no longer available. Try once more.',
+  },
+  nav: {
+    today: 'Today',
+    storylines: 'Storylines',
+    cast: 'Cast',
+  },
+  storylines: {
+    title: 'Storylines',
+    since: (openedOn: string) => `since ${monthAndYear(openedOn)}`,
+    moments: (n: number) => (n === 1 ? '1 moment' : `${n} moments`),
+    closed: 'Closed',
+    newStoryline: 'New storyline',
+    titleLabel: 'Name',
+    save: 'Save',
+    rename: 'Rename',
+    close: 'Close storyline',
+    reopen: 'Reopen',
+    remove: 'Remove',
+    removeAsk: 'Remove this storyline? The moments tagged with it stay in your documentary.',
+    removeConfirm: 'Remove it',
+    keep: 'Keep it',
+    empty:
+      'A storyline is a thread of your life you want to follow for a while, like the new job or training for the half marathon.',
+  },
+  cast: {
+    title: 'Cast',
+    namePerson: 'Name a person',
+    nameLabel: 'Name',
+    relationLabel: 'Relation, if you like',
+    save: 'Save',
+    rename: 'Rename',
+    saveRelation: 'Save relation',
+    remove: 'Remove',
+    removeAsk: 'Remove this person? The moments with them stay; only the name is taken off.',
+    removeConfirm: 'Remove them',
+    keep: 'Keep them',
+    empty:
+      "Name the people in your days. Names stay on this phone, and nobody's face or voice is ever recognised.",
   },
   lab: {
     title: 'Design lab',

@@ -1,9 +1,12 @@
 // The Today route: the capture context turned into TodayScreen's props. Without a capture context (the
 // web preview) it shows the placeholder.
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { addCastMember, listCast } from '../../application/cast';
 import { captureMoment } from '../../application/captureMoment';
 import { useOptionalCapture, type CaptureContextValue } from '../../application/captureContext';
+import { createStoryline, listOpenStorylines } from '../../application/storylines';
+import { tagMoment } from '../../application/tagMoment';
 import { todayQuestion } from '../../application/todayQuestion';
 import { TodayPlaceholder } from './TodayPlaceholder';
 import { TodayScreen, type TodayScreenProps } from './TodayScreen';
@@ -19,6 +22,17 @@ export function todayScreenProps(ctx: CaptureContextValue): Omit<TodayScreenProp
     },
     services,
     CameraView,
+    tags: {
+      load: async () => ({
+        storylines: await listOpenStorylines(store, documentary),
+        cast: await listCast(store, documentary),
+      }),
+      createStoryline: (title) => createStoryline(store, clock, ids, documentary, title),
+      addCastMember: (name) => addCastMember(store, clock, ids, documentary, name),
+      tag: async (momentId, tags) => {
+        await tagMoment(store, clock, momentId, tags);
+      },
+    },
   };
 }
 
@@ -26,7 +40,14 @@ function ConnectedToday({ ctx }: { ctx: CaptureContextValue }) {
   const [reloadKey, setReloadKey] = useState(0);
   useFocusEffect(useCallback(() => setReloadKey((k) => k + 1), []));
   const [props] = useState(() => todayScreenProps(ctx));
-  return <TodayScreen {...props} reloadKey={reloadKey} />;
+  const router = useRouter();
+  return (
+    <TodayScreen
+      {...props}
+      reloadKey={reloadKey}
+      onNavigate={(to) => router.push(to === 'storylines' ? '/storylines' : '/cast')}
+    />
+  );
 }
 
 export function TodayRoute() {

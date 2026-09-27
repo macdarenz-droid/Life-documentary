@@ -272,4 +272,19 @@ describe('TodayScreen', () => {
     expect(save).toHaveBeenCalledTimes(1);
     error.mockRestore();
   });
+
+  it('opens Storylines and Cast from the quiet top row of links', async () => {
+    const h = await todayHarness();
+    const question = await todayQuestion(h.store, h.ctx.documentary, h.ctx.clock, h.ctx.ids);
+    const onNavigate = jest.fn();
+    await render(<TodayScreen {...todayScreenProps(h.ctx)} onNavigate={onNavigate} />);
+    await findQuestion(question.text);
+    await act(async () => {
+      fireEvent.press(screen.getByRole('link', { name: words.nav.storylines }));
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByRole('link', { name: words.nav.cast }));
+    });
+    expect(onNavigate.mock.calls).toEqual([['storylines'], ['cast']]);
+  });
 });

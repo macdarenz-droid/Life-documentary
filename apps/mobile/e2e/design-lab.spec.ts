@@ -10,6 +10,8 @@ const SECTIONS = [
   'Text Morph',
   'Dissolve',
   'Today',
+  'Storylines',
+  'Cast',
   'Grain and Breath',
 ];
 /** Dwell per section so the recording walks the whole lab in about 20 s. */
@@ -38,7 +40,8 @@ test('the Design Lab shows every section without console errors', async ({ page 
   await expect(page.getByRole('switch', { name: words.extras.keepOnPhone })).toHaveCount(1);
 
   for (const name of SECTIONS) {
-    const heading = page.getByRole('heading', { name, exact: true });
+    // "Storylines" and "Cast" are also the screens' own headings; the section heading comes first.
+    const heading = page.getByRole('heading', { name, exact: true }).first();
     await heading.scrollIntoViewIfNeeded();
     await expect(heading).toBeVisible();
     if (name === 'Field') {
@@ -65,6 +68,13 @@ test('the Design Lab shows every section without console errors', async ({ page 
       await page.waitForTimeout(1000);
       await page.getByRole('button', { name: words.extras.close }).click();
     }
+    if (name === 'Storylines') {
+      // A row opens its tray; closing it leaves the list as it was.
+      await page.getByRole('button', { name: /^The new job,/ }).click();
+      await expect(page.getByRole('button', { name: words.storylines.close })).toBeVisible();
+      await page.waitForTimeout(1000);
+      await page.getByRole('button', { name: words.extras.close }).last().click();
+    }
     if (name === 'Title Card') {
       await page.getByRole('button', { name: REPLAY }).click();
     }
@@ -81,7 +91,7 @@ test.describe('with reduced motion', () => {
     await page.goto('/design-lab');
     await expect(page.getByText(REDUCED_LABEL)).toBeVisible();
     for (const name of SECTIONS) {
-      await expect(page.getByRole('heading', { name, exact: true })).toBeAttached();
+      await expect(page.getByRole('heading', { name, exact: true }).first()).toBeAttached();
     }
     expect(errors).toEqual([]);
   });

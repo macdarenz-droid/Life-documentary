@@ -172,3 +172,18 @@ export async function momentCountOn(
   );
   return row?.n ?? 0;
 }
+
+/** Live (not deleted) moments tagged with each storyline of a documentary, by storyline id. */
+export async function countByStoryline(
+  driver: SqlDriver,
+  documentaryId: string,
+): Promise<Record<string, number>> {
+  const rows = await driver.all<{ storyline_id: string; n: number }>(
+    `SELECT ms.storyline_id, count(*) AS n FROM moment_storylines ms
+     JOIN moments m ON m.id = ms.moment_id
+     WHERE m.documentary_id = ? AND m.deleted_at IS NULL
+     GROUP BY ms.storyline_id`,
+    [documentaryId],
+  );
+  return Object.fromEntries(rows.map((r) => [r.storyline_id, r.n]));
+}
