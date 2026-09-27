@@ -164,28 +164,55 @@ Text: `tasks/p6/T-011.md`.
 ### T-013a · P12.1 · Keyframes leave the phone · done · needs: T-011e, T-011d
 Text: `tasks/p12/T-013.md`.
 
-### T-013b · P12.2 · Derived rows, episodes and the cost ledger · todo · needs: T-011d, T-011b, T-011c
+### T-013b · P12.2 · Derived rows, episodes and the cost ledger · changes r1 · needs: T-011d, T-011b, T-011c
 Text: `tasks/p12/T-013.md`.
 Note (2026-09-27): for P13, `CostLedgerRow.step` also allows `plan` and `unit` also allows `cacheWriteToken` and `cacheReadToken`; store `step`, `provider` and `unit` as plain text columns without CHECK lists so later steps need no table rebuild.
 
-### T-013c · P12.3 · Transcriber and captioner providers · todo · needs: T-011d
+**Fix list r1** (review of ecd098b; everything else approved: the migration, the repositories, pull-only derived rows, tombstones, costs, the brief's per-field merge).
+1. The note's contract half is missing: `CostLedgerRow.step` must also allow `plan` and `unit` must also allow `cacheWriteToken` and `cacheReadToken` (P13 writes those rows; today `upsert` would throw). Add a contract test that such a row parses and a ledger upsert of one.
+2. Captions need the timing of what the person said, and the server can't get it later (working copies are deleted after understanding, D40). `Derived` gains `segments?: { startMs: int ≥ 0, endMs: int, text: string 1..500, words?: { text: string 1..60, startMs, endMs }[] }[]` (at most 200 segments and 60 words each, each `endMs` > `startMs`; word-level captions need the words, DESIGN §4); a new D1 migration adds a `segments` JSON text column to `derived` (append-only, with its migration test); `derived.upsert` stores it; pulls carry it. The phone does not store segments (T-013e's repository drops the field); say so in a comment there only if T-013e is already merged, else T-013e's fix list covers it.
+Tests: a `plan` / `cacheReadToken` ledger row round-trips; a derived row with two segments round-trips through upsert and a pull; one with an `endMs` before its `startMs` is refused.
+Checks: contracts, API typecheck, tests, lint, format, boundaries, `deploy:dry`.
+### T-013c · P12.3 · Transcriber and captioner providers · changes r1 · needs: T-011d
 Text: `tasks/p12/T-013.md`.
 
-### T-013d · P12.4 · EpisodePipeline step 1: understand · todo · needs: T-013a, T-013b, T-013c
+**Fix list r1** (review of a6e57e8 found nothing to block; one item for P14, D40).
+1. `Transcription` gains `segments?: { startMs, endMs, text, words? }[]`: the Workers AI adapter maps Whisper's `segments` and their `words` (seconds to whole ms, text trimmed, empty ones dropped); none when Whisper gives none. Whether its times are relative to the original audio with `vad_filter: true` is UNVERIFIED until the owner's first real call; say so in the report.
+Tests: a stub result with two segments (one with words) maps to ms; a result without segments gives none; an empty-text segment or word is dropped.
+Checks: API typecheck, tests, lint, format, boundaries.
+### T-013d · P12.4 · EpisodePipeline step 1: understand · changes r1 · needs: T-013a, T-013b, T-013c
 Text: `tasks/p12/T-013.md`.
 
-### T-013e · P12.5 · What was understood, on the phone · todo · needs: T-013b, T-011e
+**Fix list r1** (review of fde1b14; everything else approved: the inventory and `leavesDevice`, chunks, the wait and cancel rounds, working-copy deletion, costs, idempotent steps).
+1. Rule 7 leak: `keptCaption` splits on spaces, so "A man's hand", "He's holding a cup" and "A child’s drawing" pass. Split into words by letters only (`/\p{L}+/gu` on the lower-cased text), so a possessive or a contraction (straight or curly apostrophe) still yields the listed word.
+2. `captions-delete` is not idempotent: one failed delete stops the rest, and a retry fails on the already-deleted one. Delete each batch on its own (a failure of one is logged by id and the others go on), and the adapter treats a 404 on delete as already deleted.
+3. For P14 (D40): `transcribeAnswer` stores the transcription's `segments` with their words on the `workersAi` derived row (texts cut to their limits, at most 200 segments and 60 words each, times clamped to the answer's length).
+Tests: `keptCaption` drops "A man's hand holding a cup.", "He's by the window." and "A child’s drawing on a fridge." and keeps "A person's hand holding a cup."; with three batches whose second delete fails, the first and third are deleted and the run completes; a retried delete step after a 404 completes; a transcribed answer's derived row carries its segments.
+Allowed test changes: none removed or loosened.
+Checks: API, contracts and story typecheck, tests, lint, format, boundaries, `deploy:dry`.
+### T-013e · P12.5 · What was understood, on the phone · changes r1 · needs: T-013b, T-011e
 Text: `tasks/p12/T-013.md`.
+**Fix list r1** (review of fc32f43; everything else approved: the v5 table, landing rules, tombstones, the viewer's transcript, the forced v4 test change).
+1. v5 clears `sync.cursor`, so every question is pulled again, and the server keeps a stored answer even after its moment is deleted (T-011b's rule). A question whose answer the person deleted therefore comes back answered by the deleted moment, and today's question shows as saved and can't be answered again. In `applyPulled`'s question case, a pulled `answeredByMomentId` that names a moment deleted on this phone never replaces the local row's answer (an empty local answer stays empty). Correct v5's comment (questions are not last-write-wins).
+2. The phone does not store transcript segments (T-013b fix r1 adds them to `Derived`): the device repository drops the field on write.
+Tests: answer Q with M, sync, delete M, then a full re-pull (cursor null) that returns Q answered by M leaves Q unanswered and today's question answerable; a pulled derived row with segments is stored without them.
+Checks: mobile typecheck, tests, lint, format, boundaries.
 
 ## P13 — Planner (step 2 of the episode pipeline)
 
-### T-014a · P13.1 · The planner's shapes and checks · todo · needs: T-013b
+### T-014a · P13.1 · The planner's shapes and checks · changes r1 · needs: T-013b
 Text: `tasks/p13/T-014.md`.
 Note (2026-09-27, from a second check of the text): (1) Add `planMomentErrors(output, brief)`: every cold open, shot and closing id must be an answer, clip or photo of the brief, else `<where>: not a picture or sound from this week`; `planOnce` (T-014c) runs it after the `PlannerOutput` parse and before anything else. Error strings may contain ids, never other text. (2) `narratorShare` returns `{ narratorMs, spokenMs, share }` (`validatePlan` keeps its exact messages); `userVoiceShare` = 1 − `share`; the `planProperties` test for a narrator share over 25% expects `userVoiceShare` below 0.75 and `valid` false. (3) `weekday` is required on brief moments; allowed test change: the `WeekBriefV1` contract test's moments gain `weekday`. (4) `planDurationMs` takes the `PlannerOutput` and the brief (not the assembled plan) so the 30–240 s check runs before `assemblePlan` parses. (5) A lower third is timed on its moment's first scene shot; the cold open does not count, so a moment used only as the cold open gets no lower third.
+Note (2026-09-27, for P14): `planVoiceErrors` also flags a digit in a bridge or the tease (for example `scene 2 bridge has a digit`), so the retry writes numbers in words (the narrator reads digits badly, D40).
 
+**Fix list r1** (7134b37 was committed before the second note above was published; a workflow review of it is running and may add items here, so read this entry again when you start it).
+1. The second note: `planVoiceErrors` also flags a digit in a bridge or the tease (`scene <n> bridge has a digit`, `tease has a digit`).
+Tests: a bridge with "12" and a tease with "3pm" are each flagged; "Twelve weeks in" is not.
+Checks: story typecheck, tests, lint, format, boundaries.
 ### T-014b · P13.2 · The planner provider and the style prompt · todo · needs: T-013c, T-014a
 Text: `tasks/p13/T-014.md`.
 Note (2026-09-27): the style prompt gains one sentence at the end of the "How an episode goes" paragraph, right after "and that must be an answer.": "It can play again, whole, in its scene." (Three fixture weeks reach 30 s only when it does, and the recap already reuses it.)
+Note (2026-09-27, for P14): the style prompt's "Words." paragraph gains, after "British spelling.": "Write numbers, dates and times in words, such as three weeks or half past six." (The narrator's voice reads digits badly, D40.)
 
 ### T-014c · P13.3 · EpisodePipeline step 2: plan · todo · needs: T-013d, T-014a, T-014b
 Text: `tasks/p13/T-014.md`.
@@ -193,6 +220,17 @@ Note (2026-09-27): (1) When the first answer had no text, the retry sends no ass
 
 ### T-014d · P13.4 · The planner evaluation · todo · needs: T-014c
 Text: `tasks/p13/T-014.md`.
+
+## P14 — Narration (step 3 of the episode pipeline)
+
+### T-015a · P14.1 · Narration shapes and rules · todo · needs: T-014a
+Text: `tasks/p14/T-015.md`.
+
+### T-015b · P14.2 · The ElevenLabs provider · todo · needs: T-013c, T-015a
+Text: `tasks/p14/T-015.md`.
+
+### T-015c · P14.3 · EpisodePipeline step 3: narrate · todo · needs: T-014c, T-015a, T-015b
+Text: `tasks/p14/T-015.md`.
 
 ## Blocked on the owner
 
