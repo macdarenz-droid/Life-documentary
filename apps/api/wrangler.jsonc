@@ -14,4 +14,5 @@
     },
   ],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "life-media" }],
+  "ai": { "binding": "AI" },
 }
