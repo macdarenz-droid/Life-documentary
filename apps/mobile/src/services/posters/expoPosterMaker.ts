@@ -5,8 +5,6 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { getThumbnailAsync } from 'expo-video-thumbnails';
 import type { PosterMaker } from '../../domain/capturePorts';
 
-/** The poster's longest side in pixels (P10). */
-export const POSTER_MAX_SIDE = 480;
 const COMPRESS = 0.7;
 
 async function resized(uri: string, maxSide: number, compress = COMPRESS) {
@@ -34,12 +32,12 @@ function removeQuietly(uri: string) {
 }
 
 export const expoPosterMaker: PosterMaker = {
-  fromVideo: async (uri, atMs) => {
+  fromVideo: async (uri, atMs, maxSide, quality) => {
     let frame: string | undefined;
     try {
       const thumbnail = await getThumbnailAsync(uri, { time: atMs, quality: 1 });
       frame = thumbnail.uri;
-      return await resized(frame, POSTER_MAX_SIDE);
+      return await resized(frame, maxSide, quality);
     } catch {
       return null;
     } finally {

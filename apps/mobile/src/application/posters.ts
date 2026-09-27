@@ -44,6 +44,7 @@ export async function ensurePoster(
         ? await posters.fromVideo(
             source,
             (asset.durationMs ?? 0) < POSTER_FRAME_MS ? 0 : POSTER_FRAME_MS,
+            POSTER_MAX_SIDE,
           )
         : await posters.fromPhoto(source, POSTER_MAX_SIDE);
     if (!poster) return false;

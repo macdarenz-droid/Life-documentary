@@ -44,7 +44,8 @@ export type FakeServices = CaptureServices & {
     /** 'make' writes a poster through onPosterFile; 'none' gives null; 'throw' rejects. */
     mode: 'make' | 'none' | 'throw';
     /** Every call, in order. */
-    calls: { kind: 'video' | 'photo'; uri: string; at: number }[];
+    /** `at` is the frame time for a video and the longest side for a photo. */
+    calls: { kind: 'video' | 'photo'; uri: string; at: number; maxSide?: number }[];
   };
   account: Account & {
     /** The person a sign-in signs in as. */
@@ -176,8 +177,8 @@ export function fakeServices(
     })(),
     posters: (() => {
       let next = 0;
-      const make = async (kind: 'video' | 'photo', uri: string, at: number) => {
-        services.posters.calls.push({ kind, uri, at });
+      const make = async (kind: 'video' | 'photo', uri: string, at: number, maxSide?: number) => {
+        services.posters.calls.push({ kind, uri, at, ...(maxSide !== undefined ? { maxSide } : {}) });
         if (services.posters.mode === 'throw') throw new Error('No poster');
         if (services.posters.mode === 'none') return null;
         next += 1;
@@ -188,7 +189,8 @@ export function fakeServices(
       return {
         mode: 'make' as const,
         calls: [],
-        fromVideo: (uri: string, atMs: number) => make('video', uri, atMs),
+        fromVideo: (uri: string, atMs: number, maxSide: number) =>
+          make('video', uri, atMs, maxSide),
         fromPhoto: (uri: string, maxSide: number) => make('photo', uri, maxSide),
       };
     })(),

@@ -125,7 +125,7 @@ async function sendJob(
     const bytes = await io.size(plain);
     const container = containerOf(await io.read(plain, 0, Math.min(CONTAINER_HEAD_BYTES, bytes)));
     const contentType =
-      purpose === 'preview'
+      purpose === 'preview' || purpose === 'keyframe'
         ? 'image/jpeg'
         : container
           ? CONTENT_TYPES[container]

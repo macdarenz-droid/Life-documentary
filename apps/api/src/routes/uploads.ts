@@ -1,6 +1,6 @@
 // Uploads through the Worker (P6, D34): a phone starts a multipart upload for one of its assets, sends it
 // in 5 MiB parts that stream into R2, then completes it. Every step checks that the asset belongs to the
-// person's documentary and that `leavesDevice` allows exactly this purpose for its moment (rule 8).
+// person's documentary and that `leavesDevice` lists this purpose for its moment (rule 8).
 import {
   CompleteUpload,
   CreateUpload,
@@ -15,30 +15,17 @@ import {
 import type { Context } from 'hono';
 import { Hono } from 'hono';
 import { database, type Db } from '../data/db';
+import { mediaKey } from '../data/mediaKeys';
 import * as changes from '../data/repositories/changes';
 import * as documentariesRepo from '../data/repositories/documentaries';
 import * as uploadsRepo from '../data/repositories/uploads';
-import { mediaMayLeave } from '../policy/leavesDevice';
+import { uploadsAllowed } from '../policy/leavesDevice';
 import { apiError } from '../shared/errors';
 import { parseBody } from './body';
 import { requireSession, type AppEnv } from './middleware/session';
 
 /** A part's body may be at most this long; anything longer is refused before it is read. */
 export const MAX_PART_BYTES = UPLOAD_PART_SIZE + 1024;
-
-/**
- * The R2 key of an asset's file for one purpose (D37). Working copies live under `tmp/` so D14's
- * lifecycle rule can delete them by prefix; only an original lives under `u/`.
- */
-export function uploadKey(
-  userId: string,
-  documentaryId: string,
-  assetId: string,
-  purpose: UploadPurpose,
-) {
-  const prefix = purpose === 'original' ? 'u' : 'tmp';
-  return `${prefix}/${userId}/${documentaryId}/${assetId}/${purpose}`;
-}
 
 /** Whether the person may upload this asset for this purpose: it is theirs and may leave the phone. */
 async function mayUpload(
@@ -53,7 +40,7 @@ async function mayUpload(
   if (!documentary || documentary.ownerUserId !== userId || asset.ownerUserId !== userId) {
     return null;
   }
-  if (mediaMayLeave(asset.moment, asset.kind) !== purpose) return null;
+  if (!uploadsAllowed(asset.moment, asset.kind).includes(purpose)) return null;
   return { documentaryId: asset.documentaryId };
 }
 
@@ -107,7 +94,7 @@ export const uploads = new Hono<AppEnv>()
       );
     }
 
-    const key = uploadKey(userId, allowed.documentaryId, body.assetId, body.purpose);
+    const key = mediaKey(userId, allowed.documentaryId, body.assetId, body.purpose);
     const multipart = await c.env.MEDIA.createMultipartUpload(key, {
       httpMetadata: { contentType: body.contentType },
     });

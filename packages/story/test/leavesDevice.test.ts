@@ -28,10 +28,19 @@ function moment(kind: MomentKind, localOnly: boolean) {
   });
 }
 
-const expected = {
-  false: { answer: 'answer', photo: 'preview', clip: 'none', note: 'none' },
-  true: { answer: 'answer', photo: 'original', clip: 'original', note: 'none' },
-} as const;
+/** The uploads for each kind and asset kind, without and with Cloud backup. */
+function expected(kind: MomentKind, assetKind: MediaAsset['kind'] | undefined, cloudBackup: boolean) {
+  switch (kind) {
+    case 'answer':
+      return assetKind === 'video' ? ['answer', 'keyframe'] : ['answer'];
+    case 'photo':
+      return cloudBackup ? ['preview', 'original'] : ['preview'];
+    case 'clip':
+      return cloudBackup ? ['keyframe', 'original'] : ['keyframe'];
+    case 'note':
+      return [];
+  }
+}
 
 const cases = (Object.keys(assetKinds) as MomentKind[]).flatMap((kind) =>
   (assetKinds[kind].length ? assetKinds[kind] : [undefined]).flatMap((assetKind) =>
@@ -49,10 +58,32 @@ describe('leavesDevice', () => {
         { ...moment(kind, localOnly), ...(assetKind ? { assetKind } : {}) },
         { cloudBackup },
       );
-      if (localOnly) expect(result).toEqual({ row: false, media: 'none' });
-      else expect(result).toEqual({ row: true, media: expected[`${cloudBackup}`][kind] });
+      if (localOnly) expect(result).toEqual({ row: false, uploads: [] });
+      else expect(result).toEqual({ row: true, uploads: expected(kind, assetKind, cloudBackup) });
     },
   );
+
+  it('lists exactly these uploads', () => {
+    const lists = (cloudBackup: boolean) =>
+      [
+        ['answer', 'video'],
+        ['answer', 'audio'],
+        ['photo', 'photo'],
+        ['clip', 'video'],
+      ].map(([kind, assetKind]) =>
+        leavesDevice(
+          { ...moment(kind as MomentKind, false), assetKind: assetKind as MediaAsset['kind'] },
+          { cloudBackup },
+        ).uploads,
+      );
+    expect(lists(false)).toEqual([['answer', 'keyframe'], ['answer'], ['preview'], ['keyframe']]);
+    expect(lists(true)).toEqual([
+      ['answer', 'keyframe'],
+      ['answer'],
+      ['preview', 'original'],
+      ['keyframe', 'original'],
+    ]);
+  });
 
   it('covers every kind', () => {
     expect(new Set(cases.map((c) => c.kind))).toEqual(new Set(['answer', 'clip', 'photo', 'note']));
@@ -62,7 +93,7 @@ describe('leavesDevice', () => {
   it('sends no media for a moment whose asset kind is not known', () => {
     expect(leavesDevice(moment('photo', false), { cloudBackup: false })).toEqual({
       row: true,
-      media: 'none',
+      uploads: [],
     });
   });
 });

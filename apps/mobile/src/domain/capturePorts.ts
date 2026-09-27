@@ -83,8 +83,8 @@ export type Poster = { uri: string; width: number; height: number };
 
 /** Makes a small JPEG poster in the app cache; null when it cannot be made. */
 export interface PosterMaker {
-  /** The frame at `atMs`. */
-  fromVideo(uri: string, atMs: number): Promise<Poster | null>;
+  /** The frame at `atMs`, its longest side at most `maxSide`, as a JPEG of `quality` (0 to 1). */
+  fromVideo(uri: string, atMs: number, maxSide: number, quality?: number): Promise<Poster | null>;
   /** The photo with its longest side at most `maxSide`, as a JPEG of `quality` (0 to 1). */
   fromPhoto(uri: string, maxSide: number, quality?: number): Promise<Poster | null>;
 }
