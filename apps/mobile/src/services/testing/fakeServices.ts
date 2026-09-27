@@ -60,6 +60,9 @@ export type FakeServices = CaptureServices & {
     devices: RegisterDevice[];
     linked: Documentary[];
     deletionRequests: number;
+    /** The open deletion request `me()` reports, if any. */
+    deletion: Me['deletion'];
+    deletionCancels: number;
     /** Every sync request, in order; the fake server has nothing to send back. */
     syncs: SyncRequest[];
   };
@@ -211,11 +214,13 @@ export function fakeServices(
       devices: [],
       linked: [],
       deletionRequests: 0,
+      deletion: null,
+      deletionCancels: 0,
       me: async (): Promise<Me> => ({
         userId: Uuid.parse(person.userId),
         email: person.email,
         documentaries: services.api.linked,
-        deletion: null,
+        deletion: services.api.deletion,
       }),
       registerDevice: async (device) => {
         services.api.devices.push(device);
@@ -233,7 +238,10 @@ export function fakeServices(
         services.api.deletionRequests += 1;
         services.account.signedIn = null;
       },
-      cancelDeletion: async () => undefined,
+      cancelDeletion: async () => {
+        services.api.deletionCancels += 1;
+        services.api.deletion = null;
+      },
       syncs: [],
       sync: async (request) => {
         services.api.syncs.push(request);

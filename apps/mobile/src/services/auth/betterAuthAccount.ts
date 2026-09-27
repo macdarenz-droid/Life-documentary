@@ -14,6 +14,17 @@ function codeResult(error: Failure): SignInResult {
   throw new Error(`Sign-in by code failed: ${error.status}`);
 }
 
+/** The session cookie, as the server names it over http and https. */
+const SESSION_COOKIES = ['better-auth.session_token', '__Secure-better-auth.session_token'];
+
+/** True when the stored cookie line holds a session token, not just the OAuth state. */
+function holdsSession(cookie: string): boolean {
+  return cookie
+    .split(';')
+    .map((pair) => pair.trim().split('=')[0] ?? '')
+    .some((name) => SESSION_COOKIES.includes(name));
+}
+
 function ok(error: Failure, what: string): void {
   if (error) throw new Error(`${what} failed: ${error.status}`);
 }
@@ -22,7 +33,7 @@ export function betterAuthAccount(client: LifeAuthClient): Account {
   let cached: string | null = null;
   const refresh = async () => {
     const cookie = await client.getCookie();
-    cached = cookie.length > 0 ? cookie : null;
+    cached = holdsSession(cookie) ? cookie : null;
   };
 
   return {
@@ -66,8 +77,9 @@ export function betterAuthAccount(client: LifeAuthClient): Account {
         callbackURL: '/settings',
       });
       ok(error, 'Sign in with Google');
+      const { data } = await client.getSession();
       await refresh();
-      return cached ? 'signedIn' : 'cancelled';
+      return data ? 'signedIn' : 'cancelled';
     },
     signOut: async () => {
       try {

@@ -71,7 +71,7 @@ export type SignInOutcome = {
   documentary?: Documentary;
 };
 
-/** Runs one way of signing in, then `afterSignIn` once. */
+/** Runs one way of signing in, cancels an open deletion, then `afterSignIn` once. */
 export async function signInAndLink(
   deps: AccountDeps,
   signIn: () => Promise<SignInResult>,
@@ -87,6 +87,13 @@ export async function signInAndLink(
   if (result === 'wrongCode') return { user: null, line: words.account.codeWrong };
   const user = await deps.account.session().catch(() => null);
   if (!user) return { user: null, line: words.account.signInFailed };
+  try {
+    const me = await deps.api.me();
+    if (me.deletion !== null) await deps.api.cancelDeletion();
+  } catch (error) {
+    console.error('The open deletion was not cancelled.', error);
+    return { user: null, line: words.account.signInFailed };
+  }
   const link = await afterSignIn(deps.store, deps.clock, deps.api, deps.documentary, deps.device);
   return link.ok ? { user, documentary: link.documentary } : { user, line: link.line };
 }

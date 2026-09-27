@@ -84,6 +84,30 @@ describe('signInAndLink', () => {
       user: null,
     });
   });
+
+  it('cancels an open deletion once when the person signs in again', async () => {
+    const h = await todayHarness();
+    h.services.api.deletion = { purgeAfter: '2027-04-14T09:30:00Z' };
+    const outcome = await signInAndLink(deps(h), () => h.services.account.signInWithGoogle());
+    expect(outcome.user).toEqual(h.services.account.person);
+    expect(h.services.api.deletionCancels).toBe(1);
+    expect((await h.services.api.me()).deletion).toBeNull();
+  });
+
+  it('cancels nothing when no deletion is open', async () => {
+    const h = await todayHarness();
+    await signInAndLink(deps(h), () => h.services.account.signInWithGoogle());
+    expect(h.services.api.deletionCancels).toBe(0);
+  });
+
+  it('shows the sign-in failed line when the open deletion cannot be checked', async () => {
+    const h = await todayHarness();
+    h.services.api.me = () => Promise.reject(new Error('No network'));
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const outcome = await signInAndLink(deps(h), () => h.services.account.signInWithGoogle());
+    expect(outcome).toEqual({ user: null, line: words.account.signInFailed });
+    jest.restoreAllMocks();
+  });
 });
 
 describe('requestAccountDeletion', () => {
