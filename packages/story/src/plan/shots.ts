@@ -15,7 +15,7 @@ const CLIP_MAX_MS = 6000;
 const PHOTO_MS = 3000;
 
 /** Milliseconds a moment plays as a shot. */
-export function shotMs(moment: BriefMoment): number {
+export function shotMs(moment: Pick<BriefMoment, 'kind' | 'durationMs'>): number {
   if (moment.kind === 'answer') return moment.durationMs ?? ANSWER_DEFAULT_MS;
   if (moment.kind === 'clip') return Math.min(moment.durationMs ?? CLIP_MAX_MS, CLIP_MAX_MS);
   return PHOTO_MS;

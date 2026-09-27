@@ -3,6 +3,7 @@ import {
   bannedWords,
   questionTemplates,
   recapWords,
+  episodeWords,
   voiceBannedCharacters,
   voiceBannedPhrases,
   words,
@@ -95,6 +96,16 @@ function recapSample(): [string, string][] {
   ];
 }
 
+function episodeSample(): [string, string][] {
+  return [
+    ['episodeWords.label', episodeWords.label(12)],
+    ['episodeWords.dates', episodeWords.dates('2026-10-12', '2026-10-18')],
+    ['episodeWords.dates across months', episodeWords.dates('2026-09-29', '2026-10-05')],
+    ['episodeWords.closing', episodeWords.closing],
+    ['episodeWords.next', episodeWords.next],
+  ];
+}
+
 function hasPhrase(text: string, phrase: string): boolean {
   if (phrase.includes("'")) return text.toLowerCase().includes(phrase);
   return new RegExp(`\\b${escape(phrase)}\\b`, 'i').test(text);
@@ -105,6 +116,7 @@ describe('the voice (DESIGN §8)', () => {
     ...userFacing(words),
     ...questionTemplates.map((q): [string, string] => [`question ${q.id}`, q.text]),
     ...recapSample(),
+    ...episodeSample(),
   ];
 
   it('calls every function in words with sample arguments', () => {

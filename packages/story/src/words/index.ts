@@ -260,3 +260,4 @@ export * from './voice';
 
 export const bannedWords = ['streak', 'badge', 'level up', 'leaderboard', 'points', 'xp'] as const;
 export * from './recap';
+export * from './episode';
