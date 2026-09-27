@@ -11,6 +11,7 @@ import {
   NOTE_MAX_LENGTH,
   dayLabel,
   durationLabel,
+  durationWords,
   oneYearBefore,
   timeLabel,
   words,
@@ -30,6 +31,8 @@ export type FootageItem = {
   mediaKind?: 'video' | 'photo' | 'audio';
   timeLabel: string;
   durationLabel?: string;
+  /** The duration as a screen reader says it: "9 seconds". */
+  durationSpoken?: string;
   questionText?: string;
   text?: string;
   mood?: MomentMood;
@@ -57,7 +60,12 @@ async function toItem(store: Store, moment: Moment): Promise<FootageItem> {
     kind: moment.kind,
     ...(asset ? { mediaKind: asset.kind, assetId: asset.id } : {}),
     timeLabel: timeLabel(moment.capturedAt, moment.timeZone),
-    ...(asset?.durationMs !== undefined ? { durationLabel: durationLabel(asset.durationMs) } : {}),
+    ...(asset?.durationMs !== undefined
+      ? {
+          durationLabel: durationLabel(asset.durationMs),
+          durationSpoken: durationWords(asset.durationMs),
+        }
+      : {}),
     ...(question ? { questionText: question.text } : {}),
     ...(moment.text !== undefined ? { text: moment.text } : {}),
     ...(moment.mood !== undefined ? { mood: moment.mood } : {}),

@@ -81,9 +81,7 @@ test('the Design Lab shows every section without console errors', async ({ page 
     }
     if (name === 'Settings') {
       // A quarter of an hour later: the time reads 08:15.
-      await page
-        .getByRole('button', { name: `${words.reminders.minutes}, ${words.reminders.later}` })
-        .click();
+      await page.getByRole('button', { name: words.reminders.step('minute', 1) }).click();
       await expect(page.getByText('08:15')).toBeVisible();
     }
     if (name === 'Footage') {

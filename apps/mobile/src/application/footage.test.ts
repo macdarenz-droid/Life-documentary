@@ -104,6 +104,7 @@ describe('footageDays', () => {
         assetId: moment.mediaAssetId,
         timeLabel: '10:30',
         durationLabel: '0:09',
+        durationSpoken: '9 seconds',
         questionText: question.text,
         mood: 'calm',
         placeName: 'The harbour',

@@ -42,7 +42,7 @@ export function monthAndYear(date: string): string {
 export const recapWords = {
   title: (weekStart: string) => `The week of ${dayAndMonth(weekStart)}`,
   summary: (weekStart: string, weekEnd: string) =>
-    `A recap of the week of ${dayAndMonth(weekStart)} to ${dayAndMonth(weekEnd)}.`,
+    `A recap of your week, ${dayAndMonth(weekStart)} to ${dayAndMonth(weekEnd)}.`,
   weekday: (date: string): string => WEEKDAYS[dayOfWeek(date)] ?? '',
   merged: (first: string, last: string) => `${first} to ${last}`,
 };

@@ -52,13 +52,13 @@ describe('SettingsScreen', () => {
     await act(async () => {
       fireEvent(dailySwitch(), 'valueChange', true);
     });
-    await press(`${words.reminders.hour}, ${words.reminders.later}`);
-    await press(`${words.reminders.minutes}, ${words.reminders.later}`);
-    await press(`${words.reminders.minutes}, ${words.reminders.later}`);
+    await press(words.reminders.step('hour', 1));
+    await press(words.reminders.step('minute', 1));
+    await press(words.reminders.step('minute', 1));
     expect(screen.getByText('09:30')).toBeOnTheScreen();
     expect([...h.services.reminders.scheduled.values()]).toMatchObject([{ hour: 9, minute: 30 }]);
-    await press(`${words.reminders.hour}, ${words.reminders.earlier}`);
-    await press(`${words.reminders.minutes}, ${words.reminders.earlier}`);
+    await press(words.reminders.step('hour', -1));
+    await press(words.reminders.step('minute', -1));
     expect(screen.getByText('08:15')).toBeOnTheScreen();
     expect(await readDailyReminder(h.ctx.store)).toMatchObject({
       enabled: true,

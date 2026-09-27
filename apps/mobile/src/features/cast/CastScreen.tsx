@@ -48,7 +48,7 @@ export function CastScreen({ actions, onBack }: CastScreenProps) {
       await work();
     } catch (e) {
       if (!(e instanceof InputError)) console.error('The cast could not be changed.', e);
-      setError(e instanceof InputError ? e.message : words.today.couldNotSave);
+      setError(e instanceof InputError ? e.message : words.cast.changeFailed);
       return;
     }
     setAdding(false);

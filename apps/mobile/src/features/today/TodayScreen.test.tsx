@@ -216,11 +216,11 @@ describe('TodayScreen', () => {
     await act(async () => {
       await jest.advanceTimersByTimeAsync(2999);
     });
-    expect(screen.queryByText(words.today.couldNotSave)).toBeNull();
+    expect(screen.queryByText(words.today.cameraNotReady)).toBeNull();
     await act(async () => {
       await jest.advanceTimersByTimeAsync(1);
     });
-    expect(screen.getByText(words.today.couldNotSave)).toBeOnTheScreen();
+    expect(screen.getByText(words.today.cameraNotReady)).toBeOnTheScreen();
     expect(screen.queryByTestId('camera-preview')).toBeNull();
     await act(async () => {
       fireEvent(button, 'pressOut');
