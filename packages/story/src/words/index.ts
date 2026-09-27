@@ -153,6 +153,25 @@ export const words = {
     next: 'Next',
     oneYearAgo: 'One year ago today',
   },
+  deletePage: {
+    title: 'Delete your Life Documentary account',
+    intro:
+      'You can delete your account here without the app. We send a six-digit code to your email to check it is you.',
+    emailLabel: 'Email address',
+    sendCode: 'Send the code',
+    codeSent: (email: string) => `We sent a code to ${email}. It works for 5 minutes.`,
+    codeLabel: 'Six-digit code',
+    checkCode: 'Continue',
+    emailInvalid: 'That email address does not look right. Please check it.',
+    codeWrong: 'That code did not work. Ask for a new one and try again.',
+    confirmLine:
+      'Deleting removes your account and everything in it: your documentaries, moments and episodes.',
+    deleteButton: 'Delete my account',
+    done: (date: string) => `Your account and everything in it will be deleted on ${date}.`,
+    howToCancel:
+      'Changed your mind? Sign in again in the app within 30 days and cancel the deletion in Settings.',
+    refused: 'This request did not come from this page.',
+  },
   mail: {
     codeSubject: 'Your Life Documentary code',
     codeText: (code: string) => `Your Life Documentary code is ${code}. It works for 5 minutes.`,
