@@ -186,6 +186,7 @@ Note (2026-09-27, from a second check of the text): (1) Add `planMomentErrors(ou
 ### T-014b · P13.2 · The planner provider and the style prompt · todo · needs: T-013c, T-014a
 Text: `tasks/p13/T-014.md`.
 Note (2026-09-27): the style prompt gains one sentence at the end of the "How an episode goes" paragraph, right after "and that must be an answer.": "It can play again, whole, in its scene." (Three fixture weeks reach 30 s only when it does, and the recap already reuses it.)
+Note (2026-09-27, for P14): the style prompt's "Words." paragraph gains, after "British spelling.": "Write numbers, dates and times in words, such as three weeks or half past six." (The narrator's voice reads digits badly, D40.)
 
 ### T-014c · P13.3 · EpisodePipeline step 2: plan · todo · needs: T-013d, T-014a, T-014b
 Text: `tasks/p13/T-014.md`.
