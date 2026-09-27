@@ -4,4 +4,10 @@ export {
   type SettingsActions,
   type SettingsScreenProps,
 } from './SettingsScreen';
-export { SettingsRoute, settingsActions } from './SettingsRoute';
+export {
+  AccountSection,
+  type AccountActions,
+  type AccountSectionProps,
+  type AccountStep,
+} from './AccountSection';
+export { SettingsRoute, accountActions, settingsActions } from './SettingsRoute';

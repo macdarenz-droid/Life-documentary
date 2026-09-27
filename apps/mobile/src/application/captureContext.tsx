@@ -14,6 +14,7 @@ import {
 import { StyleSheet, View } from 'react-native';
 import { Text } from '../design-system';
 import type {
+  AppleButtonProps,
   AudioPlaybackProps,
   CameraViewProps,
   CaptureServices,
@@ -33,6 +34,10 @@ export type CaptureContextValue = {
   CameraView: ComponentType<CameraViewProps>;
   /** The player views for the moment viewer (P10); absent where nothing can play. */
   Playback?: PlaybackViews;
+  /** Apple's sign-in button on iPhone; a fake in tests and the Design Lab. */
+  AppleButton?: ComponentType<AppleButtonProps>;
+  /** Replaces the documentary every screen reads, after the account link changed its owner id (P4). */
+  setDocumentary?: (documentary: Documentary) => void;
 };
 
 /** Video and audio player views: the Expo ones on a device, fakes in tests and the Design Lab. */
@@ -63,11 +68,19 @@ type Props = {
   services: CaptureServices;
   CameraView: ComponentType<CameraViewProps>;
   Playback?: PlaybackViews;
+  AppleButton?: ComponentType<AppleButtonProps>;
   children: ReactNode;
 };
 
 /** Opens the store and the local documentary, then renders its children with the capture context. */
-export function CaptureRoot({ open, services, CameraView, Playback, children }: Props) {
+export function CaptureRoot({
+  open,
+  services,
+  CameraView,
+  Playback,
+  AppleButton,
+  children,
+}: Props) {
   const [state, setState] = useState<
     { status: 'opening' } | { status: 'ready'; value: CaptureContextValue } | { status: 'failed' }
   >({ status: 'opening' });
@@ -89,6 +102,13 @@ export function CaptureRoot({ open, services, CameraView, Playback, children }: 
             services,
             CameraView,
             ...(Playback ? { Playback } : {}),
+            ...(AppleButton ? { AppleButton } : {}),
+            setDocumentary: (next) =>
+              setState((current) =>
+                current.status === 'ready'
+                  ? { status: 'ready', value: { ...current.value, documentary: next } }
+                  : current,
+              ),
           },
         });
     })().catch((error: unknown) => {
@@ -98,7 +118,7 @@ export function CaptureRoot({ open, services, CameraView, Playback, children }: 
     return () => {
       active = false;
     };
-  }, [open, services, CameraView, Playback]);
+  }, [open, services, CameraView, Playback, AppleButton]);
 
   if (state.status === 'opening') return null;
   if (state.status === 'failed') {

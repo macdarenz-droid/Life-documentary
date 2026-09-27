@@ -64,6 +64,7 @@ const samples: Record<string, unknown[][]> = {
   ],
   'words.deletePage.codeSent': [['sam@example.com']],
   'words.deletePage.done': [[DATE]],
+  'words.account.codeSent': [['sam@example.com']],
   'words.account.deleted': [[DATE]],
   'words.mail.codeText': [['123456']],
 };

@@ -1,5 +1,6 @@
 // Everything a Today screen test needs: a memory store, the local documentary, fake services and a fake
 // camera, wrapped as a capture context.
+import { FakeAppleButton } from '../../services/testing/FakeAppleButton';
 import { fakeCameraView } from '../../services/testing/FakeCameraView';
 import { fakePlayback } from '../../services/testing/fakePlayback';
 import { fakeServices, type FakeServices } from '../../services/testing/fakeServices';
@@ -38,6 +39,7 @@ export async function todayHarness(at = '2027-03-15T09:30:00Z'): Promise<{
       services,
       CameraView: fakeCameraView(services.video),
       Playback: fakePlayback,
+      AppleButton: FakeAppleButton,
     },
     services,
     store,
