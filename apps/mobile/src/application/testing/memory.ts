@@ -16,6 +16,7 @@ export async function memoryStore(): Promise<Store & { io: MemoryFileIO }> {
     cipher: nodeCipher,
     masterKey: new Uint8Array(32).fill(7),
     storeDir: 'store',
+    cacheDir: 'cache',
   };
 }
 

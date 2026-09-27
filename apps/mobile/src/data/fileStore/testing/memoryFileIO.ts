@@ -34,6 +34,10 @@ export function memoryFileIO(): MemoryFileIO {
     remove: async (path) => {
       files.delete(path);
     },
+    move: async (from, to) => {
+      files.set(to, need(from));
+      files.delete(from);
+    },
     list: async (dir) =>
       [...files.keys()]
         .filter((p) => p.startsWith(`${dir}/`) && !p.slice(dir.length + 1).includes('/'))

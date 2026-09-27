@@ -17,6 +17,8 @@ export const mediaAssetSpec: TableSpec<MediaAsset> = {
     sha256: 'sha256',
     localPath: 'local_path',
     wrappedKey: 'wrapped_key',
+    posterPath: 'poster_path',
+    posterWrappedKey: 'poster_wrapped_key',
     cloudKey: 'cloud_key',
     uploadState: 'upload_state',
     createdAt: 'created_at',

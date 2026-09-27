@@ -28,6 +28,11 @@ export const expoFileIO: FileIO = {
     const file = new File(path);
     if (file.exists) file.delete();
   },
+  move: async (from, to) => {
+    const target = new File(to);
+    if (target.exists) target.delete();
+    await new File(from).move(target);
+  },
   list: async (dir) => {
     const directory = new Directory(dir);
     if (!directory.exists) return [];

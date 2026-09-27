@@ -132,7 +132,7 @@ describe('valid fixtures', () => {
     expect(CastMember.safeParse(cast).success).toBe(true);
     expect(Episode.safeParse(episode).success).toBe(true);
     expect(UploadJob.safeParse(uploadJob).success).toBe(true);
-    expect(DOMAIN_SCHEMA_VERSION).toBe(1);
+    expect(DOMAIN_SCHEMA_VERSION).toBe(2);
   });
 });
 
@@ -160,6 +160,14 @@ describe('rejections', () => {
   });
   it('a video without durationMs', () => {
     expect(MediaAsset.safeParse({ ...video, durationMs: undefined }).success).toBe(false);
+  });
+  it('a MediaAsset poster path without its wrapped key, or the key without the path', () => {
+    expect(MediaAsset.safeParse({ ...video, posterPath: '/s/a.poster.lde' }).success).toBe(false);
+    expect(MediaAsset.safeParse({ ...video, posterWrappedKey: 'a2V5' }).success).toBe(false);
+    expect(
+      MediaAsset.safeParse({ ...video, posterPath: '/s/a.poster.lde', posterWrappedKey: 'a2V5' })
+        .success,
+    ).toBe(true);
   });
   it('a sha256 of 63 characters or in uppercase hex', () => {
     expect(MediaAsset.safeParse({ ...video, sha256: 'a'.repeat(63) }).success).toBe(false);

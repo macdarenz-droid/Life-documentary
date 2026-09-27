@@ -15,6 +15,7 @@ import { StyleSheet, View } from 'react-native';
 import { Text } from '../design-system';
 import type { CameraViewProps, CaptureServices } from '../domain/capturePorts';
 import { openLocalDocumentary } from './bootstrap';
+import { clearPlaybackCache } from './playback';
 import type { Clock, Ids, Store } from './ports';
 
 export type CaptureContextValue = {
@@ -61,6 +62,7 @@ export function CaptureRoot({ open, services, CameraView, children }: Props) {
     let active = true;
     (async () => {
       const { store, clock, ids, timeZone } = await open();
+      await clearPlaybackCache(store);
       const documentary = await openLocalDocumentary(store, clock, ids, timeZone);
       if (active)
         setState({

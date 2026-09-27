@@ -66,6 +66,16 @@ export interface Reminders {
   cancel(id: string): Promise<void>;
 }
 
+export type Poster = { uri: string; width: number; height: number };
+
+/** Makes a small JPEG poster in the app cache; null when it cannot be made. */
+export interface PosterMaker {
+  /** The frame at `atMs`. */
+  fromVideo(uri: string, atMs: number): Promise<Poster | null>;
+  /** The photo with its longest side at most `maxSide`. */
+  fromPhoto(uri: string, maxSide: number): Promise<Poster | null>;
+}
+
 /** The props every camera view (the Expo one or a fake) accepts. */
 export type CameraViewProps = {
   onRecorder: (recorder: VideoRecorder | null) => void;
@@ -85,4 +95,5 @@ export type CaptureServices = {
   permissions: Permissions;
   settings: SettingsOpener;
   reminders: Reminders;
+  posters: PosterMaker;
 };

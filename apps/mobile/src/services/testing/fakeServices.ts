@@ -7,6 +7,7 @@ import type {
   Permissions,
   PickedMedia,
   PlaceFinder,
+  PosterMaker,
   Reminders,
   SettingsOpener,
   VideoRecorder,
@@ -25,8 +26,16 @@ export type FakeServices = CaptureServices & {
     scheduled: Map<string, { hour: number; minute: number; title: string; body: string }>;
     cancelled: string[];
   };
+  posters: PosterMaker & {
+    /** 'make' writes a poster through onPosterFile; 'none' gives null; 'throw' rejects. */
+    mode: 'make' | 'none' | 'throw';
+    /** Every call, in order. */
+    calls: { kind: 'video' | 'photo'; uri: string; at: number }[];
+  };
   /** Called with the source path a recording "writes"; the test puts fixture bytes there. */
   onRecordingFile?: (path: string) => void;
+  /** Called with the path a poster "writes"; the test puts fixture bytes there. */
+  onPosterFile?: (path: string) => void;
 };
 
 export function fakeServices(
@@ -119,6 +128,24 @@ export function fakeServices(
         },
       };
       return reminders;
+    })(),
+    posters: (() => {
+      let next = 0;
+      const make = async (kind: 'video' | 'photo', uri: string, at: number) => {
+        services.posters.calls.push({ kind, uri, at });
+        if (services.posters.mode === 'throw') throw new Error('No poster');
+        if (services.posters.mode === 'none') return null;
+        next += 1;
+        const path = `tmp/fake-poster-${next}.jpg`;
+        services.onPosterFile?.(path);
+        return { uri: path, width: 270, height: 480 };
+      };
+      return {
+        mode: 'make' as const,
+        calls: [],
+        fromVideo: (uri: string, atMs: number) => make('video', uri, atMs),
+        fromPhoto: (uri: string, maxSide: number) => make('photo', uri, maxSide),
+      };
     })(),
     permissions: {
       camera: permission('camera'),

@@ -13,4 +13,6 @@ export type Store = {
   cipher: Cipher;
   masterKey: Uint8Array;
   storeDir: string;
+  /** The app cache: plain playback copies and posters live here, cleared at every start (P10). */
+  cacheDir: string;
 };

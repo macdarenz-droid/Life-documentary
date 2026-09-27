@@ -33,6 +33,8 @@ export interface FileIO {
   read(path: string, offset: number, length: number): Promise<Uint8Array>;
   append(path: string, bytes: Uint8Array): Promise<void>;
   remove(path: string): Promise<void>;
+  /** Renames `from` to `to`, replacing a file already at `to`. */
+  move(from: string, to: string): Promise<void>;
   /** Full paths of the files directly inside `dir`; empty when it does not exist. */
   list(dir: string): Promise<string[]>;
   ensureDir(dir: string): Promise<void>;

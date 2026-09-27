@@ -31,6 +31,7 @@ import { expoPlaceFinder } from '../src/services/place/expoPlaceFinder';
 import { CameraRecorderView } from '../src/services/camera/CameraRecorderView';
 import { systemSettings } from '../src/services/settings/systemSettings';
 import { expoKeyStore } from '../src/services/secureStore/expoKeyStore';
+import { expoPosterMaker } from '../src/services/posters/expoPosterMaker';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -44,8 +45,9 @@ async function openDeviceStore(): Promise<OpenedStore> {
   const masterKey = await loadOrCreateMasterKey(expoKeyStore, expoCipher);
   const storeDir = new Directory(Paths.document, 'media').uri;
   await expoFileIO.ensureDir(storeDir);
+  const cacheDir = Paths.cache.uri;
   return {
-    store: { driver, io: expoFileIO, cipher: expoCipher, masterKey, storeDir },
+    store: { driver, io: expoFileIO, cipher: expoCipher, masterKey, storeDir, cacheDir },
     clock: systemClock,
     ids: expoIds,
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -63,6 +65,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       permissions: expoPermissions,
       settings: systemSettings,
       reminders,
+      posters: expoPosterMaker,
     }),
     [voice],
   );

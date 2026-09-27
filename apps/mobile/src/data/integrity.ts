@@ -88,7 +88,8 @@ export async function checkDatabase(driver: SqlDriver): Promise<IntegrityReport>
 }
 
 /**
- * Compares the encrypted file store with the database: assets whose file is gone, files no asset owns,
+ * Compares the encrypted file store with the database: assets whose original or poster is gone (unless
+ * all their moments are deleted), files no asset owns (originals and posters are owned),
  * and assets without the master key that unwraps them (iOS keeps Keychain items after an uninstall,
  * Android does not).
  */
@@ -102,18 +103,33 @@ export async function checkFiles(input: {
   const problems: IntegrityProblem[] = [];
   const assets = await mediaAssets.listAll(driver);
 
+  // An asset whose moments are all deleted may have lost its files already (delete removes them).
+  const deleted = new Set(
+    (
+      await driver.all<{ id: string }>(
+        `SELECT media_asset_id AS id FROM moments WHERE media_asset_id IS NOT NULL
+         GROUP BY media_asset_id HAVING SUM(deleted_at IS NULL) = 0`,
+      )
+    ).map((r) => r.id),
+  );
+
   for (const asset of assets) {
-    if (!(await io.exists(asset.localPath))) {
-      problems.push({
-        kind: 'missingFile',
-        table: 'media_assets',
-        id: asset.id,
-        detail: `${asset.localPath} is missing`,
-      });
+    if (deleted.has(asset.id)) continue;
+    for (const path of [asset.localPath, asset.posterPath]) {
+      if (path !== undefined && !(await io.exists(path))) {
+        problems.push({
+          kind: 'missingFile',
+          table: 'media_assets',
+          id: asset.id,
+          detail: `${path} is missing`,
+        });
+      }
     }
   }
 
-  const owned = new Set(assets.map((a) => a.localPath));
+  const owned = new Set(
+    assets.flatMap((a) => (a.posterPath ? [a.localPath, a.posterPath] : [a.localPath])),
+  );
   for (const path of await io.list(storeDir)) {
     if (!owned.has(path)) problems.push({ kind: 'orphanFile', detail: `${path} has no asset` });
   }
