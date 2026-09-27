@@ -13,30 +13,37 @@ const phrasePatterns = voiceBannedPhrases.map(
   (phrase) => [phrase, new RegExp(`\\b${escape(phrase)}\\b`, 'i')] as const,
 );
 
-function planTexts(plan: EpisodePlanV1): { field: string; text: string }[] {
+// `spoken` marks the narrator's lines, which the narrator reads aloud (it reads digits badly, D40).
+function planTexts(plan: EpisodePlanV1): { field: string; text: string; spoken?: true }[] {
   return [
     { field: 'title', text: plan.title },
     ...(plan.subtitle !== undefined ? [{ field: 'subtitle', text: plan.subtitle }] : []),
     ...plan.scenes.flatMap((scene, s) => [
       { field: `scene ${s} heading`, text: scene.heading },
       ...(scene.narratorBridge
-        ? [{ field: `scene ${s} bridge`, text: scene.narratorBridge.text }]
+        ? [{ field: `scene ${s} bridge`, text: scene.narratorBridge.text, spoken: true as const }]
         : []),
     ]),
-    ...(plan.tease ? [{ field: 'tease', text: plan.tease.text }] : []),
+    ...(plan.tease ? [{ field: 'tease', text: plan.tease.text, spoken: true as const }] : []),
     { field: 'summary', text: plan.summary },
   ];
 }
 
-/** One error per banned phrase (whole words, any case) or banned character in the plan's words. */
+const DIGIT = /\p{Nd}/u;
+
+/**
+ * One error per banned phrase (whole words, any case) or banned character in the plan's words, and one
+ * per bridge or tease with a digit, so numbers are written in words.
+ */
 export function planVoiceErrors(plan: EpisodePlanV1): string[] {
-  return planTexts(plan).flatMap(({ field, text }) => [
+  return planTexts(plan).flatMap(({ field, text, spoken }) => [
     ...phrasePatterns
       .filter(([, pattern]) => pattern.test(text))
       .map(([phrase]) => `${field} uses "${phrase}"`),
     ...voiceBannedCharacters
       .filter((char) => text.includes(char))
       .map((char) => `${field} uses "${char}"`),
+    ...(spoken && DIGIT.test(text) ? [`${field} has a digit`] : []),
   ]);
 }
 

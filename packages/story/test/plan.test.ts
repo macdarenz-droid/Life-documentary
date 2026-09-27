@@ -131,6 +131,11 @@ describe('assemblePlan', () => {
   it('sets narratorVoiceId only with a bridge or a tease', () => {
     expect(plan.narratorVoiceId).toBe('narrator-1');
     expect(assemblePlan(withoutBridges(output), brief, VOICE).narratorVoiceId).toBeUndefined();
+    const teaseOnly = {
+      ...withoutBridges(output),
+      tease: { storylineId: id(80), text: 'Next week, the sea.' },
+    };
+    expect(assemblePlan(teaseOnly, brief, VOICE).narratorVoiceId).toBe('narrator-1');
   });
   it('sets targetDurationMs to planDurationMs', () => {
     // 5,000 + 3,000 + 6,000 + 6,000 + 3,000 + 4,000 + 8,000 + 2,500.
@@ -201,6 +206,13 @@ describe('planVoiceErrors', () => {
   });
   it('finds nothing in a clean plan', () => {
     expect(planVoiceErrors(plan)).toEqual([]);
+  });
+  it('flags a digit in a bridge or the tease, and not a number in words', () => {
+    expect(planVoiceErrors(withBridge('12 weeks in.'))).toEqual(['scene 1 bridge has a digit']);
+    expect(
+      planVoiceErrors({ ...plan, tease: { storylineId: id(80), text: 'Friday at 3pm.' } }),
+    ).toEqual(['tease has a digit']);
+    expect(planVoiceErrors(withBridge('Twelve weeks in.'))).toEqual([]);
   });
 });
 
