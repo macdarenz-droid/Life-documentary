@@ -170,6 +170,7 @@ function buildWeek(spec: WeekSpec): FixtureWeek {
       const isPhoto = m.kind === 'photo';
       derived.push(
         Derived.parse({
+          id: fixtureId(spec.week, 50_000 + i),
           momentId: id,
           ...(isPhoto
             ? { caption: sentence(12, i) }

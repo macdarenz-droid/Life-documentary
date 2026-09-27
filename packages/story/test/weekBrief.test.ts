@@ -1,7 +1,7 @@
-import { WeekBriefV1 } from '@life/contracts';
+import { Derived, WeekBriefV1 } from '@life/contracts';
 import { describe, expect, it } from 'vitest';
 import { WEEK_BRIEF_BUDGET, weekBrief } from '../src';
-import { NAMES, fixtureWeeks, type FixtureWeek } from './fixtures/weeks';
+import { NAMES, fixtureId, fixtureWeeks, type FixtureWeek } from './fixtures/weeks';
 
 const weeks = fixtureWeeks();
 function week(name: string): FixtureWeek {
@@ -119,6 +119,25 @@ describe('weekBrief', () => {
       expect(m.storylineIds).toEqual([]);
       expect(m.castIds).toEqual([]);
     }
+  });
+
+  it("keeps a moment's transcript and a newer caption from another provider", () => {
+    const { input } = week(NAMES.full);
+    const answer = input.derived.find((d) => d.transcript !== undefined)!;
+    const later = new Date(Date.parse(answer.producedAt) + 60_000).toISOString();
+    const caption = Derived.parse({
+      id: fixtureId(99, 1),
+      momentId: answer.momentId,
+      caption: 'A person holds a coffee cup by a window.',
+      language: 'en',
+      provider: 'anthropic',
+      modelVersion: 'fixture-caption',
+      producedAt: later,
+    });
+    const brief = weekBrief({ ...input, derived: [...input.derived, caption] });
+    const moment = brief.moments.find((m) => m.momentId === answer.momentId)!;
+    expect(moment.transcript).toBe(answer.transcript);
+    expect(moment.caption).toBe('A person holds a coffee cup by a window.');
   });
 
   it('leaves transcripts out when nothing was derived yet', () => {

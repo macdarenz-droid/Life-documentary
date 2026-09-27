@@ -6,6 +6,7 @@ import { Documentary } from '../domain/documentary';
 import { MediaAsset } from '../domain/mediaAsset';
 import { Moment } from '../domain/moment';
 import { Question } from '../domain/question';
+import { Derived } from '../episode/derived';
 import { CastMember, Storyline } from '../domain/storyline';
 import { Uuid } from '../ids';
 
@@ -58,6 +59,19 @@ export const SyncChange = z.discriminatedUnion('entity', [
 ]);
 export type SyncChange = z.infer<typeof SyncChange>;
 
+/**
+ * What a pull may carry: every pushed kind, and rows only the server writes (P12's derived text). A phone
+ * never pushes a derived row, so `SyncRequest` refuses one.
+ */
+export const PulledEntity = z.enum([...SyncEntity.options, 'derived']);
+export type PulledEntity = z.infer<typeof PulledEntity>;
+
+export const PulledChange = z.discriminatedUnion('entity', [
+  ...SyncChange.options,
+  z.object({ entity: z.literal('derived'), row: Derived }),
+]);
+export type PulledChange = z.infer<typeof PulledChange>;
+
 export const SYNC_MAX_CHANGES = 100;
 
 /** The cursor is the server's change log position; null on the first sync. */
@@ -77,7 +91,7 @@ export type SyncRefusal = z.infer<typeof SyncRefusal>;
 
 export const SyncResponse = z.object({
   cursor: z.number().int().min(0),
-  changes: z.array(SyncChange),
+  changes: z.array(PulledChange),
   refused: z.array(SyncRefusal),
 });
 export type SyncResponse = z.infer<typeof SyncResponse>;

@@ -9,6 +9,8 @@ import {
 import { applyD1Migrations } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
+import { database } from '../src/data/db';
+import * as derivedRepo from '../src/data/repositories/derived';
 import { bindings, testApp } from './session';
 
 const T0 = '2027-03-15T08:00:00.000Z';
@@ -325,6 +327,86 @@ describe('POST /sync', () => {
 });
 
 describe('the sync migration', () => {
+  it('pulls derived text, and its replacement under the same id from an earlier cursor', async () => {
+    const ada = await person('ada.derived@example.com');
+    const moment = note(ada.documentary.id, ada.userId);
+    const { cursor } = await ada.ok({ cursor: null, changes: [moment] });
+    const db = database(bindings.DB);
+    const text = {
+      momentId: moment.row.id,
+      language: 'en',
+      provider: 'workersAi',
+      modelVersion: '@cf/openai/whisper-large-v3-turbo',
+    } as const;
+    const first = await derivedRepo.upsert(db, ada.documentary.id, {
+      ...text,
+      transcript: 'We walked to the lake.',
+      producedAt: at(10),
+    });
+    const pulled = await ada.ok({ cursor, changes: [] });
+    expect(pulled.changes).toEqual([{ entity: 'derived', row: first }]);
+
+    const second = await derivedRepo.upsert(db, ada.documentary.id, {
+      ...text,
+      transcript: 'We walked to the lake and back.',
+      producedAt: at(20),
+    });
+    expect(second.id).toBe(first.id);
+    expect(await derivedRepo.forMoments(db, [moment.row.id])).toEqual([second]);
+    const again = await ada.ok({ cursor, changes: [] });
+    expect(again.changes).toEqual([{ entity: 'derived', row: second }]);
+  });
+
+  it('refuses a pushed derived change with 400 and stores nothing', async () => {
+    const ada = await person('ada.pushderived@example.com');
+    const moment = note(ada.documentary.id, ada.userId);
+    await ada.ok({ cursor: null, changes: [moment] });
+    const derived = {
+      entity: 'derived',
+      row: {
+        id: crypto.randomUUID(),
+        momentId: moment.row.id,
+        caption: 'A person on a bench.',
+        language: 'en',
+        provider: 'anthropic',
+        modelVersion: 'claude-haiku-4-5-20251001',
+        producedAt: at(5),
+      },
+    };
+    const res = await ada.sync({
+      cursor: null,
+      changes: [derived] as unknown as SyncRequest['changes'],
+    });
+    expect(res.status).toBe(400);
+    expect(ApiError.parse(await res.json()).error.code).toBe('bad_request');
+    expect(await derivedRepo.forMoments(database(bindings.DB), [moment.row.id])).toEqual([]);
+  });
+
+  it("removes a moment's derived rows when its tombstone is pushed", async () => {
+    const ada = await person('ada.tombderived@example.com');
+    const moment = note(ada.documentary.id, ada.userId);
+    await ada.ok({ cursor: null, changes: [moment] });
+    const db = database(bindings.DB);
+    for (const provider of ['workersAi', 'anthropic'] as const) {
+      await derivedRepo.upsert(db, ada.documentary.id, {
+        momentId: moment.row.id,
+        ...(provider === 'workersAi' ? { transcript: 'Hello.' } : { caption: 'A tram.' }),
+        language: 'en',
+        provider,
+        modelVersion: 'fixture-1',
+        producedAt: at(5),
+      });
+    }
+    expect(await derivedRepo.forMoments(db, [moment.row.id])).toHaveLength(2);
+    const tombstone = note(ada.documentary.id, ada.userId, {
+      id: moment.row.id,
+      deletedAt: at(30),
+      updatedAt: at(30),
+    });
+    await ada.ok({ cursor: null, changes: [tombstone] });
+    expect(await derivedRepo.forMoments(db, [moment.row.id])).toEqual([]);
+  });
+
   it('adds the sync tables and keeps the rows before it', async () => {
     const { MIGRATION_DB, TEST_MIGRATIONS } = env as unknown as {
       MIGRATION_DB: D1Database;

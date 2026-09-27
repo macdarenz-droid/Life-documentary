@@ -1,7 +1,14 @@
 // The D1 tables, as Drizzle SQLite tables. The auth tables are the ones Better Auth needs for our options
 // (checked against getAuthTables in test/auth.test.ts); ids are UUID text, times are integer milliseconds.
 import { sql } from 'drizzle-orm';
-import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import {
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core';
 
 const nowMs = sql`(cast(unixepoch('subsecond') * 1000 as integer))`;
 const createdAt = () => integer('created_at', { mode: 'timestamp_ms' }).default(nowMs).notNull();
@@ -232,7 +239,15 @@ export const changeLog = sqliteTable(
     seq: integer('seq').primaryKey({ autoIncrement: true }),
     documentaryId: documentaryId(),
     entity: text('entity', {
-      enum: ['documentary', 'moment', 'mediaAsset', 'question', 'storyline', 'castMember'],
+      enum: [
+        'documentary',
+        'moment',
+        'mediaAsset',
+        'question',
+        'storyline',
+        'castMember',
+        'derived',
+      ],
     }).notNull(),
     entityId: text('entity_id').notNull(),
     updatedAt: text('updated_at').notNull(),
@@ -255,4 +270,65 @@ export const uploads = sqliteTable(
     createdAt: text('created_at').notNull(),
   },
   (t) => [primaryKey({ columns: [t.assetId, t.purpose] })],
+);
+
+// Understanding (P12, D38): one episode per documentary and week, the text derived from each moment
+// (one row per moment and provider) and what each step cost. `step`, `provider` and `unit` are plain
+// text without CHECK lists, so later steps add values without a table rebuild; the contracts guard them.
+
+export const episodes = sqliteTable(
+  'episodes',
+  {
+    id: text('id').primaryKey(),
+    documentaryId: documentaryId(),
+    number: integer('number').notNull(),
+    weekStart: text('week_start').notNull(),
+    weekEnd: text('week_end').notNull(),
+    state: text('state').notNull(),
+    planVersion: integer('plan_version').notNull(),
+    renderVersion: integer('render_version').notNull(),
+    mp4Key: text('mp4_key'),
+    posterKey: text('poster_key'),
+    durationMs: integer('duration_ms'),
+    costCents: integer('cost_cents').notNull(),
+    summary: text('summary'),
+    deliveredAt: text('delivered_at'),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (t) => [uniqueIndex('episodes_documentary_week_idx').on(t.documentaryId, t.weekStart)],
+);
+
+export const derived = sqliteTable(
+  'derived',
+  {
+    id: text('id').primaryKey(),
+    documentaryId: documentaryId(),
+    momentId: text('moment_id')
+      .notNull()
+      .references(() => moments.id, { onDelete: 'cascade' }),
+    transcript: text('transcript'),
+    caption: text('caption'),
+    language: text('language').notNull(),
+    provider: text('provider').notNull(),
+    modelVersion: text('model_version').notNull(),
+    producedAt: text('produced_at').notNull(),
+  },
+  (t) => [uniqueIndex('derived_moment_provider_idx').on(t.momentId, t.provider)],
+);
+
+export const costLedger = sqliteTable(
+  'cost_ledger',
+  {
+    id: text('id').primaryKey(),
+    episodeId: text('episode_id')
+      .notNull()
+      .references(() => episodes.id, { onDelete: 'cascade' }),
+    step: text('step').notNull(),
+    provider: text('provider').notNull(),
+    unit: text('unit').notNull(),
+    units: integer('units').notNull(),
+    microUsd: integer('micro_usd').notNull(),
+    at: text('at').notNull(),
+  },
+  (t) => [uniqueIndex('cost_ledger_episode_step_unit_idx').on(t.episodeId, t.step, t.unit)],
 );

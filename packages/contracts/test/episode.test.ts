@@ -105,6 +105,7 @@ describe('WeekBriefV1', () => {
 
 describe('Derived', () => {
   const derived = {
+    id: id(11),
     momentId: id(10),
     transcript: 'We met the team.',
     language: 'en',

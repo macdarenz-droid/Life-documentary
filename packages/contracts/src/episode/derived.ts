@@ -1,9 +1,13 @@
 import { z } from 'zod';
 import { Timestamp, Uuid } from '../ids';
 
-/** What a model derived from one moment's media: a transcript, a caption, or both. */
+/**
+ * What a model derived from one moment's media: a transcript, a caption, or both. One row per moment
+ * and provider; deriving again replaces it and keeps its id.
+ */
 export const Derived = z
   .object({
+    id: Uuid,
     momentId: Uuid,
     transcript: z.string().max(4000).optional(),
     caption: z.string().max(500).optional(),

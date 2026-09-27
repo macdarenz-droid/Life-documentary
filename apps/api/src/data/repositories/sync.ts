@@ -8,22 +8,32 @@ import {
   Question,
   Storyline,
   SyncedMediaAsset,
+  type PulledChange,
+  type PulledEntity,
   type SyncChange,
-  type SyncEntity,
   type Timestamp,
   type Uuid,
 } from '@life/contracts';
 import { eq, inArray, sql } from 'drizzle-orm';
 import type { BatchItem } from 'drizzle-orm/batch';
 import type { Db } from '../db';
-import { castMembers, documentaries, mediaAssets, moments, questions, storylines } from '../schema';
+import {
+  castMembers,
+  derived,
+  documentaries,
+  mediaAssets,
+  moments,
+  questions,
+  storylines,
+} from '../schema';
+import { toDerived } from './derived';
 
 const ID_CHUNK = 90;
 
 type Stored = {
   /** The documentary the row belongs to (for a documentary, its own id). */
   documentaryId: string;
-  change: SyncChange;
+  change: PulledChange;
 };
 
 /** Drops SQL nulls: the contracts use absent fields, not nulls. */
@@ -44,7 +54,7 @@ function chunks<T>(items: T[]): T[][] {
   return out;
 }
 
-async function readRows(db: Db, entity: SyncEntity, ids: string[]): Promise<Stored[]> {
+async function readRows(db: Db, entity: PulledEntity, ids: string[]): Promise<Stored[]> {
   const out: Stored[] = [];
   for (const part of chunks(ids)) {
     switch (entity) {
@@ -98,6 +108,12 @@ async function readRows(db: Db, entity: SyncEntity, ids: string[]): Promise<Stor
             change: { entity, row: CastMember.parse(present(r)) },
           });
         break;
+      case 'derived':
+        for (const r of await db.select().from(derived).where(inArray(derived.id, part))) {
+          const { documentaryId, row } = toDerived(r);
+          out.push({ documentaryId, change: { entity, row } });
+        }
+        break;
     }
   }
   return out;
@@ -106,7 +122,7 @@ async function readRows(db: Db, entity: SyncEntity, ids: string[]): Promise<Stor
 /** The stored rows for these ids of one kind, keyed by id, whatever documentary they belong to. */
 export async function getMany(
   db: Db,
-  entity: SyncEntity,
+  entity: PulledEntity,
   ids: string[],
 ): Promise<Map<string, Stored>> {
   const rows = await readRows(db, entity, [...new Set(ids)]);

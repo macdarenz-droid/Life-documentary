@@ -103,6 +103,8 @@ async function runRound(store: Store, api: Api, documentary: Documentary): Promi
   const send = async (changes: SyncChange[]): Promise<number> => {
     const response = await api.sync({ documentaryId: documentary.id, cursor, changes });
     for (const change of response.changes) {
+      // Derived text (P12) is kept on the phone from T-013e; until then it is skipped.
+      if (change.entity === 'derived') continue;
       const key = `${change.entity}:${change.row.id}`;
       pulled.delete(key);
       pulled.set(key, change);
