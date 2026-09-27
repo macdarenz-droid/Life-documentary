@@ -29,7 +29,10 @@ export function leavesDevice(
   const original: UploadPurpose[] = cloudBackup ? ['original'] : [];
   switch (moment.kind) {
     case 'answer':
-      return { row: true, uploads: moment.assetKind === 'video' ? ['answer', 'keyframe'] : ['answer'] };
+      return {
+        row: true,
+        uploads: moment.assetKind === 'video' ? ['answer', 'keyframe'] : ['answer'],
+      };
     case 'photo':
       return { row: true, uploads: ['preview', ...original] };
     case 'clip':

@@ -178,7 +178,12 @@ export function fakeServices(
     posters: (() => {
       let next = 0;
       const make = async (kind: 'video' | 'photo', uri: string, at: number, maxSide?: number) => {
-        services.posters.calls.push({ kind, uri, at, ...(maxSide !== undefined ? { maxSide } : {}) });
+        services.posters.calls.push({
+          kind,
+          uri,
+          at,
+          ...(maxSide !== undefined ? { maxSide } : {}),
+        });
         if (services.posters.mode === 'throw') throw new Error('No poster');
         if (services.posters.mode === 'none') return null;
         next += 1;

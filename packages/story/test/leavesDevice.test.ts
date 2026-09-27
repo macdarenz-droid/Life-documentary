@@ -29,7 +29,11 @@ function moment(kind: MomentKind, localOnly: boolean) {
 }
 
 /** The uploads for each kind and asset kind, without and with Cloud backup. */
-function expected(kind: MomentKind, assetKind: MediaAsset['kind'] | undefined, cloudBackup: boolean) {
+function expected(
+  kind: MomentKind,
+  assetKind: MediaAsset['kind'] | undefined,
+  cloudBackup: boolean,
+) {
   switch (kind) {
     case 'answer':
       return assetKind === 'video' ? ['answer', 'keyframe'] : ['answer'];
@@ -70,11 +74,12 @@ describe('leavesDevice', () => {
         ['answer', 'audio'],
         ['photo', 'photo'],
         ['clip', 'video'],
-      ].map(([kind, assetKind]) =>
-        leavesDevice(
-          { ...moment(kind as MomentKind, false), assetKind: assetKind as MediaAsset['kind'] },
-          { cloudBackup },
-        ).uploads,
+      ].map(
+        ([kind, assetKind]) =>
+          leavesDevice(
+            { ...moment(kind as MomentKind, false), assetKind: assetKind as MediaAsset['kind'] },
+            { cloudBackup },
+          ).uploads,
       );
     expect(lists(false)).toEqual([['answer', 'keyframe'], ['answer'], ['preview'], ['keyframe']]);
     expect(lists(true)).toEqual([

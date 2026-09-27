@@ -40,8 +40,18 @@ async function setup(sourceBytes = original(4000)) {
   const documentary = await openLocalDocumentary(store, clock, ids, 'Europe/Berlin');
   store.io.files.set(SOURCE, sourceBytes);
   const asked: { maxSide: number; quality: number | undefined }[] = [];
+  /** Frames asked of videos; a frame is made only when `frames.make` is set. */
+  const frames = {
+    make: false,
+    asked: [] as { atMs: number; maxSide: number; quality: number | undefined }[],
+  };
   const posters: PosterMaker = {
-    fromVideo: async () => null,
+    fromVideo: async (_uri, atMs, maxSide, quality) => {
+      frames.asked.push({ atMs, maxSide, quality });
+      if (!frames.make) return null;
+      store.io.files.set('tmp/frame.jpg', previewBytes);
+      return { uri: 'tmp/frame.jpg', width: 563, height: 1000 };
+    },
     fromPhoto: async (_uri, maxSide, quality) => {
       asked.push({ maxSide, quality });
       store.io.files.set('tmp/preview.jpg', previewBytes);
@@ -66,7 +76,7 @@ async function setup(sourceBytes = original(4000)) {
     return moment;
   };
   const plainCopies = () => [...store.io.files.keys()].filter((p) => p.startsWith('cache/'));
-  return { store, clock, ids, posters, asked, network, api, drain, answer, plainCopies };
+  return { store, clock, ids, posters, asked, frames, network, api, drain, answer, plainCopies };
 }
 
 describe('enqueueUploads and drainUploads', () => {
@@ -100,8 +110,9 @@ describe('enqueueUploads and drainUploads', () => {
       media: photo,
       localOnly: false,
     });
-    const job = await enqueueUploads(t.store, t.clock, t.posters, moment.id);
-    expect(job).toMatchObject({ purpose: 'preview', state: 'pending' });
+    const jobs = await enqueueUploads(t.store, t.clock, t.posters, moment.id);
+    expect(jobs).toMatchObject([{ purpose: 'preview', state: 'pending' }]);
+    const job = jobs[0];
     expect(t.asked).toEqual([{ maxSide: PREVIEW_MAX_SIDE, quality: 0.8 }]);
     expect(PREVIEW_MAX_SIDE).toBe(1000);
 
@@ -115,15 +126,43 @@ describe('enqueueUploads and drainUploads', () => {
     expect(job?.sourcePath && t.store.io.files.has(job.sourcePath)).toBe(false);
   });
 
-  it('enqueues nothing for a library clip', async () => {
+  it('enqueues only a keyframe for a library clip', async () => {
     const t = await setup();
+    t.frames.make = true;
     const moment = await captureMoment(t.store, t.clock, t.ids, {
       kind: 'clip',
       media: video(),
       localOnly: false,
     });
-    expect(await enqueueUploads(t.store, t.clock, t.posters, moment.id)).toBeNull();
-    expect(await uploadJobs.listForAsset(t.store.driver, moment.mediaAssetId!)).toEqual([]);
+    const jobs = await enqueueUploads(t.store, t.clock, t.posters, moment.id);
+    expect(jobs).toMatchObject([{ purpose: 'keyframe', state: 'pending' }]);
+    expect(await uploadJobs.listForAsset(t.store.driver, moment.mediaAssetId!)).toMatchObject([
+      { purpose: 'keyframe' },
+    ]);
+  });
+
+  it('enqueues the answer and a keyframe from the middle of a video answer', async () => {
+    const t = await setup();
+    t.frames.make = true;
+    const moment = await t.answer(video(9000));
+    const jobs = await uploadJobs.listForAsset(t.store.driver, moment.mediaAssetId!);
+    expect(jobs.map((j) => j.purpose).sort()).toEqual(['answer', 'keyframe']);
+    expect(t.frames.asked).toEqual([{ atMs: 4500, maxSide: 1000, quality: 0.8 }]);
+
+    expect(await t.drain()).toMatchObject({ uploaded: 2 });
+    expect(t.api.objects.get(`${moment.mediaAssetId}/keyframe`)).toEqual(previewBytes);
+    expect(t.api.contentTypes.get(`${moment.mediaAssetId}/keyframe`)).toBe('image/jpeg');
+    const keyframe = jobs.find((j) => j.purpose === 'keyframe');
+    expect(keyframe?.sourcePath && t.store.io.files.has(keyframe.sourcePath)).toBe(false);
+  });
+
+  it('keeps the answer job when no frame can be made', async () => {
+    const t = await setup();
+    const moment = await t.answer();
+    expect(t.frames.asked).toHaveLength(1);
+    expect(await uploadJobs.listForAsset(t.store.driver, moment.mediaAssetId!)).toMatchObject([
+      { purpose: 'answer' },
+    ]);
   });
 
   it('enqueues nothing for a local-only capture and never calls the Api for it', async () => {
@@ -136,8 +175,9 @@ describe('enqueueUploads and drainUploads', () => {
       localOnly: true,
     });
     expect(await uploadJobs.listForAsset(t.store.driver, moment.mediaAssetId!)).toEqual([]);
-    expect(await enqueueUploads(t.store, t.clock, t.posters, shot.id)).toBeNull();
+    expect(await enqueueUploads(t.store, t.clock, t.posters, shot.id)).toEqual([]);
     expect(t.asked).toEqual([]);
+    expect(t.frames.asked).toEqual([]);
     await enqueueExisting(t.store, t.clock, t.posters);
     expect(await t.drain({ retryFailed: true })).toEqual({ uploaded: 0, failed: 0, waiting: 0 });
     expect(t.api.calls).toEqual([]);
@@ -225,6 +265,22 @@ describe('enqueueUploads and drainUploads', () => {
     ]);
   });
 
+  it('enqueues a keyframe once for an earlier video capture', async () => {
+    const t = await setup();
+    t.frames.make = true;
+    const moment = await captureMoment(t.store, t.clock, t.ids, {
+      kind: 'clip',
+      media: video(),
+      localOnly: false,
+    });
+    await enqueueExisting(t.store, t.clock, t.posters);
+    await enqueueExisting(t.store, t.clock, t.posters);
+    expect(t.frames.asked).toHaveLength(1);
+    expect(await uploadJobs.listForAsset(t.store.driver, moment.mediaAssetId!)).toMatchObject([
+      { purpose: 'keyframe' },
+    ]);
+  });
+
   it('removes a waiting preview with its job when the moment is deleted', async () => {
     const t = await setup();
     const moment = await captureMoment(t.store, t.clock, t.ids, {
@@ -232,7 +288,7 @@ describe('enqueueUploads and drainUploads', () => {
       media: photo,
       localOnly: false,
     });
-    const job = await enqueueUploads(t.store, t.clock, t.posters, moment.id);
+    const [job] = await enqueueUploads(t.store, t.clock, t.posters, moment.id);
     expect(t.store.io.files.has(job!.sourcePath!)).toBe(true);
     await deleteMoment(t.store, t.clock, moment.id);
     expect(t.store.io.files.has(job!.sourcePath!)).toBe(false);
