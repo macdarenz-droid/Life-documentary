@@ -228,6 +228,43 @@ describe('uploads', () => {
     expect(asset?.row).toMatchObject({ cloudKey: done.cloudKey });
   });
 
+  it('keeps the completed cloud key when a later sync sends another', async () => {
+    const p = await person('ada.keepkey@example.com');
+    await p.create();
+    const done = UploadDone.parse(await (await p.complete(await sendAll(p))).json());
+    const stored = await bindings.DB.prepare('SELECT * FROM media_assets WHERE id = ?')
+      .bind(p.assetId)
+      .first<Record<string, unknown>>();
+    const asset = SyncChange.parse({
+      entity: 'mediaAsset',
+      row: {
+        id: p.assetId,
+        ownerUserId: p.me.userId,
+        kind: 'video',
+        durationMs: 9000,
+        width: 1080,
+        height: 1920,
+        bytes: FIXTURE.byteLength,
+        sha256: 'b'.repeat(64),
+        createdAt: T0,
+        cloudKey: 'u/other/x/y/answer',
+      },
+    });
+    expect(stored?.cloud_key).toBe(done.cloudKey);
+    const res = await p.phone.post(
+      '/sync',
+      { documentaryId: p.documentary.id, cursor: null, changes: [asset] },
+      p.cookie,
+    );
+    expect(SyncResponse.parse(await res.json()).refused).toEqual([]);
+    const after = await bindings.DB.prepare(
+      'SELECT cloud_key, sha256 FROM media_assets WHERE id = ?',
+    )
+      .bind(p.assetId)
+      .first<{ cloud_key: string; sha256: string }>();
+    expect(after).toEqual({ cloud_key: done.cloudKey, sha256: 'b'.repeat(64) });
+  });
+
   it('aborts an open upload', async () => {
     const p = await person('ada.abort@example.com');
     await p.create();

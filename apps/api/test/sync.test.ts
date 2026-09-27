@@ -93,6 +93,21 @@ function photoAsset(userId: string, id = crypto.randomUUID()): SyncChange {
   });
 }
 
+function question(documentaryId: string, over: Record<string, unknown> = {}): SyncChange {
+  return SyncChange.parse({
+    entity: 'question',
+    row: {
+      id: crypto.randomUUID(),
+      documentaryId,
+      templateId: 'q001',
+      reason: 'after_quiet_days',
+      askedOn: '2027-03-15',
+      text: 'What made today feel different?',
+      ...over,
+    },
+  });
+}
+
 async function count(table: string, id: string): Promise<number> {
   const row = await bindings.DB.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE id = ?`)
     .bind(id)
@@ -254,14 +269,58 @@ describe('POST /sync', () => {
     expect(again.changes).toEqual([]);
   });
 
-  it('keeps a cloud key when a phone sends the asset without one', async () => {
+  it('stores no cloud key a phone sends for an asset', async () => {
     const ada = await person('ada.cloud@example.com');
     const asset = photoAsset(ada.userId);
-    const withKey = { entity: 'mediaAsset', row: { ...asset.row, cloudKey: 'u/a/b/c/preview' } };
+    const withKey = {
+      entity: 'mediaAsset',
+      row: { ...asset.row, cloudKey: 'u/other/b/c/preview' },
+    };
     await ada.ok({ cursor: null, changes: [withKey] as SyncChange[] });
     const res = await ada.ok({ cursor: null, changes: [asset] });
     expect(res.refused).toEqual([{ entity: 'mediaAsset', id: asset.row.id, reason: 'stale' }]);
-    expect(res.changes).toContainEqual(withKey);
+    expect(res.changes).toContainEqual(asset);
+  });
+
+  it('never lets an unanswered copy of a question clear its answer', async () => {
+    const ada = await person('ada.question@example.com');
+    const answer = note(ada.documentary.id, ada.userId);
+    const q = question(ada.documentary.id, { answeredByMomentId: answer.row.id });
+    await ada.ok({ cursor: null, changes: [answer, q] });
+
+    const phoneB = testApp();
+    const cookie = await phoneB.signIn(ada.email);
+    const unanswered = question(ada.documentary.id, { id: q.row.id });
+    const res = SyncResponse.parse(
+      await (
+        await phoneB.post(
+          '/sync',
+          { documentaryId: ada.documentary.id, cursor: null, changes: [unanswered] },
+          cookie,
+        )
+      ).json(),
+    );
+    expect(res.refused).toEqual([{ entity: 'question', id: q.row.id, reason: 'stale' }]);
+    expect(res.changes).toContainEqual(q);
+  });
+
+  it('takes a new answer once the stored answer moment is deleted', async () => {
+    const ada = await person('ada.reanswer@example.com');
+    const first = note(ada.documentary.id, ada.userId);
+    const q = question(ada.documentary.id, { answeredByMomentId: first.row.id });
+    const { cursor } = await ada.ok({ cursor: null, changes: [first, q] });
+    const tombstone = SyncChange.parse({
+      entity: 'moment',
+      row: { ...first.row, updatedAt: at(5), deletedAt: at(5) },
+    });
+    await ada.ok({ cursor, changes: [tombstone] });
+
+    const second = note(ada.documentary.id, ada.userId);
+    const again = question(ada.documentary.id, { id: q.row.id, answeredByMomentId: second.row.id });
+    const res = await ada.ok({ cursor: null, changes: [second, again] });
+    expect(res.refused).toEqual([]);
+    const pulled = await ada.ok({ cursor: null, changes: [] });
+    expect(pulled.changes).toContainEqual(again);
   });
 });
 

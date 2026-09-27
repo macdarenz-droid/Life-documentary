@@ -184,7 +184,8 @@ export function upsert(
         height: n(r.height),
         bytes: r.bytes,
         sha256: r.sha256,
-        cloudKey: n(r.cloudKey),
+        // Only a completed upload sets the cloud key; what the phone sends plays no part.
+        cloudKey: null,
         createdAt: r.createdAt,
         updatedAt: now,
         deletedAt: null,
@@ -194,8 +195,7 @@ export function upsert(
         .values(values)
         .onConflictDoUpdate({
           target: mediaAssets.id,
-          // A phone that has not heard of the upload yet does not erase the cloud key.
-          set: { ...values, cloudKey: sql`coalesce(excluded.cloud_key, ${mediaAssets.cloudKey})` },
+          set: { ...values, cloudKey: sql`${mediaAssets.cloudKey}` },
         });
     }
     case 'question': {

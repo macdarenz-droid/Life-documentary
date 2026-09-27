@@ -38,21 +38,42 @@ function canonical(value: unknown): string {
   );
 }
 
-/** The row as it would be stored: a media asset keeps its cloud key when the phone sends none. */
+/**
+ * The row as it would be stored. A media asset's cloud key is the server's alone: only a completed
+ * upload sets it, so whatever the phone sends is dropped and the stored key kept.
+ */
 function merged(change: SyncChange, prior: SyncChange | undefined): SyncChange {
-  if (change.entity !== 'mediaAsset' || prior?.entity !== 'mediaAsset') return change;
-  const cloudKey = change.row.cloudKey ?? prior.row.cloudKey;
-  return { entity: 'mediaAsset', row: { ...change.row, ...(cloudKey ? { cloudKey } : {}) } };
+  if (change.entity !== 'mediaAsset') return change;
+  const row = { ...change.row };
+  delete row.cloudKey;
+  const cloudKey = prior?.entity === 'mediaAsset' ? prior.row.cloudKey : undefined;
+  return { entity: 'mediaAsset', row: { ...row, ...(cloudKey ? { cloudKey } : {}) } };
 }
 
-/** Same or older than the stored row. Rows without `updatedAt` are stale only when nothing changed. */
-function isStale(change: SyncChange, prior: SyncChange | undefined): boolean {
+/**
+ * Same or older than the stored row. Media assets have no `updatedAt`, so they are stale only when
+ * nothing changed. A stored question is replaced only by an answer when it has none, or when its
+ * answer's moment is deleted on the server, so a stored answer is never cleared.
+ */
+function isStale(
+  change: SyncChange,
+  prior: SyncChange | undefined,
+  momentDeleted: (id: string) => boolean,
+): boolean {
   if (!prior) return false;
-  if (change.entity === 'mediaAsset' || change.entity === 'question') {
+  if (change.entity === 'mediaAsset') {
     return canonical(merged(change, prior).row) === canonical(prior.row);
   }
+  if (change.entity === 'question' && prior.entity === 'question') {
+    const incoming = change.row.answeredByMomentId;
+    const answer = prior.row.answeredByMomentId;
+    if (!incoming || incoming === answer) return true;
+    return answer !== undefined && !momentDeleted(answer);
+  }
   const stored = prior.row as { updatedAt: string };
-  return Date.parse(stored.updatedAt) >= Date.parse(change.row.updatedAt);
+  return (
+    Date.parse(stored.updatedAt) >= Date.parse((change.row as { updatedAt: string }).updatedAt)
+  );
 }
 
 export const sync = new Hono<AppEnv>().post('/sync', requireSession, async (c) => {
@@ -71,6 +92,24 @@ export const sync = new Hono<AppEnv>().post('/sync', requireSession, async (c) =
   }
   const stored = new Map<SyncEntity, Map<string, { documentaryId: string; change: SyncChange }>>();
   for (const [entity, list] of ids) stored.set(entity, await rows.getMany(db, entity, list));
+
+  // The moments that answer stored questions, to tell whether an answer's moment is deleted.
+  const storedMoments =
+    stored.get('moment') ?? new Map<string, { documentaryId: string; change: SyncChange }>();
+  stored.set('moment', storedMoments);
+  const answerIds = [...(stored.get('question')?.values() ?? [])].flatMap((q) =>
+    q.change.entity === 'question' && q.change.row.answeredByMomentId
+      ? [q.change.row.answeredByMomentId]
+      : [],
+  );
+  const missing = answerIds.filter((id) => !storedMoments.has(id));
+  if (missing.length > 0) {
+    for (const [id, row] of await rows.getMany(db, 'moment', missing)) storedMoments.set(id, row);
+  }
+  const momentDeleted = (id: string) => {
+    const moment = storedMoments.get(id)?.change;
+    return moment?.entity === 'moment' && moment.row.deletedAt !== undefined;
+  };
 
   // Media of a moment kept on the phone never leaves it either.
   const localOnlyAssets = new Set(
@@ -108,7 +147,7 @@ export const sync = new Hono<AppEnv>().post('/sync', requireSession, async (c) =
       refuse('local_only');
       continue;
     }
-    if (isStale(change, prior?.change)) {
+    if (isStale(change, prior?.change, momentDeleted)) {
       refuse('stale');
       continue;
     }
