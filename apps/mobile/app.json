@@ -53,7 +53,8 @@
           "locationAlwaysPermission": false
         }
       ],
-      "expo-video"
+      "expo-video",
+      "expo-notifications"
     ]
   }
 }

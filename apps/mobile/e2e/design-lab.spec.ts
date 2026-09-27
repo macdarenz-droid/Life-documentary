@@ -12,6 +12,7 @@ const SECTIONS = [
   'Today',
   'Storylines',
   'Cast',
+  'Settings',
   'Grain and Breath',
 ];
 /** Dwell per section so the recording walks the whole lab in about 20 s. */
@@ -34,10 +35,11 @@ test('the Design Lab shows every section without console errors', async ({ page 
   await page.goto('/design-lab');
   await expect(page.getByRole('heading', { name: 'Design lab' })).toBeVisible();
   await expect(page.getByText(REDUCED_LABEL)).toHaveCount(0);
-  // The state Switch is decoration; screen readers get the text line only. The one switch they get is the
-  // Today section's labelled "Keep on this phone" toggle.
-  await expect(page.getByRole('switch')).toHaveCount(1);
+  // The state Switch is decoration; screen readers get the text line only. The switches they get are the
+  // Today section's labelled "Keep on this phone" toggle and the Settings section's "Daily question".
+  await expect(page.getByRole('switch')).toHaveCount(2);
   await expect(page.getByRole('switch', { name: words.extras.keepOnPhone })).toHaveCount(1);
+  await expect(page.getByRole('switch', { name: words.reminders.dailyQuestion })).toHaveCount(1);
 
   for (const name of SECTIONS) {
     // "Storylines" and "Cast" are also the screens' own headings; the section heading comes first.
@@ -74,6 +76,13 @@ test('the Design Lab shows every section without console errors', async ({ page 
       await expect(page.getByRole('button', { name: words.storylines.close })).toBeVisible();
       await page.waitForTimeout(1000);
       await page.getByRole('button', { name: words.extras.close }).last().click();
+    }
+    if (name === 'Settings') {
+      // A quarter of an hour later: the time reads 08:15.
+      await page
+        .getByRole('button', { name: `${words.reminders.minutes}, ${words.reminders.later}` })
+        .click();
+      await expect(page.getByText('08:15')).toBeVisible();
     }
     if (name === 'Title Card') {
       await page.getByRole('button', { name: REPLAY }).click();
