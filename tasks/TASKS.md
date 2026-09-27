@@ -181,14 +181,19 @@ Text: `tasks/p12/T-013.md`.
 ### T-014a · P13.1 · The planner's shapes and checks · done · needs: T-013b
 Text: `tasks/p13/T-014.md`.
 
-### T-014b · P13.2 · The planner provider and the style prompt · todo · needs: T-013c, T-014a
+### T-014b · P13.2 · The planner provider and the style prompt · done · needs: T-013c, T-014a
 Text: `tasks/p13/T-014.md`.
-Note (2026-09-27): the style prompt gains one sentence at the end of the "How an episode goes" paragraph, right after "and that must be an answer.": "It can play again, whole, in its scene." (Three fixture weeks reach 30 s only when it does, and the recap already reuses it.)
-Note (2026-09-27, for P14): the style prompt's "Words." paragraph gains, after "British spelling.": "Write numbers, dates and times in words, such as three weeks or half past six." (The narrator's voice reads digits badly, D40.)
 
-### T-014c · P13.3 · EpisodePipeline step 2: plan · todo · needs: T-013d, T-014a, T-014b
+### T-014c · P13.3 · EpisodePipeline step 2: plan · changes r1 · needs: T-013d, T-014a, T-014b
 Text: `tasks/p13/T-014.md`.
 Note (2026-09-27): (1) When the first answer had no text, the retry sends no assistant turn (an empty one is a 400): the errors follow the brief in the one user message. (2) `planOnce` catches an error on the retry call and returns `invalid` with the usage so far; only an error on the first call throws. (3) `planOnce(brief, planner, { effort = PLAN_EFFORT } = {})` so the eval can set effort. (4) The error-string test allows ids and nothing else from the brief or the answer.
+
+**Fix list r1** (workflow review of 48f2a76; everything else approved: the migration, `briefInput` and `leavesDevice`, `planOnce` and its retry turns, the recap path, costs).
+1. A replayed step after an empty week's removal fails the run. `planStep` and `recapStep` start with `episodeOf`, which throws `The episode is gone.` once `remove` has run. So a replay of `plan` (for example after its D1 batch committed but reported an error) throws on both attempts, and `plan-recap` then throws on all six, leaving the instance errored instead of complete. When the episode is missing, both steps return `{ outcome: 'empty' }` and throw nothing (ARCHITECTURE §7: every pipeline step is idempotent on its key).
+2. The error-string test skips every string under 8 characters (`if (text.length >= 8)`), so a cast name like "Maya", a weekday or a mood could appear in an error and the test would still pass (Note 4 allows ids and nothing else). Exempt only UUIDs, the brief's dates, the fixed kind words (`answer`, `clip`, `photo`, `note`) and the banned phrases and characters `planVoiceErrors` names on purpose, and check every other string of the brief and the answers whatever its length. Add bad answers that reach `validatePlan`: a lower third whose cast id is not tagged on its moment, a cold open on a photo, and one outside the 30 to 240 s bounds.
+Tests: `planStep` twice on a notes-only week gives `empty` both times, and so does `recapStep` after the removal; the Workflow run on a notes-only week whose `plan` step is replayed (`mockStepError` once after the removal, or a direct second call) completes; the stricter error-string test above.
+Allowed test changes: the error-string test is made stricter as above.
+Checks: API typecheck, tests, lint, format, boundaries, `deploy:dry`.
 
 ### T-014d · P13.4 · The planner evaluation · todo · needs: T-014c
 Text: `tasks/p13/T-014.md`.
@@ -203,6 +208,23 @@ Text: `tasks/p14/T-015.md`.
 
 ### T-015c · P14.3 · EpisodePipeline step 3: narrate · todo · needs: T-014c, T-015a, T-015b
 Text: `tasks/p14/T-015.md`.
+
+## P15 — Render (the episode timeline, the compositions, the renderer)
+
+### T-016a · P15.1 · The episode timeline · todo · needs: T-014a, T-015a
+Text: `tasks/p15/T-016.md`.
+
+### T-016b · P15.2 · The episode, drawn · todo · needs: T-016a
+Text: `tasks/p15/T-016.md`.
+
+### T-016c · P15.3 · Word-level captions · todo · needs: T-016b
+Text: `tasks/p15/T-016.md`.
+
+### T-016d · P15.4 · The render input and the renderer port · todo · needs: T-014c, T-015c, T-016a
+Text: `tasks/p15/T-016.md`.
+
+### T-016e · P15.5 · Remotion Lambda · todo · needs: T-016b, T-016d
+Text: `tasks/p15/T-016.md`.
 
 ## Blocked on the owner
 
