@@ -52,7 +52,16 @@ type Mode = 'video' | 'voice';
 type Phase = 'idle' | 'recording' | 'saving' | 'saved';
 type Notice =
   | null
-  | { kind: 'holdLonger' | 'couldNotSave' | 'clipTooLong' | 'clipUnreadable' | 'saved' }
+  | {
+      kind:
+        | 'holdLonger'
+        | 'couldNotSave'
+        | 'cameraNotReady'
+        | 'photoFailed'
+        | 'clipTooLong'
+        | 'clipUnreadable'
+        | 'saved';
+    }
   | { kind: 'denied'; which: 'camera' | 'microphone' };
 type Session = {
   recorder: VideoRecorder | VoiceRecorder;
@@ -65,6 +74,8 @@ type Session = {
 const NOTICE_WORDS = {
   holdLonger: words.today.holdLonger,
   couldNotSave: words.today.couldNotSave,
+  cameraNotReady: words.today.cameraNotReady,
+  photoFailed: words.today.photoFailed,
   clipTooLong: words.extras.clipTooLong,
   clipUnreadable: words.extras.clipUnreadable,
   saved: words.extras.saved,
@@ -259,7 +270,7 @@ export function TodayScreen({
       if (!video) {
         closeCamera();
         // Still holding: the camera never got ready. Released first: nothing was recorded.
-        setNotice({ kind: holding.current ? 'couldNotSave' : 'holdLonger' });
+        setNotice({ kind: holding.current ? 'cameraNotReady' : 'holdLonger' });
         return;
       }
       recorder = video;
@@ -339,7 +350,7 @@ export function TodayScreen({
     const still = camera.current;
     const photo = still ? await still.takePhoto() : null;
     closePhoto();
-    if (!photo) return setNotice({ kind: 'couldNotSave' });
+    if (!photo) return setNotice({ kind: 'photoFailed' });
     services.haptics.impactLight();
     const media: MediaInput = {
       sourcePath: photo.uri,
@@ -412,7 +423,7 @@ export function TodayScreen({
                 min: 0,
                 max: plan.maxMs / 1000,
                 now: left,
-                text: `${left} ${words.today.secondsLeft}`,
+                text: words.today.secondsLeft(left),
               }
             : undefined
         }

@@ -39,16 +39,15 @@ const dissolve = FadeIn.duration(tokens.motion.duration.dissolve)
   .reduceMotion(ReduceMotion.Never);
 
 function rowLabel(item: FootageItem): string {
-  return [
-    words.footage.kinds[item.kind],
-    item.timeLabel,
-    item.durationLabel,
-    item.questionText ?? item.text,
-    item.mood ? words.moods[item.mood] : undefined,
-    item.localOnly ? words.footage.onThisPhone : undefined,
-  ]
-    .filter(Boolean)
-    .join(', ');
+  const text = item.questionText ?? item.text;
+  return words.footage.rowLabel({
+    kind: words.footage.kinds[item.kind],
+    time: item.timeLabel,
+    ...(item.durationSpoken ? { duration: item.durationSpoken } : {}),
+    ...(text ? { text } : {}),
+    ...(item.mood ? { mood: words.moods[item.mood] } : {}),
+    onThisPhone: item.localOnly,
+  });
 }
 
 function Row({
@@ -278,7 +277,7 @@ export function FootageScreen({ actions, onOpen, onBack, reloadKey = 0 }: Footag
           <View style={styles.rows}>
             {storylines !== null && storylines.length === 0 ? (
               <Text variant="body" tone="secondary">
-                {words.footage.empty}
+                {words.footage.storylinesEmpty}
               </Text>
             ) : null}
             {(storylines ?? []).map((row) => (

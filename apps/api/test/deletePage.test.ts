@@ -120,7 +120,7 @@ describe('the public deletion page', () => {
 
     const res = await submit('/account/delete/web/verify', { email, otp: wrong });
     expect(res.res.status).toBe(400);
-    expect(res.text).toContain(t.codeWrong);
+    expect(readable(res.text)).toContain(t.codeWrong);
     expect(res.set).toBeUndefined();
     const confirm = await submit('/account/delete/web/confirm', {});
     expect(confirm.res.status).toBe(401);
@@ -182,7 +182,7 @@ describe('the public deletion page', () => {
 
     const verified = await submit('/account/delete/web/verify', { email, otp: '123456' });
     expect(verified.res.status).toBe(400);
-    expect(verified.text).toContain(t.codeWrong);
+    expect(readable(verified.text)).toContain(t.codeWrong);
     expect(verified.set).toBeUndefined();
     expect(await userRows(email)).toHaveLength(0);
   });

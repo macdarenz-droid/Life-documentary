@@ -83,7 +83,7 @@ describe('The edit tray', () => {
     await showFootage(h);
     expect(
       await screen.findByRole('button', {
-        name: `${words.footage.kinds.note}, 10:30, A slower morning., ${words.moods.calm}`,
+        name: `${words.footage.kinds.note}, 10:30. A slower morning. ${words.moods.calm}`,
       }),
     ).toBeOnTheScreen();
   });

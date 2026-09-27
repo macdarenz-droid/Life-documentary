@@ -5,6 +5,6 @@ describe('TodayPlaceholder', () => {
   it('shows the title as a header and the waiting line', async () => {
     await render(<TodayPlaceholder />);
     expect(screen.getByRole('header')).toHaveTextContent('Life Documentary');
-    expect(screen.getByText('Your first question arrives soon.')).toBeOnTheScreen();
+    expect(screen.getByText('Your first question will be here soon.')).toBeOnTheScreen();
   });
 });

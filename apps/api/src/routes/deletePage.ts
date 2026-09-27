@@ -45,7 +45,6 @@ function page(body: string): string {
   input { font: inherit; padding: 0.75rem; border: 2px solid #5c564e; border-radius: 0.5rem; background: #fff; color: #1c1a17; }
   input:focus, button:focus { outline: 3px solid #1f4e8c; outline-offset: 2px; }
   button { font: inherit; font-weight: 600; min-height: 2.75rem; padding: 0.75rem 1rem; border: 0; border-radius: 0.5rem; background: #1c1a17; color: #fff; cursor: pointer; }
-  .note { color: #4a453e; }
   .error { color: #8a1c14; font-weight: 600; }
 </style>
 </head>
@@ -93,8 +92,7 @@ function doneText(purgeAfter: string): string {
     year: 'numeric',
     timeZone: 'UTC',
   });
-  return `<p role="status">${escape(t.done(date))}</p>
-<p class="note">${escape(t.howToCancel)}</p>`;
+  return `<p role="status">${escape(t.done(date))} ${escape(t.howToCancel)}</p>`;
 }
 
 function html(c: Context<AppEnv>, body: string, status: 200 | 400 | 401 | 403 | 429 = 200) {

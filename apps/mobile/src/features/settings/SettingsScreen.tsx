@@ -35,12 +35,15 @@ const two = (n: number) => String(n).padStart(2, '0');
 /** One number with Earlier and Later; screen readers adjust it with swipe up and down. */
 function Stepper({
   label,
-  value,
+  unit,
+  time,
   onStep,
   disabled,
 }: {
   label: string;
-  value: number;
+  unit: 'hour' | 'minute';
+  /** The whole time, "07:30", which is what a screen reader says as the value. */
+  time: string;
   onStep: (direction: 1 | -1) => void;
   disabled: boolean;
 }) {
@@ -54,7 +57,7 @@ function Stepper({
       accessible
       accessibilityRole="adjustable"
       accessibilityLabel={label}
-      accessibilityValue={{ text: two(value) }}
+      accessibilityValue={{ text: time }}
       accessibilityState={{ disabled }}
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={disabled ? undefined : onAction}
@@ -67,7 +70,7 @@ function Stepper({
           <Pressable
             key={direction}
             accessibilityRole="button"
-            accessibilityLabel={`${label}, ${direction < 0 ? words.reminders.earlier : words.reminders.later}`}
+            accessibilityLabel={words.reminders.step(unit, direction)}
             accessibilityState={{ disabled }}
             disabled={disabled}
             onPress={() => onStep(direction)}
@@ -169,13 +172,15 @@ export function SettingsScreen({ actions, onBack }: SettingsScreenProps) {
             <View style={styles.pickers}>
               <Stepper
                 label={words.reminders.hour}
-                value={choice.hour}
+                unit="hour"
+                time={time}
                 disabled={denied}
                 onStep={(d) => void apply({ ...choice, hour: (choice.hour + d + 24) % 24 })}
               />
               <Stepper
                 label={words.reminders.minutes}
-                value={choice.minute}
+                unit="minute"
+                time={time}
                 disabled={denied}
                 onStep={(d) =>
                   void apply({ ...choice, minute: (choice.minute + d * MINUTE_STEP + 60) % 60 })

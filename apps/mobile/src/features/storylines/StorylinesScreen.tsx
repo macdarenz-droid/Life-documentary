@@ -69,7 +69,7 @@ export function StorylinesScreen({ actions, onBack }: StorylinesScreenProps) {
       await work();
     } catch (e) {
       if (!(e instanceof InputError)) console.error('The storyline could not be changed.', e);
-      setError(e instanceof InputError ? e.message : words.today.couldNotSave);
+      setError(e instanceof InputError ? e.message : words.storylines.changeFailed);
       return;
     }
     setCreating(false);

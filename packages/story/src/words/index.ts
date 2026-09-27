@@ -1,7 +1,17 @@
 import { permissionWords } from './permissions';
 import { monthAndYear } from './recap';
 
-/** Every user-facing string. Plain and warm; never game words or exclamation marks (CLAUDE.md rule 11). */
+/** What a Footage row's spoken label is built from; every part but kind and time is optional. */
+export type FootageRowLabel = {
+  kind: string;
+  time: string;
+  duration?: string;
+  text?: string;
+  mood?: string;
+  onThisPhone?: boolean;
+};
+
+/** Every user-facing string, in the voice of DESIGN §8 (CLAUDE.md rule 11; the words test checks it). */
 export const words = {
   documentary: {
     defaultTitle: 'My documentary',
@@ -9,16 +19,18 @@ export const words = {
   permissions: permissionWords,
   today: {
     placeholderTitle: 'Life Documentary',
-    placeholderLine: 'Your first question arrives soon.',
+    placeholderLine: 'Your first question will be here soon.',
     modeLabel: 'Record with',
     modeVideo: 'Video',
     modeVoice: 'Voice',
-    holdLonger: 'Hold a little longer to keep an answer.',
-    secondsLeft: 'seconds left',
+    holdLonger: 'That was too short to save. Hold a bit longer.',
+    secondsLeft: (n: number) => (n === 1 ? '1 second left' : `${n} seconds left`),
     startRecording: 'Start recording',
     stopRecording: 'Stop recording',
     openSettings: 'Open Settings',
-    couldNotSave: 'This one could not be saved. Try once more.',
+    couldNotSave: "Couldn't save that. Give it another try.",
+    cameraNotReady: "The camera didn't start in time. Give it another try.",
+    photoFailed: "Couldn't take the photo. Give it another try.",
   },
   extras: {
     photo: 'Photo',
@@ -28,17 +40,17 @@ export const words = {
     noteLabel: 'A line about today',
     save: 'Save',
     close: 'Close',
-    clipTooLong: 'Clips from the library can be up to a minute long. This one is longer.',
-    clipUnreadable: 'This clip could not be read. Try another one.',
+    clipTooLong: 'That clip is over a minute long. Pick a shorter one.',
+    clipUnreadable: "Couldn't open that clip. Try a different one.",
     moodLabel: 'Mood',
-    placeLabel: 'Add the place',
+    placeLabel: 'Add place',
     placeUse: 'Use this place',
-    placeNotFound: 'No place name was found here.',
+    placeNotFound: "Couldn't find a name for this place.",
     keepOnPhone: 'Keep on this phone',
     keepOnPhoneHelp: 'This moment stays on this phone and is never used in episodes.',
     saved: 'Saved',
     takePhoto: 'Take photo',
-    flip: 'Flip',
+    flip: 'Flip camera',
     cancel: 'Cancel',
   },
   moods: {
@@ -61,11 +73,11 @@ export const words = {
     titleEmpty: 'Give the storyline a name.',
     titleTooLong: 'A storyline name can be up to 60 characters.',
     titleTaken: 'An open storyline already has this name.',
-    nameInvalid: 'A name can be 1 to 40 characters.',
-    relationInvalid: 'A relation can be up to 40 characters.',
-    tooManyStorylines: 'A moment can hold up to 10 storylines.',
-    tooManyCast: 'A moment can hold up to 20 people.',
-    unavailable: 'Something here is no longer available. Try once more.',
+    nameInvalid: 'A name can be up to 40 characters.',
+    relationInvalid: 'Use up to 40 characters for how you know them.',
+    tooManyStorylines: 'You can tag a moment with up to 10 storylines.',
+    tooManyCast: 'You can tag up to 20 people in a moment.',
+    unavailable: "That's been removed, so the change didn't save.",
   },
   nav: {
     today: 'Today',
@@ -89,38 +101,51 @@ export const words = {
     removeAsk: 'Remove this storyline? The moments tagged with it stay in your documentary.',
     removeConfirm: 'Remove it',
     keep: 'Keep it',
+    changeFailed: "Couldn't save that change. Give it another try.",
     empty:
-      'A storyline is a thread of your life you want to follow for a while, like the new job or training for the half marathon.',
+      'A storyline is something going on in your life that you want to follow for a while, like a new job or training for a half marathon.',
   },
   cast: {
     title: 'Cast',
     namePerson: 'Name a person',
     nameLabel: 'Name',
-    relationLabel: 'Relation, if you like',
+    relationLabel: 'How you know them (optional)',
     save: 'Save',
     rename: 'Rename',
-    saveRelation: 'Save relation',
+    saveRelation: 'Save',
     remove: 'Remove',
-    removeAsk: 'Remove this person? The moments with them stay; only the name is taken off.',
+    removeAsk:
+      'Remove this person? The moments with them stay in your documentary, just without their name.',
     removeConfirm: 'Remove them',
+    changeFailed: "Couldn't save that change. Give it another try.",
     keep: 'Keep them',
     empty:
-      "Name the people in your days. Names stay on this phone, and nobody's face or voice is ever recognised.",
+      'Name the people in your days. Names stay on this phone, and Life Documentary never recognises faces or voices.',
   },
   reminders: {
     notificationTitle: "Today's question",
-    notificationBody: 'One question, ten seconds.',
+    notificationBody: 'It takes ten seconds to answer.',
     channelName: 'Daily question',
     settingsTitle: 'Settings',
     dailyQuestion: 'Daily question',
-    dailyQuestionHelp: 'One quiet reminder a day, at the time you choose.',
+    dailyQuestionHelp: 'One reminder a day, at the time you choose.',
     time: 'Time',
     hour: 'Hour',
-    minutes: 'Minutes',
+    minutes: 'Minute',
     earlier: 'Earlier',
     later: 'Later',
-    denied: 'Notifications are off for Life Documentary. You can turn them on in Settings.',
-    offerLine: "Would a quiet reminder help? One a day, for the day's question.",
+    /** The spoken label of a time button: the hour moves by 1, the minute by 15. */
+    step: (unit: 'hour' | 'minute', direction: 1 | -1) =>
+      unit === 'hour'
+        ? direction < 0
+          ? 'An hour earlier'
+          : 'An hour later'
+        : direction < 0
+          ? '15 minutes earlier'
+          : '15 minutes later',
+    denied:
+      "Notifications are off for Life Documentary. You can turn them on in your phone's Settings.",
+    offerLine: 'Want a reminder for the daily question? Just one a day.',
     offerAccept: 'Remind me each morning',
     offerDismiss: 'Not now',
   },
@@ -128,18 +153,34 @@ export const words = {
     title: 'Footage',
     days: 'Days',
     storylines: 'Storylines',
-    empty: 'Your moments gather here, day by day.',
+    empty: 'Nothing here yet.',
+    storylinesEmpty: "Tag a moment with a storyline and it'll show up here.",
     storylineEmpty: 'No moments in this storyline yet.',
     onThisPhone: 'On this phone',
+    seconds: (n: number) => (n === 1 ? '1 second' : `${n} seconds`),
+    minutes: (n: number) => (n === 1 ? '1 minute' : `${n} minutes`),
+    /** A row as a screen reader says it: "Answer, 08:14, 7 seconds. What stayed with you today? On this phone". */
+    rowLabel: (row: FootageRowLabel) => {
+      const head = [row.kind, row.time, row.duration].filter(Boolean).join(', ');
+      const parts = [
+        head,
+        row.text,
+        row.mood,
+        row.onThisPhone ? 'On this phone' : undefined,
+      ].filter((part): part is string => Boolean(part));
+      return parts
+        .map((part, i) => (i < parts.length - 1 && !/[.?]$/.test(part) ? `${part}.` : part))
+        .join(' ');
+    },
     open: 'Open',
     close: 'Close',
     play: 'Play',
     pause: 'Pause',
-    cannotOpen: 'This moment could not be opened.',
+    cannotOpen: "Couldn't open this moment.",
     kinds: { answer: 'Answer', clip: 'Clip', photo: 'Photo', note: 'Note' },
-    noteEmpty: 'A note needs a few words.',
+    noteEmpty: "A note can't be empty.",
     noteTooLong: 'A note can be up to 280 characters.',
-    unavailable: 'This moment is no longer here.',
+    unavailable: "This moment was deleted, so the change didn't save.",
     edit: 'Edit',
     editLabel: 'Edit this moment',
     noteLabel: 'Note',
@@ -147,7 +188,7 @@ export const words = {
     done: 'Done',
     delete: 'Delete',
     deleteAsk:
-      'Delete this moment? It and its original leave this phone. Nothing else in your documentary changes.',
+      "Delete this moment? It'll be gone from this phone for good. Nothing else in your documentary changes.",
     deleteConfirm: 'Delete it',
     keep: 'Keep it',
     next: 'Next',
@@ -155,23 +196,33 @@ export const words = {
   },
   deletePage: {
     title: 'Delete your Life Documentary account',
-    intro:
-      'You can delete your account here without the app. We send a six-digit code to your email to check it is you.',
+    intro: "Enter the email address on your account and we'll send you a six-digit code.",
     emailLabel: 'Email address',
     sendCode: 'Send the code',
-    codeSent: (email: string) => `We sent a code to ${email}. It works for 5 minutes.`,
+    codeSent: (email: string) => `Enter the code we sent to ${email}. It works for 5 minutes.`,
     codeLabel: 'Six-digit code',
     checkCode: 'Continue',
-    emailInvalid: 'That email address does not look right. Please check it.',
-    codeWrong: 'That code did not work. Ask for a new one and try again.',
+    emailInvalid: "That email address doesn't look right. Check it and try again.",
+    codeWrong: "That code didn't work. Check it and try again, or get a new one.",
     confirmLine:
       'Deleting removes your account and everything in it: your documentaries, moments and episodes.',
     deleteButton: 'Delete my account',
-    done: (date: string) => `Your account and everything in it will be deleted on ${date}.`,
-    howToCancel:
-      'Changed your mind? Sign in again in the app within 30 days and cancel the deletion in Settings.',
+    done: (date: string) =>
+      `Your account and everything in it will be deleted on ${date}, 30 days from now.`,
+    howToCancel: 'To cancel, sign in to the app again before then.',
     refused: 'This request did not come from this page.',
     tooManyCodes: "You've asked for a lot of codes. Wait 10 minutes, then try again.",
+  },
+  account: {
+    intro:
+      'You can use Life Documentary on this phone without an account. Sign in to get your weekly episodes.',
+    deleteAsk:
+      'Delete your account? Everything in it will be deleted after 30 days. To cancel, sign in again before then.',
+    deleteConfirm: 'Delete my account',
+    keep: 'Keep it',
+    deleted: (date: string) =>
+      `Your account will be deleted on ${date}. To cancel, sign in again before then.`,
+    linkFailed: "Couldn't link this phone to your account. Try again later.",
   },
   mail: {
     codeSubject: 'Your Life Documentary code',
@@ -188,6 +239,8 @@ export const words = {
     saved: 'Saved',
   },
 } as const;
+
+export * from './voice';
 
 export const bannedWords = ['streak', 'badge', 'level up', 'leaderboard', 'points', 'xp'] as const;
 export * from './recap';
