@@ -58,7 +58,8 @@ export function fakeSyncApi(options: { page?: number; userId?: string } = {}): F
       const request = SyncRequest.parse(input);
       const keptAssets = new Set(
         request.changes.flatMap((c) =>
-          c.entity === 'moment' && !leavesDevice(c.row, { cloudBackup: false }).row
+          c.entity === 'moment' &&
+          !leavesDevice(c.row, { cloudBackup: false, requested: false }).row
             ? [c.row.mediaAssetId]
             : [],
         ),
@@ -78,7 +79,8 @@ export function fakeSyncApi(options: { page?: number; userId?: string } = {}): F
           continue;
         }
         if (
-          (change.entity === 'moment' && !leavesDevice(change.row, { cloudBackup: false }).row) ||
+          (change.entity === 'moment' &&
+            !leavesDevice(change.row, { cloudBackup: false, requested: false }).row) ||
           (change.entity === 'mediaAsset' && keptAssets.has(change.row.id))
         ) {
           refuse('local_only');

@@ -16,17 +16,18 @@ export type LeavesDevice = {
  * - `localOnly`: nothing leaves, not the row and not the media.
  * - Otherwise the row syncs. An answer uploads as recorded (the service needs its sound), a video answer
  *   also a keyframe. A photo uploads a preview. A library clip uploads a keyframe. Cloud backup adds
- *   the original to a photo and a clip, never instead of their working copy. A note has no media.
+ *   the original to a photo and a clip, never instead of their working copy. So does an open request
+ *   for the asset (P16, D42): the episode's plan uses it. A note has no media.
  */
 export function leavesDevice(
   moment: LeavingMoment,
-  { cloudBackup }: { cloudBackup: boolean },
+  { cloudBackup, requested }: { cloudBackup: boolean; requested: boolean },
 ): LeavesDevice {
   if (moment.localOnly) return { row: false, uploads: [] };
   if (moment.mediaAssetId === undefined || moment.assetKind === undefined) {
     return { row: true, uploads: [] };
   }
-  const original: UploadPurpose[] = cloudBackup ? ['original'] : [];
+  const original: UploadPurpose[] = cloudBackup || requested ? ['original'] : [];
   switch (moment.kind) {
     case 'answer':
       return {

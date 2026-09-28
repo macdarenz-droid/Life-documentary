@@ -176,7 +176,7 @@ async function collect(
       : undefined;
     const decision = leavesDevice(
       { ...moment, ...(asset ? { assetKind: asset.kind } : {}) },
-      { cloudBackup: false },
+      { cloudBackup: false, requested: false },
     );
     if (!decision.row) {
       kept.add(moment.id);

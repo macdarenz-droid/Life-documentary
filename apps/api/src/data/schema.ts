@@ -249,6 +249,7 @@ export const changeLog = sqliteTable(
         'storyline',
         'castMember',
         'derived',
+        'originalRequest',
       ],
     }).notNull(),
     entityId: text('entity_id').notNull(),
@@ -408,5 +409,27 @@ export const renders = sqliteTable(
   },
   (t) => [
     uniqueIndex('renders_episode_version_format_idx').on(t.episodeId, t.renderVersion, t.format),
+  ],
+);
+
+// Requests for the full photos and clips an episode's plan uses (P16, D42). One row per episode and
+// asset; phones pull them. They go with their episode.
+export const originalRequests = sqliteTable(
+  'original_requests',
+  {
+    id: text('id').primaryKey(),
+    episodeId: text('episode_id')
+      .notNull()
+      .references(() => episodes.id, { onDelete: 'cascade' }),
+    documentaryId: text('documentary_id').notNull(),
+    momentId: text('moment_id').notNull(),
+    assetId: text('asset_id').notNull(),
+    state: text('state', { enum: ['open', 'met', 'closed'] }).notNull(),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (t) => [
+    uniqueIndex('original_requests_episode_asset_idx').on(t.episodeId, t.assetId),
+    index('original_requests_asset_idx').on(t.assetId),
   ],
 );
