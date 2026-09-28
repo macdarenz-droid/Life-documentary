@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { RecutState } from '../episode/edit';
 import { LocalDate, Timestamp, Uuid } from '../ids';
 
 const MS_PER_DAY = 86_400_000;
@@ -73,10 +74,10 @@ const weekSpan = {
 
 /**
  * What a phone learns of an episode (P16, D42): pulled only, once a plan is stored, without storage keys.
- * The video comes from `GET /episodes/:id/video`.
+ * The video comes from `GET /episodes/:id/video`. `recut` says where a re-cut stands (P17).
  */
 export const EpisodeSummary = z
-  .object(episodeSummaryFields)
+  .object({ ...episodeSummaryFields, recut: RecutState.optional() })
   .refine((e) => isWeekSpan(e.weekStart, e.weekEnd), weekSpan);
 export type EpisodeSummary = z.infer<typeof EpisodeSummary>;
 

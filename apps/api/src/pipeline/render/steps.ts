@@ -63,14 +63,19 @@ export function planMomentIds(
 
 /**
  * The episode as the renderer draws it, from the stored plan and what may still leave the phone, or
- * `null` when nothing is left to show. Every source is a presigned URL under the owner's prefix.
+ * `null` when nothing is left to show. Every source is a presigned URL under the owner's prefix. With
+ * `planVersion`, it draws that version with that version's narration instead of the current plan.
  */
 export async function renderInput(
   ctx: RenderContext,
   episode: Episode,
   format: RenderFormat,
+  planVersion?: number,
 ): Promise<RenderManifestV2 | null> {
-  const stored = await plans.current(ctx.db, episode.id);
+  const stored =
+    planVersion === undefined
+      ? await plans.current(ctx.db, episode.id)
+      : await plans.get(ctx.db, episode.id, planVersion);
   const documentary = await documentaries.get(ctx.db, episode.documentaryId);
   if (!stored || !documentary) return null;
   const owner = { userId: documentary.ownerUserId, documentaryId: documentary.id };
@@ -149,27 +154,33 @@ export async function renderInput(
   });
 }
 
-export type StartResult = { outcome: 'nothing' } | { outcome: 'started'; id: Uuid };
+export type StartResult =
+  { outcome: 'nothing' } | { outcome: 'stale' } | { outcome: 'started'; id: Uuid };
 
 /**
  * Starts one render of the episode's current plan in this shape. A render of the same plan version and
- * shape that is running or done is returned with no call; one left `starting` is started again.
+ * shape that is running or done is returned with no call; one left `starting` is started again. With
+ * `planVersion` (a re-cut, P17), a version that is no longer the current plan gives `stale`. The version
+ * is read once, so an edit landing during a start can't mix two versions.
  */
 export async function startRender(
   ctx: RenderContext,
   episodeId: Uuid,
   format: RenderFormat,
+  planVersion?: number,
 ): Promise<StartResult> {
   const episode = await episodes.get(ctx.db, episodeId);
   const documentary = episode ? await documentaries.get(ctx.db, episode.documentaryId) : null;
   if (!episode || !documentary || episode.planVersion < 1) return { outcome: 'nothing' };
+  const version = planVersion ?? episode.planVersion;
+  if (version !== episode.planVersion) return { outcome: 'stale' };
   const rows = await renders.forEpisode(ctx.db, episode.id);
-  const same = rows.filter((r) => r.planVersion === episode.planVersion && r.format === format);
+  const same = rows.filter((r) => r.planVersion === version && r.format === format);
   const running = same.find((r) => r.state === 'rendering' || r.state === 'done');
   if (running) return { outcome: 'started', id: running.id };
   if (format === 'landscape' && episode.renderVersion === 0) return { outcome: 'nothing' };
 
-  const manifest = await renderInput(ctx, episode, format);
+  const manifest = await renderInput(ctx, episode, format, version);
   if (!manifest) return { outcome: 'nothing' };
   if (new TextEncoder().encode(JSON.stringify(manifest)).byteLength > MAX_INPUT_BYTES) {
     throw new Error(INPUT_TOO_LARGE);
@@ -194,7 +205,7 @@ export async function startRender(
   const row = await renders.put(ctx.db, {
     id: reused?.id ?? (crypto.randomUUID() as Uuid),
     episodeId: episode.id,
-    planVersion: episode.planVersion,
+    planVersion: version,
     renderVersion,
     format,
     outKey,

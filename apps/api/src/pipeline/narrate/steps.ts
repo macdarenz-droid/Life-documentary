@@ -62,11 +62,22 @@ async function clipHash(voiceId: string, text: string): Promise<string> {
   return [...digest].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-/** The indices of the lines to speak; none unless the episode is waiting for narration. */
+/**
+ * The indices of the lines to speak; none unless the episode is waiting for narration. With
+ * `planVersion` (a re-cut, P17), that version's lines when it is the current plan, whatever the state.
+ */
 export async function linesStep(
   ctx: NarrateContext,
   episodeId: Episode['id'],
+  planVersion?: number,
 ): Promise<LinesResult> {
+  if (planVersion !== undefined) {
+    const found = await planOf(ctx, episodeId, planVersion);
+    return {
+      planVersion,
+      indices: found ? narrationLines(found.plan).map((line) => line.index) : [],
+    };
+  }
   const episode = await episodes.get(ctx.db, episodeId);
   if (!episode || episode.state !== 'narrating') {
     return { planVersion: episode?.planVersion ?? 0, indices: [] };
@@ -148,7 +159,10 @@ export async function lineStep(
   return { outcome: 'spoken', characters: speech.characters };
 }
 
-/** Keeps the narrator under a quarter of spoken time on the measured lengths; the episode goes to render. */
+/**
+ * Keeps the narrator under a quarter of spoken time on the measured lengths. An episode that is
+ * `narrating` goes to render; any other (a re-cut of a ready one) keeps its state.
+ */
 export async function fitStep(
   ctx: NarrateContext,
   episodeId: Episode['id'],
@@ -166,7 +180,9 @@ export async function fitStep(
     brief,
   );
   await narration.setKept(ctx.db, episode.id, planVersion, kept);
-  await episodes.setState(ctx.db, episode.id, 'rendering', ctx.clock.now());
+  if (episode.state === 'narrating') {
+    await episodes.setState(ctx.db, episode.id, 'rendering', ctx.clock.now());
+  }
   return { kept: kept.length, dropped: clips.length - kept.length };
 }
 

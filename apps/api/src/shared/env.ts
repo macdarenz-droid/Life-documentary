@@ -46,4 +46,6 @@ export type Env = {
     renderAt: string;
     deliverAt: string;
   }>;
+  /** The re-cut Workflow (P17). */
+  RECUT_PIPELINE: Workflow<{ episodeId: string; runId: string }>;
 };

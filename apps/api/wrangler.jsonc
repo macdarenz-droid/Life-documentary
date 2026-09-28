@@ -19,5 +19,7 @@
   "triggers": { "crons": ["*/15 * * * *"] },
   "workflows": [
     { "name": "episode-pipeline", "binding": "EPISODE_PIPELINE", "class_name": "EpisodePipeline" },
+    // The re-cut run (P17, D43): one instance per claimed edit.
+    { "name": "recut-pipeline", "binding": "RECUT_PIPELINE", "class_name": "RecutPipeline" },
   ],
 }

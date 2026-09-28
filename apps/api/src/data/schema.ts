@@ -298,6 +298,10 @@ export const episodes = sqliteTable(
     summary: text('summary'),
     deliveredAt: text('delivered_at'),
     updatedAt: text('updated_at').notNull(),
+    /** Where a re-cut stands (P17, D43): `working`, `waiting` or `failed`. */
+    recutState: text('recut_state', { enum: ['working', 'waiting', 'failed'] }),
+    /** The id of the re-cut run that holds the claim, while one does. */
+    recutRun: text('recut_run'),
   },
   (t) => [uniqueIndex('episodes_documentary_week_idx').on(t.documentaryId, t.weekStart)],
 );
@@ -456,4 +460,18 @@ export const episodeRuns = sqliteTable(
     originalsReceived: integer('originals_received'),
   },
   (t) => [primaryKey({ columns: [t.documentaryId, t.weekStart] })],
+);
+
+// The characters each re-cut round spoke (P17, D43): one row per episode and plan version, so the
+// `renarrate` ledger row is their sum and a replayed round never counts twice. They go with their episode.
+export const recutNarration = sqliteTable(
+  'recut_narration',
+  {
+    episodeId: text('episode_id')
+      .notNull()
+      .references(() => episodes.id, { onDelete: 'cascade' }),
+    planVersion: integer('plan_version').notNull(),
+    characters: integer('characters').notNull(),
+  },
+  (t) => [uniqueIndex('recut_narration_episode_version_idx').on(t.episodeId, t.planVersion)],
 );

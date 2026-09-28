@@ -1,16 +1,19 @@
 // Episodes on the server (P12): one per documentary and week, numbered from 1 in the order their weeks
 // were first asked for. Rows are parsed with the contract on the way out. From its plan on, every state,
 // plan or render change also writes a change-log row, so the phone pulls the episode's summary (P16).
+// A re-cut (P17, D43) holds a claim in `recut_run`; its writes apply only while that run holds it.
 import {
   Episode,
   EpisodePlanV1,
   EpisodeSummary,
   type EpisodeState,
+  type RecutState,
   type LocalDate,
   type Timestamp,
   type Uuid,
 } from '@life/contracts';
-import { and, eq, gt, inArray, lt, ne, sql } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNotNull, lt, ne, sql } from 'drizzle-orm';
+import type { BatchItem } from 'drizzle-orm/batch';
 import type { Db } from '../db';
 import { changeLog, costLedger, episodePlans, episodeRuns, episodes } from '../schema';
 
@@ -219,6 +222,98 @@ export async function summaries(db: Db, ids: string[]): Promise<EpisodeSummary[]
       dueAt: dueAt ?? undefined,
       deliveredAt: e.deliveredAt ?? undefined,
       updatedAt: e.updatedAt,
+      recut: e.recutState ?? undefined,
     }),
   );
+}
+
+export type Recut = { state: RecutState | null; run: string | null };
+
+/** Where the episode's re-cut stands and which run holds the claim; null when the episode is gone. */
+export async function recutOf(db: Db, id: Uuid): Promise<Recut | null> {
+  const [row] = await db
+    .select({ state: episodes.recutState, run: episodes.recutRun })
+    .from(episodes)
+    .where(eq(episodes.id, id))
+    .limit(1);
+  return row ?? null;
+}
+
+/** Every episode whose re-cut claim is held, with the run that holds it. */
+export async function withRecutRun(db: Db): Promise<{ id: Uuid; run: string }[]> {
+  const rows = await db
+    .select({ id: episodes.id, run: episodes.recutRun })
+    .from(episodes)
+    .where(isNotNull(episodes.recutRun));
+  return rows.flatMap((r) => (r.run ? [{ id: r.id as Uuid, run: r.run }] : []));
+}
+
+/** Sets the re-cut's state, only while `runId` holds the claim. */
+export async function setRecutState(
+  db: Db,
+  id: Uuid,
+  runId: string,
+  state: RecutState,
+  at: Timestamp,
+): Promise<void> {
+  await db.batch([
+    db
+      .update(episodes)
+      .set({ recutState: state, updatedAt: at })
+      .where(and(eq(episodes.id, id), eq(episodes.recutRun, runId))),
+    recordChange(db, id, at),
+  ]);
+}
+
+/**
+ * Ends the re-cut: clears its state and claim, only while `runId` holds it and the plan is still
+ * `planVersion`. Returns whether it did; when not, the plan moved on and the run goes round again.
+ */
+export async function endRecut(
+  db: Db,
+  id: Uuid,
+  runId: string,
+  planVersion: number,
+  at: Timestamp,
+): Promise<boolean> {
+  const [ended] = await db.batch([
+    db
+      .update(episodes)
+      .set({ recutState: null, recutRun: null, updatedAt: at })
+      .where(
+        and(
+          eq(episodes.id, id),
+          eq(episodes.recutRun, runId),
+          eq(episodes.planVersion, planVersion),
+        ),
+      )
+      .returning({ id: episodes.id }),
+    recordChange(db, id, at),
+  ]);
+  return ended.length > 0;
+}
+
+/**
+ * Batch items that mark the re-cut `failed` and release the claim, only while `runId` holds it. With
+ * `plan`, the same statement points the episode at that plan version and its summary (the revert).
+ */
+export function failRecut(
+  db: Db,
+  id: Uuid,
+  runId: string,
+  at: Timestamp,
+  plan?: { version: number; summary: string },
+): BatchItem<'sqlite'>[] {
+  return [
+    db
+      .update(episodes)
+      .set({
+        recutState: 'failed',
+        recutRun: null,
+        ...(plan ? { planVersion: plan.version, summary: plan.summary } : {}),
+        updatedAt: at,
+      })
+      .where(and(eq(episodes.id, id), eq(episodes.recutRun, runId))),
+    recordChange(db, id, at),
+  ];
 }
