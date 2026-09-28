@@ -61,7 +61,7 @@ module.exports = {
       severity: 'error',
       from: { path: '^apps/api/src/', pathNot: '^apps/api/src/providers/' },
       to: {
-        path: '(^|/)(@anthropic-ai/sdk|elevenlabs|@elevenlabs/[^/]+|@remotion/lambda|openai)(/|$)',
+        path: '(^|/)(@anthropic-ai/sdk|elevenlabs|@elevenlabs/[^/]+|@remotion/lambda|aws4fetch|openai)(/|$)',
       },
     },
     {

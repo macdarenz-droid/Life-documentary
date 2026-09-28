@@ -18,6 +18,10 @@ export default defineConfig({
           BETTER_AUTH_SECRET: 'test-only-secret-not-used-anywhere-else-0123456789',
           TEST_MIGRATIONS: migrations,
           PROVIDERS: 'fixture',
+          // Fixed, fake R2 credentials: presigning is pure signing, so no test reaches R2's S3 endpoint.
+          R2_ACCOUNT_ID: 'testaccount0123456789',
+          R2_ACCESS_KEY_ID: 'test-access-key-id',
+          R2_SECRET_ACCESS_KEY: 'test-secret-access-key',
           NARRATOR_VOICES: JSON.stringify({
             'narrator-1': 'fixture-voice-1',
             'narrator-2': 'fixture-voice-2',

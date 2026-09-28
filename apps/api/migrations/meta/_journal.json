@@ -57,6 +57,13 @@
       "when": 1790550382752,
       "tag": "0007_narration",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1790557452232,
+      "tag": "0008_renders",
+      "breakpoints": true
     }
   ]
 }

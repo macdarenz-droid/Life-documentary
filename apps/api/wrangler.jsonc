@@ -4,7 +4,7 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-08-22",
   "compatibility_flags": ["nodejs_compat"],
-  "vars": { "BUILD": "dev", "BETTER_AUTH_URL": "http://localhost:8787" },
+  "vars": { "BUILD": "dev", "BETTER_AUTH_URL": "http://localhost:8787", "R2_BUCKET": "life-media" },
   "d1_databases": [
     {
       "binding": "DB",

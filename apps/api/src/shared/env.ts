@@ -20,6 +20,12 @@ export type Env = {
   ELEVENLABS_API_KEY?: string;
   /** Worker secret: our narrator ids (`narrator-1` … `narrator-4`) to ElevenLabs voice ids, as JSON (P14). */
   NARRATOR_VOICES?: string;
+  /** The media bucket's name, for R2's S3 endpoint (P15). */
+  R2_BUCKET: string;
+  /** Worker secrets: an R2 API token scoped to the media bucket, for presigned render URLs (P15, D41). */
+  R2_ACCOUNT_ID?: string;
+  R2_ACCESS_KEY_ID?: string;
+  R2_SECRET_ACCESS_KEY?: string;
   /** `fixture` makes the pipeline use fixture providers; set only by the test pool and local dev. */
   PROVIDERS?: string;
   /** The episode pipeline Workflow (P12). */
