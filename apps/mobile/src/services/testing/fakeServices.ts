@@ -277,6 +277,9 @@ export function fakeServices(
         services.api.uploads.push('complete');
         return { cloudKey: `tmp/${assetId}/${purpose}` };
       },
+      abortUpload: async (assetId, purpose) => {
+        services.api.uploads.push(`abort:${assetId}:${purpose}`);
+      },
     },
     network: {
       kind: 'wifi',

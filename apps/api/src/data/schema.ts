@@ -249,6 +249,8 @@ export const changeLog = sqliteTable(
         'storyline',
         'castMember',
         'derived',
+        'originalRequest',
+        'episode',
       ],
     }).notNull(),
     entityId: text('entity_id').notNull(),
@@ -409,4 +411,49 @@ export const renders = sqliteTable(
   (t) => [
     uniqueIndex('renders_episode_version_format_idx').on(t.episodeId, t.renderVersion, t.format),
   ],
+);
+
+// Requests for the full photos and clips an episode's plan uses (P16, D42). One row per episode and
+// asset; phones pull them. They go with their episode.
+export const originalRequests = sqliteTable(
+  'original_requests',
+  {
+    id: text('id').primaryKey(),
+    episodeId: text('episode_id')
+      .notNull()
+      .references(() => episodes.id, { onDelete: 'cascade' }),
+    documentaryId: text('documentary_id').notNull(),
+    momentId: text('moment_id').notNull(),
+    assetId: text('asset_id').notNull(),
+    state: text('state', { enum: ['open', 'met', 'closed'] }).notNull(),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (t) => [
+    uniqueIndex('original_requests_episode_asset_idx').on(t.episodeId, t.assetId),
+    index('original_requests_asset_idx').on(t.assetId),
+  ],
+);
+
+// One row per documentary and week's run (P16, D42): when each stage ended, when the episode was due
+// and delivered, how it ended and how many originals were asked for and received. The episode id has no
+// foreign key: an empty week's episode is removed while its run is kept.
+export const episodeRuns = sqliteTable(
+  'episode_runs',
+  {
+    documentaryId: text('documentary_id').notNull(),
+    weekStart: text('week_start').notNull(),
+    episodeId: text('episode_id'),
+    startedAt: text('started_at').notNull(),
+    understoodAt: text('understood_at'),
+    plannedAt: text('planned_at'),
+    narratedAt: text('narrated_at'),
+    renderStartedAt: text('render_started_at'),
+    deliveredAt: text('delivered_at'),
+    dueAt: text('due_at').notNull(),
+    outcome: text('outcome', { enum: ['model', 'recap', 'empty', 'failed'] }),
+    originalsAsked: integer('originals_asked'),
+    originalsReceived: integer('originals_received'),
+  },
+  (t) => [primaryKey({ columns: [t.documentaryId, t.weekStart] })],
 );

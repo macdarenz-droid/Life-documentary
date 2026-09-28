@@ -1,6 +1,7 @@
 // An in-memory copy of the Worker's upload routes over a fake R2 for upload tests: an open upload per
 // asset and purpose (created again, the same one comes back), parts stored by number, and the finished
-// object's bytes. Every call is recorded; `failOnPart` makes that part number throw once.
+// object's bytes. Every call is recorded; `failOnPart` makes that part number throw once, and a purpose
+// in `refused` answers every part with a 403.
 import {
   CompleteUpload,
   CreateUpload,
@@ -8,7 +9,7 @@ import {
   UploadedPart,
   partCountFor,
 } from '@life/contracts';
-import type { Api } from '../../domain/capturePorts';
+import { ApiRefused, type Api } from '../../domain/capturePorts';
 
 type Open = { uploadId: string; bytes: number; parts: Map<number, Uint8Array> };
 
@@ -23,6 +24,10 @@ export type FakeUploadApi = Api & {
   failOnPart: number | null;
   /** Every create throws. */
   down: boolean;
+  /** Parts for these purposes are refused with a 403. */
+  refused: Set<string>;
+  /** Every body sent, by `<assetId>/<purpose>`, part by part. */
+  bodies: Map<string, Uint8Array[]>;
 };
 
 export function fakeUploadApi(): FakeUploadApi {
@@ -39,6 +44,8 @@ export function fakeUploadApi(): FakeUploadApi {
     contentTypes: new Map(),
     failOnPart: null,
     down: false,
+    refused: new Set(),
+    bodies: new Map(),
     me: unused,
     registerDevice: unused,
     linkDocumentary: unused,
@@ -69,9 +76,16 @@ export function fakeUploadApi(): FakeUploadApi {
         api.failOnPart = null;
         throw new Error('Connection dropped');
       }
+      if (api.refused.has(purpose)) {
+        throw new ApiRefused(`/uploads/${assetId}/${purpose}/parts/${partNumber}: 403`, 403);
+      }
       const upload = open.get(key(assetId, purpose));
       if (!upload) throw new Error('No open upload');
       upload.parts.set(partNumber, bytes.slice());
+      api.bodies.set(key(assetId, purpose), [
+        ...(api.bodies.get(key(assetId, purpose)) ?? []),
+        bytes.slice(),
+      ]);
       return UploadedPart.parse({ partNumber, etag: `etag-${partNumber}` });
     },
     completeUpload: async (assetId, purpose, parts) => {
@@ -90,6 +104,10 @@ export function fakeUploadApi(): FakeUploadApi {
       api.objects.set(k, out);
       open.delete(k);
       return { cloudKey: `tmp/${k}` };
+    },
+    abortUpload: async (assetId, purpose) => {
+      api.calls.push(`abort:${purpose}`);
+      open.delete(key(assetId, purpose));
     },
   };
   return api;

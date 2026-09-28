@@ -60,8 +60,10 @@ export async function briefInput(db: Db, episode: Episode): Promise<WeekBriefInp
   // The server applies the rule again (rule 8): a local-only moment and its text never go in.
   const moments = (await week.momentsOfWeek(db, episode.documentaryId, episode.weekStart)).filter(
     ({ moment, asset }) =>
-      leavesDevice(asset ? { ...moment, assetKind: asset.kind } : moment, { cloudBackup: false })
-        .row,
+      leavesDevice(asset ? { ...moment, assetKind: asset.kind } : moment, {
+        cloudBackup: false,
+        requested: false,
+      }).row,
   );
 
   const questionIds = await db

@@ -226,41 +226,17 @@ Text: `tasks/p16/T-017.md`.
 ### T-017b · P16.2 · Push · done · needs: T-016d
 Text: `tasks/p16/T-017.md`.
 
-### T-017c · P16.3 · Asking for originals, on the server · changes r1 · needs: T-014c, T-016d, T-017b
-Text: `tasks/p16/T-017.md`.
+### T-017c · P16.3 · Asking for originals, on the server · done · needs: T-014c, T-016d, T-017b
+Text: `tasks/p16/T-017.md`. Fix r1 approved (`17e2cb5`).
 
-**Fix list r1** (review of 0f344a2, confirmed by two skeptics; everything else approved: the contract and pulled entity, `leavesDevice` with `requested` on both sides, the table and repository, `keepAnswers`, `requestOriginals` and its silent push, the upload rule and the `originals-ready` event, `closeAll`).
-1. In `/sync`, a moment tombstone is committed first and the R2 delete of its `original` runs after it. If that delete fails, a retried tombstone finds the row already deleted and never deletes the file, so the full recording of a deleted moment stays in the cloud (VISION §8). Delete the `original` before the tombstone is committed. A tombstone for a row that is already deleted also deletes it again (the delete is safe to repeat).
-Tests: an R2 delete that throws once leaves the tombstone uncommitted, and the retried push deletes the original and commits. A second tombstone for an already-deleted moment deletes a stray original.
-Checks: API typecheck, tests, lint, format, boundaries, `deploy:dry`.
+### T-017d · P16.4 · Asking for originals, on the phone · done · needs: T-017b, T-017c
+Text: `tasks/p16/T-017.md`. Fix r1 approved (`4f507ee`).
 
-### T-017d · P16.4 · Asking for originals, on the phone · changes r1 · needs: T-017b, T-017c
-Text: `tasks/p16/T-017.md`.
+### T-017e · P16.5 · The weekly run · done · needs: T-015c, T-016d, T-017a, T-017c
+Text: `tasks/p16/T-017.md`. Fix r1 approved (`a92d0f3`).
 
-**Fix list r1** (review of d874edd, confirmed by two skeptics; everything else approved: the migration and cursor reset, landing pulled requests, the upload rules, closed requests, the push payload parsing, the plugin option).
-1. The silent-push run gets a fresh 25 s once it holds the lock, so a push that arrives during the P6 task can run for 40 s or more after iOS woke the app (iOS allows about 30 s). Take a deadline when the task starts (in `handleOriginalsPush`, before `runInBackground`) and pass it through. Once the lock is held, the runner gets only what is left, measured from before the store opens. Skip the drain when under 5 s are left, and skip the whole run when nothing is left.
-2. `run` in `captureContext.tsx` always passes `foreground: true`, and the mount-time `onForeground()` runs even when iOS launched the app in the background (a silent push renders the root too). That re-encodes a full-size photo in the background. Pass `foreground: AppState.currentState === 'active'` there as well, or skip the mount-time run unless the app is active.
-3. `queueRequestedOriginals` can run twice at once (a foreground run and a sync after a capture), and both write the same JPEG path. One attempt can delete the copy the surviving job points at, or leave a key that doesn't match the file, and the photo then never reaches the episode. Make it single-flight per store, as `drainUploads` is, give each attempt its own temporary name, and set the job only when none exists (removing the copy when it loses).
-Tests: a push that arrives while another run holds the lock ends within 25 s of its own start (advancing clock). A mount with AppState `background` queues no photo copy. Two overlapping `queueRequestedOriginals` calls leave one job whose copy decrypts.
-Checks: mobile typecheck, tests, lint, format, boundaries.
-
-### T-017e · P16.5 · The weekly run · changes r1 · needs: T-015c, T-016d, T-017a, T-017c
-Text: `tasks/p16/T-017.md`.
-
-**Fix list r1** (review of 62ef64d, confirmed by two skeptics; everything else approved: the cron and `startDueWeeks`, the params and times read inside steps, the new order, keeping answers before the working copies go, the originals wait, the render rounds and the recap fallback, the conditional publish and its single push, the `episode_runs` table, the allowed test changes).
-1. `run-record` and `cost-check` run after `publish`, outside the inner try. If one of them fails after its retries, the top-level catch runs `markFailed`, an unconditional `setState`, so an episode that was published and pushed ends `failed` and the app says it couldn't be made. Make `markFailed` apply only `WHERE state <> 'ready'`, and give the bookkeeping after `publish` its own try/catch that logs (ids only) instead of failing the week.
-2. When the first step (`episode`) fails after its retries, no `episode_runs` row exists, and `finish` is an UPDATE, so the week leaves no record and later crons skip it. In `run-failed`, insert the row when it is missing (`startedAt` now, `dueAt` from `params.deliverAt`), then set the outcome.
-3. A week whose model and recap renders both fail ends `failed` with nothing logged, though the text says "failed, logged". Log the episode id and the last render outcome (`nothing`, `failed`, `gone` or the round limit), with no content.
-4. If anything throws in `publish` after `setDelivered` has moved the episode, the retried step finds nothing to move and `episode_runs.delivered_at` stays empty forever. In `run-record`, copy the episode's stored `deliveredAt` into the run row whatever `publish` returned (safe to repeat).
-Tests: `mockStepError` on `run-record` leaves the episode `ready` with one push. `mockStepError` on `episode` leaves a `failed` run row. Both renders failing logs one line with the episode id and no content. A `publish` that throws once after `setDelivered` still ends with `delivered_at` on the run row.
-Checks: API typecheck, tests, lint, format, boundaries, `deploy:dry`.
-
-### T-017f · P16.6 · Episodes to the phone · changes r1 · needs: T-016d, T-017e
-Text: `tasks/p16/T-017.md`.
-
-**Fix list r1** (review of aed4a57, confirmed by two skeptics; everything else approved: the summary and its pulled entity, the change-log rows from `setPlan` on, the video route with 200, 206 and 416 and its 404s, the device table rebuild and landing newer rows with the local fields kept).
-1. The test "a week that ended empty is never pulled" pulls only after `episodes.remove`, when no row is left, so it would pass even without the `planVersion > 0` guard or the plan join. Also pull after `setState('understanding')` and `setState('planning')`, before `remove`, and check that no `episode` change comes back. Keep the pull after `remove`.
-Checks: API typecheck, tests, lint, format, boundaries.
+### T-017f · P16.6 · Episodes to the phone · done · needs: T-016d, T-017e
+Text: `tasks/p16/T-017.md`. Fix r1 approved (`6559ef6`).
 
 ### T-017g · P16.7 · The Episode screens · todo · needs: T-003e, T-017a, T-017f
 Text: `tasks/p16/T-017.md`.

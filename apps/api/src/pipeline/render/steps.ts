@@ -51,7 +51,9 @@ export const INPUT_TOO_LARGE = 'The render input is too large';
 const MEDIA_TYPE = { video: 'video', audio: 'voice', photo: 'photo' } as const;
 
 /** Every moment the plan shows. */
-function planMomentIds(plan: NonNullable<Awaited<ReturnType<typeof plans.current>>>['plan']) {
+export function planMomentIds(
+  plan: NonNullable<Awaited<ReturnType<typeof plans.current>>>['plan'],
+) {
   return new Set([
     plan.coldOpen.momentId,
     ...plan.scenes.flatMap((s) => s.shots.map((shot) => shot.momentId)),

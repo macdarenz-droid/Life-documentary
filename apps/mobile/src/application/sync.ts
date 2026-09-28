@@ -3,7 +3,10 @@
 // device-only fields. Pulled rows land with the same last-write-wins rule the server uses. The cursor and
 // the push mark move only when the whole round worked, so a failed round is repeated as it was. Derived
 // text (P12) only comes down: it lands for this phone's live moments and goes with a moment's tombstone.
+// Requests for originals (P16) only come down too, and land only for moments on this phone. Episode
+// summaries (P16) only come down, newer by `updatedAt`, and keep this phone's downloaded copy.
 import {
+  DeviceEpisode,
   MediaAsset,
   Question,
   SYNC_MAX_CHANGES,
@@ -12,6 +15,7 @@ import {
   type Derived,
   type Documentary,
   type Moment,
+  type OriginalRequest,
   type PulledChange,
   type PulledEntity,
 } from '@life/contracts';
@@ -19,8 +23,10 @@ import { addDays, leavesDevice, localDay } from '@life/story';
 import * as castMembers from '../data/repositories/castMembers';
 import * as derived from '../data/repositories/derived';
 import * as documentaries from '../data/repositories/documentaries';
+import * as episodes from '../data/repositories/episodes';
 import * as mediaAssets from '../data/repositories/mediaAssets';
 import * as moments from '../data/repositories/moments';
+import * as originalRequests from '../data/repositories/originalRequests';
 import * as questions from '../data/repositories/questions';
 import * as storylines from '../data/repositories/storylines';
 import * as syncState from '../data/repositories/syncState';
@@ -39,6 +45,8 @@ const ORDER: PulledEntity[] = [
   'question',
   'moment',
   'derived',
+  'originalRequest',
+  'episode',
 ];
 
 export type SyncOutcome =
@@ -53,7 +61,9 @@ export type SyncOutcome =
 
 /** A pulled change as it is written here: a media asset keeps this phone's files and keys. */
 type Write =
-  Exclude<PulledChange, { entity: 'mediaAsset' }> | { entity: 'mediaAsset'; row: MediaAsset };
+  | Exclude<PulledChange, { entity: 'mediaAsset' | 'episode' }>
+  | { entity: 'mediaAsset'; row: MediaAsset }
+  | { entity: 'episode'; row: DeviceEpisode };
 
 const running = new WeakMap<Store, Promise<SyncOutcome>>();
 
@@ -176,7 +186,7 @@ async function collect(
       : undefined;
     const decision = leavesDevice(
       { ...moment, ...(asset ? { assetKind: asset.kind } : {}) },
-      { cloudBackup: false },
+      { cloudBackup: false, requested: false },
     );
     if (!decision.row) {
       kept.add(moment.id);
@@ -251,6 +261,7 @@ async function applyPulled(
   const candidateMoments = new Map<string, Moment>();
   const candidateQuestions = new Map<string, Question>();
   const candidateDerived: Derived[] = [];
+  const candidateRequests: OriginalRequest[] = [];
 
   for (const change of sorted) {
     switch (change.entity) {
@@ -309,6 +320,25 @@ async function applyPulled(
         candidateDerived.push(change.row);
         break;
       }
+      case 'originalRequest': {
+        candidateRequests.push(change.row);
+        break;
+      }
+      case 'episode': {
+        if (change.row.documentaryId !== documentary.id) break;
+        const local = await episodes.get(driver, change.row.id);
+        if (!newer(change.row, local)) break;
+        // The summary has no local fields, so this phone's downloaded copy stays.
+        const row = DeviceEpisode.parse({
+          ...change.row,
+          ...(local?.localPath !== undefined ? { localPath: local.localPath } : {}),
+          ...(local?.localRenderVersion !== undefined
+            ? { localRenderVersion: local.localRenderVersion }
+            : {}),
+        });
+        writes.push({ entity: 'episode', row });
+        break;
+      }
     }
   }
 
@@ -360,6 +390,14 @@ async function applyPulled(
     writes.push({ entity: 'derived', row });
   }
 
+  // A request lands only for a moment on this phone, last-write-wins; a closed one is kept as closed.
+  for (const row of candidateRequests) {
+    const moment = candidateMoments.get(row.momentId) ?? (await moments.get(driver, row.momentId));
+    if (!moment) continue;
+    if (!newer(row, await originalRequests.get(driver, row.id))) continue;
+    writes.push({ entity: 'originalRequest', row });
+  }
+
   await syncState.applyPulled(driver, async (tx) => {
     for (const change of writes) {
       switch (change.entity) {
@@ -385,6 +423,12 @@ async function applyPulled(
           break;
         case 'derived':
           await derived.put(tx, change.row);
+          break;
+        case 'originalRequest':
+          await originalRequests.put(tx, change.row);
+          break;
+        case 'episode':
+          await episodes.put(tx, change.row);
           break;
       }
     }

@@ -56,7 +56,12 @@
         }
       ],
       "expo-video",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "enableBackgroundRemoteNotifications": true
+        }
+      ],
       "expo-apple-authentication"
     ],
     "extra": {

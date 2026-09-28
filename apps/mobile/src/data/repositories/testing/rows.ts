@@ -2,7 +2,7 @@
 import {
   CastMember,
   Documentary,
-  Episode,
+  EpisodeSummary,
   MediaAsset,
   Moment,
   Question,
@@ -85,17 +85,15 @@ export const note = (n: number, capturedAt: string, patch: Partial<Moment> = {})
     ...patch,
   });
 
-export const episode = (n: number, number: number): Episode =>
-  Episode.parse({
+export const episode = (n: number, number: number): EpisodeSummary =>
+  EpisodeSummary.parse({
     id: id(n),
     documentaryId: id(1),
     number,
     weekStart: '2027-03-08',
     weekEnd: '2027-03-14',
     state: 'ready',
-    planVersion: 1,
     renderVersion: 1,
-    costCents: 42,
     updatedAt: NOW,
   });
 

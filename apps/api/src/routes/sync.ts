@@ -2,8 +2,9 @@
 // changed since its cursor. Each row is refused when it belongs elsewhere (`not_yours`), may not leave
 // the phone (`local_only`), or is not newer than the stored one (`stale`); the rest are written with
 // one change-log row each in a single batch. Rows this request wrote are not sent back to it. A pull
-// also carries the text the server derived (P12); an accepted moment tombstone removes that moment's
-// derived rows in the same batch.
+// also carries the text the server derived (P12) and its requests for originals (P16); an accepted moment
+// tombstone removes that moment's derived rows and closes its asset's open requests in the same batch,
+// after the asset's original is deleted from R2 (a repeated tombstone deletes it again).
 import {
   SyncRequest,
   SyncResponse,
@@ -16,9 +17,11 @@ import {
 import type { BatchItem } from 'drizzle-orm/batch';
 import { Hono } from 'hono';
 import { database } from '../data/db';
+import { mediaKey } from '../data/mediaKeys';
 import * as changes from '../data/repositories/changes';
 import * as derivedRepo from '../data/repositories/derived';
 import * as documentariesRepo from '../data/repositories/documentaries';
+import * as originalRequests from '../data/repositories/originalRequests';
 import * as rows from '../data/repositories/sync';
 import { momentRowMayLeave } from '../policy/leavesDevice';
 import { apiError } from '../shared/errors';
@@ -132,6 +135,7 @@ export const sync = new Hono<AppEnv>().post('/sync', requireSession, async (c) =
   const refused: SyncRefusal[] = [];
   const statements: BatchItem<'sqlite'>[] = [];
   const written = new Set<string>();
+  const deletedOriginals: string[] = [];
   for (const change of body.changes) {
     const { entity } = change;
     const id = change.row.id;
@@ -156,12 +160,30 @@ export const sync = new Hono<AppEnv>().post('/sync', requireSession, async (c) =
       continue;
     }
     if (isStale(change, prior?.change, momentDeleted)) {
+      // A tombstone repeated for a moment already deleted takes a stray original with it.
+      const priorRow = prior?.change.entity === 'moment' ? prior.change.row : undefined;
+      if (
+        change.entity === 'moment' &&
+        change.row.deletedAt !== undefined &&
+        priorRow?.deletedAt !== undefined
+      ) {
+        const assetId = priorRow.mediaAssetId ?? change.row.mediaAssetId;
+        if (assetId !== undefined) {
+          deletedOriginals.push(mediaKey(userId, body.documentaryId, assetId, 'original'));
+        }
+      }
       refuse('stale');
       continue;
     }
     statements.push(rows.upsert(db, body.documentaryId, change, now));
     if (change.entity === 'moment' && change.row.deletedAt !== undefined) {
       statements.push(derivedRepo.deleteForMoment(db, change.row.id));
+      const assetId = change.row.mediaAssetId;
+      if (assetId !== undefined) {
+        const opened = await originalRequests.openForAsset(db, assetId);
+        statements.push(...originalRequests.closeStatements(db, opened, now));
+        deletedOriginals.push(mediaKey(userId, body.documentaryId, assetId, 'original'));
+      }
     }
     statements.push(
       changes.record(db, body.documentaryId, entity, id, rows.changeTime(change, now)),
@@ -169,6 +191,9 @@ export const sync = new Hono<AppEnv>().post('/sync', requireSession, async (c) =
     known.set(id, { documentaryId: body.documentaryId, change: merged(change, prior?.change) });
     written.add(key(entity, id));
   }
+  // A deleted moment's original leaves the cloud with it (VISION §8). It goes before the tombstone is
+  // committed: if the delete fails, nothing is written and the phone's retry deletes it again.
+  if (deletedOriginals.length > 0) await c.env.MEDIA.delete(deletedOriginals);
   if (statements.length > 0) {
     await db.batch(statements as [BatchItem<'sqlite'>, ...BatchItem<'sqlite'>[]]);
   }
