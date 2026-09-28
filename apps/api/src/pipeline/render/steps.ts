@@ -237,11 +237,41 @@ async function recordRenderCosts(ctx: RenderContext, episodeId: Uuid): Promise<v
   await episodes.setCostCents(ctx.db, episodeId, cents, at);
 }
 
-/** Asks how a render is going and records a finished one; a finished row answers without a call. */
+/**
+ * Points the episode at a finished portrait render and rewrites the render costs. Safe to run again:
+ * `setRender` only moves forward and the cost row is rewritten from the renders.
+ */
+async function recordDone(
+  ctx: RenderContext,
+  row: Pick<EpisodeRender, 'episodeId' | 'format' | 'renderVersion' | 'outKey' | 'durationMs'>,
+  now: Timestamp,
+): Promise<void> {
+  if (row.format === 'portrait') {
+    await episodes.setRender(
+      ctx.db,
+      row.episodeId,
+      row.renderVersion,
+      row.outKey,
+      row.durationMs,
+      now,
+    );
+  }
+  await recordRenderCosts(ctx, row.episodeId);
+}
+
+/**
+ * Asks how a render is going and records a finished one. A finished row answers without a call; a `done`
+ * row writes the episode's render and costs again, so a check that stopped after marking the row done
+ * still completes on the next one.
+ */
 export async function checkRender(ctx: RenderContext, id: Uuid): Promise<CheckResult> {
   const row = await renders.get(ctx.db, id);
   if (!row) return { outcome: 'gone' };
-  if (row.state === 'done' || row.state === 'failed') return { outcome: row.state };
+  if (row.state === 'failed') return { outcome: 'failed' };
+  if (row.state === 'done') {
+    await recordDone(ctx, row, ctx.clock.now());
+    return { outcome: 'done' };
+  }
   if (row.state === 'starting' || !row.vendorRenderId || !row.bucket) {
     return { outcome: 'starting' };
   }
@@ -265,16 +295,6 @@ export async function checkRender(ctx: RenderContext, id: Uuid): Promise<CheckRe
     ...(progress.costUsd !== undefined ? { costMicroUsd: renderMicroUsd(progress.costUsd) } : {}),
     finishedAt: now,
   });
-  if (row.format === 'portrait') {
-    await episodes.setRender(
-      ctx.db,
-      row.episodeId,
-      row.renderVersion,
-      row.outKey,
-      row.durationMs,
-      now,
-    );
-  }
-  await recordRenderCosts(ctx, row.episodeId);
+  await recordDone(ctx, row, now);
   return { outcome: 'done' };
 }

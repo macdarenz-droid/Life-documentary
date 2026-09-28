@@ -236,6 +236,37 @@ describe('portrait renders', () => {
     expect(progress).not.toHaveBeenCalled();
   });
 
+  it('completes the episode on the next check when a write after marking the row done failed', async () => {
+    const { seed, episode } = await narratedWeek();
+    const { id } = (await startRender(ctx(), episode.id, 'portrait')) as { id: Uuid };
+    // The episode's render write fails once, after the row is already done.
+    await bindings.DB.prepare(
+      `CREATE TRIGGER fail_set_render BEFORE UPDATE OF render_version ON episodes
+       BEGIN SELECT RAISE(ABORT, 'setRender failed'); END`,
+    ).run();
+    try {
+      await expect(checkRender(ctx(), id)).rejects.toThrow();
+    } finally {
+      await bindings.DB.prepare('DROP TRIGGER fail_set_render').run();
+    }
+    expect((await renders.get(seed.db, id))?.state).toBe('done');
+    expect(await episodes.get(seed.db, episode.id)).toMatchObject({ renderVersion: 0 });
+    expect(await costLedger.forEpisode(seed.db, episode.id)).toEqual([]);
+
+    const progress = vi.spyOn(fixtures.renderer, 'progress');
+    expect(await checkRender(ctx(), id)).toEqual({ outcome: 'done' });
+    expect(progress).not.toHaveBeenCalled();
+    const row = (await renders.get(seed.db, id))!;
+    expect(await episodes.get(seed.db, episode.id)).toMatchObject({
+      renderVersion: 1,
+      mp4Key: row.outKey,
+      durationMs: row.durationMs,
+      costCents: 2,
+    });
+    const ledger = await costLedger.forEpisode(seed.db, episode.id);
+    expect(ledger.map((r) => [r.step, r.units, r.microUsd])).toEqual([['render', 1, 12_300]]);
+  });
+
   it('starts one render when asked twice for the same plan version', async () => {
     const { episode } = await narratedWeek();
     const first = await startRender(ctx(), episode.id, 'portrait');
