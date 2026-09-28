@@ -244,7 +244,7 @@ Text: `tasks/p16/T-017.md`.
 ## P17 — Edits (five one-tap changes, the re-cut run, the edit sheets)
 
 ### T-018a · P17.1 · Edit rules · todo · needs: T-016a
-Text: `tasks/p17/T-018.md`.
+Text: `tasks/p17/T-018.md`. Approved (`3331ca1`); merges with T-017g after its review.
 
 ### T-018b · P17.2 · The re-cut run · todo · needs: T-017c, T-017e, T-017f, T-018a
 Text: `tasks/p17/T-018.md`.
