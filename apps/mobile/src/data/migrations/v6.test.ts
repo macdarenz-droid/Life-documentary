@@ -1,4 +1,4 @@
-import { migrate, migrations } from './index';
+import { migrate } from './index';
 import { openMemoryDriver } from '../sqlite/testing/memoryDriver';
 import { SEED_NOW, seedIds, seedV1 } from './testing/seedV1';
 import { v1 } from './v1';
@@ -6,6 +6,10 @@ import { v2 } from './v2';
 import { v3 } from './v3';
 import { v4 } from './v4';
 import { v5 } from './v5';
+import { v6 } from './v6';
+
+/** Up to this version only: later migrations have their own tests. */
+const migrations = [v1, v2, v3, v4, v5, v6];
 
 const TABLES = [
   'documentaries',

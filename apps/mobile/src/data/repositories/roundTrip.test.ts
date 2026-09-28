@@ -1,7 +1,7 @@
 import {
   CastMember,
+  DeviceEpisode,
   Documentary,
-  Episode,
   MediaAsset,
   Moment,
   Question,
@@ -92,9 +92,17 @@ describe('round trip: get after put equals the parsed contract', () => {
 
   it('episode', async () => {
     const db = await freshDb();
-    const e = { ...episode(60, 3), mp4Key: 'e/3.mp4', durationMs: 120_000, deliveredAt: NOW };
+    const e = {
+      ...episode(60, 3),
+      title: 'The week it rained',
+      durationMs: 120_000,
+      dueAt: NOW,
+      deliveredAt: NOW,
+      localPath: 'episodes/60.bin',
+      localRenderVersion: 1,
+    };
     await episodes.put(db, e);
-    expect(await episodes.get(db, e.id)).toEqual(Episode.parse(e));
+    expect(await episodes.get(db, e.id)).toEqual(DeviceEpisode.parse(e));
   });
 
   it('upload job with parts', async () => {

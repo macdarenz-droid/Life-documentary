@@ -29,6 +29,7 @@ import {
   storylines,
 } from '../schema';
 import { toDerived } from './derived';
+import { summaries } from './episodes';
 
 const ID_CHUNK = 90;
 
@@ -125,6 +126,10 @@ async function readRows(db: Db, entity: PulledEntity, ids: string[]): Promise<St
             documentaryId: r.documentaryId,
             change: { entity, row: OriginalRequest.parse(r) },
           });
+        break;
+      case 'episode':
+        for (const row of await summaries(db, part))
+          out.push({ documentaryId: row.documentaryId, change: { entity, row } });
         break;
     }
   }

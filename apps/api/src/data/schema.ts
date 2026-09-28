@@ -250,6 +250,7 @@ export const changeLog = sqliteTable(
         'castMember',
         'derived',
         'originalRequest',
+        'episode',
       ],
     }).notNull(),
     entityId: text('entity_id').notNull(),

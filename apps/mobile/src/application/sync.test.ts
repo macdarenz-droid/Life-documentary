@@ -1,5 +1,6 @@
 import { Moment, Uuid, type Documentary, type SyncChange, type SyncRequest } from '@life/contracts';
 import * as derived from '../data/repositories/derived';
+import * as episodes from '../data/repositories/episodes';
 import * as mediaAssets from '../data/repositories/mediaAssets';
 import * as moments from '../data/repositories/moments';
 import * as questions from '../data/repositories/questions';
@@ -81,6 +82,60 @@ function derivedChange(momentId: string, producedAt: string, transcript: string)
     },
   };
 }
+
+function episodeChange(documentary: Documentary, updatedAt: string, title: string) {
+  return {
+    entity: 'episode' as const,
+    row: {
+      id: Uuid.parse('00000000-0000-4000-8000-0000000000e1'),
+      documentaryId: documentary.id,
+      number: 1,
+      weekStart: '2027-03-07',
+      weekEnd: '2027-03-13',
+      state: 'ready' as const,
+      title,
+      durationMs: 90_000,
+      renderVersion: 1,
+      dueAt: '2027-03-14T17:00:00Z',
+      deliveredAt: '2027-03-14T17:00:00Z',
+      updatedAt,
+    },
+  };
+}
+
+describe('syncNow and episodes', () => {
+  it('lands a pulled episode, and an older one does not replace it', async () => {
+    const { store, clock, documentary, api } = await setup();
+    const newer = episodeChange(documentary, '2027-03-14T17:00:00Z', 'The week it rained');
+    api.seed(newer);
+    await syncNow(store, clock, api, documentary);
+    expect(await episodes.get(store.driver, newer.row.id)).toEqual(newer.row);
+
+    api.seed(episodeChange(documentary, '2027-03-14T16:00:00Z', 'An older title'));
+    await syncNow(store, clock, api, documentary);
+    expect((await episodes.get(store.driver, newer.row.id))?.title).toBe('The week it rained');
+  });
+
+  it('keeps the downloaded copy when a newer pulled row lands', async () => {
+    const { store, clock, documentary, api } = await setup();
+    const first = episodeChange(documentary, '2027-03-14T17:00:00Z', 'The week it rained');
+    await episodes.put(store.driver, {
+      ...first.row,
+      localPath: 'episodes/e1.bin',
+      localRenderVersion: 1,
+    });
+
+    const renamed = episodeChange(documentary, '2027-03-15T09:00:00Z', 'Rain, then the coast');
+    api.seed({ ...renamed, row: { ...renamed.row, renderVersion: 2 } });
+    await syncNow(store, clock, api, documentary);
+    expect(await episodes.get(store.driver, first.row.id)).toEqual({
+      ...renamed.row,
+      renderVersion: 2,
+      localPath: 'episodes/e1.bin',
+      localRenderVersion: 1,
+    });
+  });
+});
 
 describe('syncNow and derived text', () => {
   it('lands derived text only for a moment on this phone, and an older row never replaces a newer one', async () => {

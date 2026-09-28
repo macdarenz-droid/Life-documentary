@@ -3,8 +3,10 @@
 // device-only fields. Pulled rows land with the same last-write-wins rule the server uses. The cursor and
 // the push mark move only when the whole round worked, so a failed round is repeated as it was. Derived
 // text (P12) only comes down: it lands for this phone's live moments and goes with a moment's tombstone.
-// Requests for originals (P16) only come down too, and land only for moments on this phone.
+// Requests for originals (P16) only come down too, and land only for moments on this phone. Episode
+// summaries (P16) only come down, newer by `updatedAt`, and keep this phone's downloaded copy.
 import {
+  DeviceEpisode,
   MediaAsset,
   Question,
   SYNC_MAX_CHANGES,
@@ -21,6 +23,7 @@ import { addDays, leavesDevice, localDay } from '@life/story';
 import * as castMembers from '../data/repositories/castMembers';
 import * as derived from '../data/repositories/derived';
 import * as documentaries from '../data/repositories/documentaries';
+import * as episodes from '../data/repositories/episodes';
 import * as mediaAssets from '../data/repositories/mediaAssets';
 import * as moments from '../data/repositories/moments';
 import * as originalRequests from '../data/repositories/originalRequests';
@@ -43,6 +46,7 @@ const ORDER: PulledEntity[] = [
   'moment',
   'derived',
   'originalRequest',
+  'episode',
 ];
 
 export type SyncOutcome =
@@ -57,7 +61,9 @@ export type SyncOutcome =
 
 /** A pulled change as it is written here: a media asset keeps this phone's files and keys. */
 type Write =
-  Exclude<PulledChange, { entity: 'mediaAsset' }> | { entity: 'mediaAsset'; row: MediaAsset };
+  | Exclude<PulledChange, { entity: 'mediaAsset' | 'episode' }>
+  | { entity: 'mediaAsset'; row: MediaAsset }
+  | { entity: 'episode'; row: DeviceEpisode };
 
 const running = new WeakMap<Store, Promise<SyncOutcome>>();
 
@@ -318,6 +324,21 @@ async function applyPulled(
         candidateRequests.push(change.row);
         break;
       }
+      case 'episode': {
+        if (change.row.documentaryId !== documentary.id) break;
+        const local = await episodes.get(driver, change.row.id);
+        if (!newer(change.row, local)) break;
+        // The summary has no local fields, so this phone's downloaded copy stays.
+        const row = DeviceEpisode.parse({
+          ...change.row,
+          ...(local?.localPath !== undefined ? { localPath: local.localPath } : {}),
+          ...(local?.localRenderVersion !== undefined
+            ? { localRenderVersion: local.localRenderVersion }
+            : {}),
+        });
+        writes.push({ entity: 'episode', row });
+        break;
+      }
     }
   }
 
@@ -405,6 +426,9 @@ async function applyPulled(
           break;
         case 'originalRequest':
           await originalRequests.put(tx, change.row);
+          break;
+        case 'episode':
+          await episodes.put(tx, change.row);
           break;
       }
     }
