@@ -1,4 +1,3 @@
-import type { RenderManifestV1 } from '@life/contracts';
 import { tokens } from '@life/design';
 import { episodeTitleCard, msToFrames, titleCardPlan } from '@life/story';
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
@@ -7,6 +6,8 @@ import { px } from '../scale';
 const { duration, ease, stagger } = tokens.motion;
 const easeOut = Easing.bezier(...ease.out);
 const TIMING = { wordStaggerMs: stagger.word, wordDurationMs: duration.title };
+/** How `episodeTitleCard` reads the episode label off the title. */
+const EPISODE_SEPARATOR = ' · ';
 const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
 
 /**
@@ -14,15 +15,22 @@ const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
  * in Instrument Serif with the app's masked word reveal, held until the card ends.
  */
 export function TitleCard({
-  title,
+  label: episodeLabel,
+  text,
+  subtitle,
   reducedMotion,
 }: {
-  title: RenderManifestV1['title'];
+  label: string;
+  text: string;
+  subtitle?: string | undefined;
   reducedMotion: boolean;
 }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { label, lines } = episodeTitleCard(title);
+  const { label, lines } = episodeTitleCard({
+    text: `${episodeLabel}${EPISODE_SEPARATOR}${text}`,
+    subtitle,
+  });
   const plan = titleCardPlan(lines, TIMING);
   const display = tokens.type.display64;
   const labelType = tokens.type.label;

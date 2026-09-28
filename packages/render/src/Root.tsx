@@ -1,13 +1,18 @@
-import { RenderManifestV1 } from '@life/contracts';
-import { fixtureManifest, manifestDurationMs, msToFrames } from '@life/story';
+import { RenderManifestV2 } from '@life/contracts';
+import { fixtureManifest, msToFrames } from '@life/story';
 import { Composition, Still } from 'remotion';
 import { Episode } from './episode/Episode';
+import { FixtureAnswer } from './fixtures/FixtureAnswer';
 import { FixtureClip } from './fixtures/FixtureClip';
 import { FixturePhoto } from './fixtures/FixturePhoto';
 
 const FPS = 30;
-const WIDTH = 1080;
-const HEIGHT = 1920;
+/** The fixture media is portrait, like a phone's. */
+const FIXTURE_WIDTH = 1080;
+const FIXTURE_HEIGHT = 1920;
+/** A fixture answer plays 4 s. */
+const ANSWER_SECONDS = 4;
+const fixture = fixtureManifest();
 
 export function RemotionRoot() {
   return (
@@ -15,28 +20,41 @@ export function RemotionRoot() {
       <Composition
         id="Episode"
         component={Episode}
-        schema={RenderManifestV1}
-        defaultProps={fixtureManifest()}
-        width={WIDTH}
-        height={HEIGHT}
+        schema={RenderManifestV2}
+        defaultProps={fixture}
+        width={fixture.format.width}
+        height={fixture.format.height}
         fps={FPS}
-        durationInFrames={msToFrames(manifestDurationMs(fixtureManifest()), FPS)}
+        durationInFrames={msToFrames(fixture.durationMs, FPS)}
         calculateMetadata={({ props }) => ({
-          durationInFrames: msToFrames(manifestDurationMs(props), FPS),
-          width: WIDTH,
-          height: HEIGHT,
+          durationInFrames: msToFrames(props.durationMs, FPS),
+          width: props.format.width,
+          height: props.format.height,
           fps: FPS,
         })}
       />
       <Composition
         id="FixtureClip"
         component={FixtureClip}
-        width={WIDTH}
-        height={HEIGHT}
+        width={FIXTURE_WIDTH}
+        height={FIXTURE_HEIGHT}
         fps={FPS}
         durationInFrames={3 * FPS}
       />
-      <Still id="FixturePhoto" component={FixturePhoto} width={WIDTH} height={HEIGHT} />
+      <Composition
+        id="FixtureAnswer"
+        component={FixtureAnswer}
+        width={FIXTURE_WIDTH}
+        height={FIXTURE_HEIGHT}
+        fps={FPS}
+        durationInFrames={ANSWER_SECONDS * FPS}
+      />
+      <Still
+        id="FixturePhoto"
+        component={FixturePhoto}
+        width={FIXTURE_WIDTH}
+        height={FIXTURE_HEIGHT}
+      />
     </>
   );
 }

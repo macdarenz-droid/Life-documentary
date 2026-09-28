@@ -53,8 +53,11 @@ jobs:
         run: pnpm --filter @life/render render:fixture
       - uses: actions/upload-artifact@v7
         with:
-          name: fixture-episode
-          path: packages/render/out/fixture.mp4
+          name: render-stills
+          path: |
+            packages/render/out/episode-9x16.mp4
+            packages/render/out/episode-16x9.mp4
+            packages/render/out/frames/
           retention-days: 7
           if-no-files-found: error
 
