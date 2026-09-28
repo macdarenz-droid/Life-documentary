@@ -475,3 +475,26 @@ export const recutNarration = sqliteTable(
   },
   (t) => [uniqueIndex('recut_narration_episode_version_idx').on(t.episodeId, t.planVersion)],
 );
+
+// The changes a person applied to an episode (P17, D43): one append-only row per applied edit, numbered by
+// `seq` within the episode, with the plan version it was made on and the one it made, the change as JSON
+// and the documentary's local day it counts against. They go with their episode.
+export const episodeEdits = sqliteTable(
+  'episode_edits',
+  {
+    id: text('id').primaryKey(),
+    episodeId: text('episode_id')
+      .notNull()
+      .references(() => episodes.id, { onDelete: 'cascade' }),
+    seq: integer('seq').notNull(),
+    appliedToVersion: integer('applied_to_version').notNull(),
+    resultVersion: integer('result_version').notNull(),
+    change: text('change').notNull(),
+    localDay: text('local_day').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [
+    uniqueIndex('episode_edits_episode_seq_idx').on(t.episodeId, t.seq),
+    index('episode_edits_episode_day_idx').on(t.episodeId, t.localDay),
+  ],
+);

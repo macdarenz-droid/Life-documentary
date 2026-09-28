@@ -17,7 +17,9 @@ export type LeavesDevice = {
  * - Otherwise the row syncs. An answer uploads as recorded (the service needs its sound), a video answer
  *   also a keyframe. A photo uploads a preview. A library clip uploads a keyframe. Cloud backup adds
  *   the original to a photo and a clip, never instead of their working copy. So does an open request
- *   for the asset (P16, D42): the episode's plan uses it. A note has no media.
+ *   for the asset (P16, D42): the episode's plan uses it. An answer lists its original only with an
+ *   open request (P17, D43: an edit swapped it in), never for Cloud backup, since its working copy is
+ *   already the recording. A note has no media.
  */
 export function leavesDevice(
   moment: LeavingMoment,
@@ -29,11 +31,11 @@ export function leavesDevice(
   }
   const original: UploadPurpose[] = cloudBackup || requested ? ['original'] : [];
   switch (moment.kind) {
-    case 'answer':
-      return {
-        row: true,
-        uploads: moment.assetKind === 'video' ? ['answer', 'keyframe'] : ['answer'],
-      };
+    case 'answer': {
+      const recorded: UploadPurpose[] =
+        moment.assetKind === 'video' ? ['answer', 'keyframe'] : ['answer'];
+      return { row: true, uploads: requested ? [...recorded, 'original'] : recorded };
+    }
     case 'photo':
       return { row: true, uploads: ['preview', ...original] };
     case 'clip':

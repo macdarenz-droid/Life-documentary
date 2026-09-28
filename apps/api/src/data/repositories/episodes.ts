@@ -12,7 +12,7 @@ import {
   type Timestamp,
   type Uuid,
 } from '@life/contracts';
-import { and, eq, gt, inArray, isNotNull, lt, ne, sql } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNotNull, isNull, lt, ne, sql } from 'drizzle-orm';
 import type { BatchItem } from 'drizzle-orm/batch';
 import type { Db } from '../db';
 import { changeLog, costLedger, episodePlans, episodeRuns, episodes } from '../schema';
@@ -225,6 +225,36 @@ export async function summaries(db: Db, ids: string[]): Promise<EpisodeSummary[]
       recut: e.recutState ?? undefined,
     }),
   );
+}
+
+/**
+ * Batch items that point the episode at an edited plan version and its summary, with a change-log row
+ * (P17). The version's plain insert in the same batch is what refuses a clash.
+ */
+export function pointAtPlan(
+  db: Db,
+  id: Uuid,
+  plan: { version: number; summary: string },
+  at: Timestamp,
+): BatchItem<'sqlite'>[] {
+  return [
+    db
+      .update(episodes)
+      .set({ planVersion: plan.version, summary: plan.summary, updatedAt: at })
+      .where(eq(episodes.id, id)),
+    recordChange(db, id, at),
+  ];
+}
+
+/** Batch items that claim the re-cut for `runId` as `working`, only while no run holds the claim. */
+export function claimRecut(db: Db, id: Uuid, runId: string, at: Timestamp): BatchItem<'sqlite'>[] {
+  return [
+    db
+      .update(episodes)
+      .set({ recutRun: runId, recutState: 'working', updatedAt: at })
+      .where(and(eq(episodes.id, id), isNull(episodes.recutRun))),
+    recordChange(db, id, at),
+  ];
 }
 
 export type Recut = { state: RecutState | null; run: string | null };
