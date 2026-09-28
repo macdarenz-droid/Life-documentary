@@ -6,6 +6,7 @@ import type { Env } from '../shared/env';
 import { anthropicBatches, anthropicCaptioner } from './anthropic/captioner';
 import { anthropicMessages, anthropicPlanner } from './anthropic/planner';
 import { elevenlabsNarrator } from './elevenlabs/narrator';
+import { expoPusher } from './expoPush/pusher';
 import { fixtures } from './fixture';
 import { RENDERING_NOT_SET_UP } from './r2/presign';
 import { remotionLambdaRenderer } from './remotionLambda/renderer';
@@ -53,5 +54,6 @@ export function pipelineProviders(env: Env): PipelineProviders {
       : narrationNotSetUp,
     // Without its secrets the renderer fails at its first call with `Rendering is not set up`.
     renderer: remotionLambdaRenderer(env),
+    pusher: expoPusher(env.EXPO_ACCESS_TOKEN),
   };
 }

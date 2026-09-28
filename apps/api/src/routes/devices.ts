@@ -13,5 +13,5 @@ export const devices = new Hono<AppEnv>().post('/devices', requireSession, async
   if (!body) return apiError(c, 400, 'bad_request', 'The device could not be read.');
   const db = database(c.env.DB);
   const device = await devicesRepo.upsert(db, c.var.user.id, body, new Date().toISOString());
-  return c.json(RegisterDevice.parse(device), 200);
+  return c.json(RegisterDevice.parse({ ...device, pushToken: device.pushToken ?? undefined }), 200);
 });

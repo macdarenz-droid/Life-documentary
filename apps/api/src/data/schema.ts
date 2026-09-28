@@ -121,6 +121,8 @@ export const devices = sqliteTable(
     appVersion: text('app_version').notNull(),
     createdAt: text('created_at').notNull(),
     lastSeenAt: text('last_seen_at').notNull(),
+    /** The Expo push token (P16); a token lives on one device row only. */
+    pushToken: text('push_token'),
   },
   (t) => [index('devices_user_idx').on(t.userId)],
 );

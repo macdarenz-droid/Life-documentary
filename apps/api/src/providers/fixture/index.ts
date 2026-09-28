@@ -4,6 +4,7 @@ import type { PipelineProviders } from '../../pipeline/ports';
 import { fixtureCaptioner, type FixtureCaptioner } from './captioner';
 import { fixtureNarrator, type FixtureNarrator } from './narrator';
 import { fixturePlanner, type FixturePlanner } from './planner';
+import { fixturePusher, type FixturePusher } from './pusher';
 import { fixtureRenderer, type FixtureRenderer } from './renderer';
 import { fixtureTranscriber, type FixtureTranscriber } from './transcriber';
 
@@ -11,11 +12,13 @@ export {
   fixtureCaptioner,
   fixtureNarrator,
   fixturePlanner,
+  fixturePusher,
   fixtureRenderer,
   fixtureTranscriber,
   type FixtureCaptioner,
   type FixtureNarrator,
   type FixturePlanner,
+  type FixturePusher,
   type FixtureRenderer,
   type FixtureTranscriber,
 };
@@ -26,6 +29,7 @@ export const fixtures: PipelineProviders & {
   planner: FixturePlanner;
   narrator: FixtureNarrator;
   renderer: FixtureRenderer;
+  pusher: FixturePusher;
   reset(): void;
 } = {
   transcriber: fixtureTranscriber(),
@@ -33,11 +37,13 @@ export const fixtures: PipelineProviders & {
   planner: fixturePlanner(),
   narrator: fixtureNarrator(),
   renderer: fixtureRenderer(),
+  pusher: fixturePusher(),
   reset() {
     fixtures.transcriber.reset();
     fixtures.captioner.reset();
     fixtures.planner.reset();
     fixtures.narrator.reset();
     fixtures.renderer.reset();
+    fixtures.pusher.reset();
   },
 };

@@ -135,10 +135,29 @@ export interface Renderer {
   progress(input: { renderId: string; bucketName: string }): Promise<RenderProgress>;
 }
 
+/** One push: visible with a title, or silent (data only). `data` holds ids and fixed words only. */
+export type PushMessage = {
+  to: string;
+  title?: string;
+  data: Record<string, string>;
+  silent: boolean;
+};
+
+export type PushOutcome = 'sent' | 'deviceNotRegistered' | 'failed';
+
+/** What became of one message; `error` is our own words and never holds a token. */
+export type PushResult = { to: string; outcome: PushOutcome; error?: string };
+
+/** Sends pushes to phones (P16, D42), in the order given; one result per message. */
+export interface Pusher {
+  send(messages: PushMessage[]): Promise<PushResult[]>;
+}
+
 export type PipelineProviders = {
   transcriber: Transcriber;
   captioner: Captioner;
   planner: Planner;
   narrator: Narrator;
   renderer: Renderer;
+  pusher: Pusher;
 };

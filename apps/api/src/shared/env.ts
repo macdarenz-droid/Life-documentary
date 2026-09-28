@@ -35,6 +35,8 @@ export type Env = {
   REMOTION_REGION?: string;
   REMOTION_FUNCTION_NAME?: string;
   REMOTION_SERVE_URL?: string;
+  /** Worker secret, optional: Expo's access token, sent when push security is turned on (P16). */
+  EXPO_ACCESS_TOKEN?: string;
   /** `fixture` makes the pipeline use fixture providers; set only by the test pool and local dev. */
   PROVIDERS?: string;
   /** The episode pipeline Workflow (P12). */
