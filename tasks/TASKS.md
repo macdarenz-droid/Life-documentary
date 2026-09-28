@@ -258,6 +258,17 @@ Text: `tasks/p17/T-018.md`.
 ### T-018e · P17.5 · The edit sheets · todo · needs: T-018d
 Text: `tasks/p17/T-018.md`.
 
+## P18 — The month (the month card on the phone)
+
+### T-019a · P18.1 · The month card rules · todo · needs: T-017f
+Text: `tasks/p18/T-019.md`.
+
+### T-019b · P18.2 · Best lines reach the phone · todo · needs: T-017f, T-019a
+Text: `tasks/p18/T-019.md`.
+
+### T-019c · P18.3 · The Month screen · todo · needs: T-017g, T-019b
+Text: `tasks/p18/T-019.md`.
+
 ## Blocked on the owner
 
 ### P-B · Capture and upload proof on real devices · blocked · needs: P3, P5, P6 tasks (not yet written)
