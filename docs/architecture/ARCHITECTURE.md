@@ -160,6 +160,8 @@ Yearly: Claude Opus 5.5 reads the year's episode summaries and plans and writes 
 
 **Watch and edit.** An episode syncs down (pull only, no storage keys) once a plan is stored. The phone works out where this week stands from its clock, `episodeTimes` and that summary (being made, running late, couldn't be made, or no episode this week). The Episode screen plays the MP4 from `GET /episodes/:id/video` (session auth, byte ranges, `Cache-Control: private, no-store`); the four newest ready episodes are downloaded on Wi-Fi and encrypted into the file store for offline viewing (D14, D42). Five edit sheets, one tap each; the screen shows "Making the new cut" while `RecutPipeline` runs, and the new version replaces the old when ready (D43).
 
+**Month.** From the 1st of the next month, the phone shows a card for the month it just finished, worked out on the phone from its own moments, storylines, cast and transcripts, with the weeks' best lines from `EpisodeSummary.coldOpenMomentId` (D44). Today links to it for seven days. Nothing about it leaves the phone.
+
 **Crew.** The owner invites by link (deep link with a one-time code). A crew member's moments join the shared documentary; the owner's device still receives only metadata plus previews for the Footage screen; originals stay with their author unless chosen for an episode. Leaving removes future contributions and offers a takeout of past ones.
 
 **Export and delete.** Settings → Export everything → `ExportJob` zips originals, JSON metadata and episodes to a 7-day link. Delete account → soft delete → `DeleteJob` at day 30 removes D1 rows and R2 prefixes; an R2 lifecycle rule is the backstop. Both also reachable from a public web page for store compliance.
@@ -181,6 +183,7 @@ Yearly: Claude Opus 5.5 reads the year's episode summaries and plans and writes 
 | Episode state | `apps/api/src/pipeline/EpisodePipeline` |
 | Entitlement, quota, crew limit | `apps/api/src/policy/entitlements` |
 | Cost per episode | `CostLedger` rows written by pipeline steps; totals by `apps/api/src/policy/costs` |
+| The month card | `packages/story/month` (`monthCard`), shown by the phone from its own data (D44) |
 | Words on screen | `packages/story/words` (plain, warm, documentary tone; one file, tested for banned words like "streak") |
 | Appearance | `packages/design` tokens; the app and the render read the same file |
 
