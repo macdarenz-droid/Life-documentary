@@ -247,8 +247,12 @@ Checks: mobile typecheck, tests, lint, format, boundaries.
 ### T-017e · P16.5 · The weekly run · todo · needs: T-015c, T-016d, T-017a, T-017c
 Text: `tasks/p16/T-017.md`.
 
-### T-017f · P16.6 · Episodes to the phone · todo · needs: T-016d, T-017e
+### T-017f · P16.6 · Episodes to the phone · changes r1 · needs: T-016d, T-017e
 Text: `tasks/p16/T-017.md`.
+
+**Fix list r1** (review of aed4a57, confirmed by two skeptics; everything else approved: the summary and its pulled entity, the change-log rows from `setPlan` on, the video route with 200, 206 and 416 and its 404s, the device table rebuild and landing newer rows with the local fields kept).
+1. The test "a week that ended empty is never pulled" pulls only after `episodes.remove`, when no row is left, so it would pass even without the `planVersion > 0` guard or the plan join. Also pull after `setState('understanding')` and `setState('planning')`, before `remove`, and check that no `episode` change comes back. Keep the pull after `remove`.
+Checks: API typecheck, tests, lint, format, boundaries.
 
 ### T-017g · P16.7 · The Episode screens · todo · needs: T-003e, T-017a, T-017f
 Text: `tasks/p16/T-017.md`.
