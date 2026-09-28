@@ -218,6 +218,29 @@ Text: `tasks/p15/T-016.md`.
 ### T-016e · P15.5 · Remotion Lambda · todo · needs: T-016b, T-016d
 Text: `tasks/p15/T-016.md`.
 
+## P16 — Delivery (the weekly run, push, the Episode screens)
+
+### T-017a · P16.1 · The week and the schedule · todo · needs: T-016a
+Text: `tasks/p16/T-017.md`.
+
+### T-017b · P16.2 · Push · todo · needs: T-016d
+Text: `tasks/p16/T-017.md`.
+
+### T-017c · P16.3 · Asking for originals, on the server · todo · needs: T-014c, T-016d, T-017b
+Text: `tasks/p16/T-017.md`.
+
+### T-017d · P16.4 · Asking for originals, on the phone · todo · needs: T-017b, T-017c
+Text: `tasks/p16/T-017.md`.
+
+### T-017e · P16.5 · The weekly run · todo · needs: T-015c, T-016d, T-017a, T-017c
+Text: `tasks/p16/T-017.md`.
+
+### T-017f · P16.6 · Episodes to the phone · todo · needs: T-016d, T-017e
+Text: `tasks/p16/T-017.md`.
+
+### T-017g · P16.7 · The Episode screens · todo · needs: T-003e, T-017a, T-017f
+Text: `tasks/p16/T-017.md`.
+
 ## Blocked on the owner
 
 ### P-B · Capture and upload proof on real devices · blocked · needs: P3, P5, P6 tasks (not yet written)
