@@ -75,12 +75,23 @@ export function jsonObjects(text: string): string[] {
   const objects: string[] = [];
   let depth = 0;
   let start = 0;
+  // Braces inside JSON strings (a title, a transcript word) are text, not structure.
+  let inString = false;
+  let escaped = false;
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
-    if (char === '{') {
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') {
+      if (depth > 0) inString = true;
+    } else if (char === '{') {
       if (depth === 0) start = i;
       depth += 1;
-    } else if (char === '}') {
+    } else if (char === '}' && depth > 0) {
       depth -= 1;
       if (depth === 0) objects.push(text.slice(start, i + 1));
     }
@@ -124,9 +135,16 @@ const count = (v: unknown): number | undefined =>
 /** A fatal error is a timeout when Remotion says so; any other fatal error is a failed render. */
 function failure(answer: Answer): RenderFailure {
   const errors = Array.isArray(answer.errors) ? (answer.errors as unknown[]) : [];
+  // Only a fatal error that is not being retried says why the render ended.
   const timedOut = errors.some((e) => {
     if (e === null || typeof e !== 'object') return false;
-    const { message, name } = e as { message?: unknown; name?: unknown };
+    const { message, name, isFatal, willRetry } = e as {
+      message?: unknown;
+      name?: unknown;
+      isFatal?: unknown;
+      willRetry?: unknown;
+    };
+    if (isFatal !== true || willRetry === true) return false;
     return /timed? ?out/i.test(`${text(name) ?? ''} ${text(message) ?? ''}`);
   });
   return timedOut ? 'render timed out' : 'render failed';

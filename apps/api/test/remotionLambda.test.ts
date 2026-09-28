@@ -169,6 +169,38 @@ describe('the Remotion Lambda renderer', () => {
     expect(await renderer.progress(at)).toEqual({ state: 'failed', reason: 'render timed out' });
   });
 
+  it('reads progress when the repeated input props hold lone braces inside strings', async () => {
+    // The status answer repeats the input props; a title or a word may hold a lone brace or quote.
+    const payload = JSON.stringify({ title: 'Sam said } then {', word: 'a \\"quoted\\" {' });
+    const metadata = JSON.stringify({ inputProps: { type: 'payload', payload } });
+    stubFetch(
+      json(
+        `{"type":"success","done":false,"overallProgress":0.4,"renderMetadata":${metadata},"errors":[]}`,
+      ),
+      json(
+        `{"type":"success","done":true,"overallProgress":1,"renderMetadata":${metadata},"costs":{"accruedSoFar":0.02},"outputSizeInBytes":1000}`,
+      ),
+    );
+    const renderer = remotionLambdaRenderer(SECRETS);
+    const at = { renderId: 'r-2', bucketName: 'b' };
+    expect(await renderer.progress(at)).toEqual({ state: 'rendering', fraction: 0.4 });
+    expect(await renderer.progress(at)).toEqual({ state: 'done', costUsd: 0.02, bytes: 1000 });
+  });
+
+  it('calls a render failed when only a retried error timed out beside a fatal one', async () => {
+    stubFetch(
+      json(
+        '{"type":"success","done":false,"fatalErrorEncountered":true,"errors":[{"name":"TimeoutError","message":"Timed out after 240s","isFatal":false,"willRetry":true},{"name":"Error","message":"Out of memory","isFatal":true,"willRetry":false}]}',
+      ),
+    );
+    expect(
+      await remotionLambdaRenderer(SECRETS).progress({ renderId: 'r-3', bucketName: 'b' }),
+    ).toEqual({
+      state: 'failed',
+      reason: 'render failed',
+    });
+  });
+
   it('refuses a manifest over 200 KB before any call', async () => {
     const { spy } = stubFetch();
     const big = fixtureManifest();
