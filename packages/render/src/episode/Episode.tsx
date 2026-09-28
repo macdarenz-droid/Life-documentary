@@ -4,6 +4,7 @@ import { msToFrames } from '@life/story';
 import type { ReactNode } from 'react';
 import { AbsoluteFill, Sequence, useVideoConfig } from 'remotion';
 import { loadFonts } from '../fonts';
+import { Captions } from './Captions';
 import { ClosingCard } from './ClosingCard';
 import { ColdOpen } from './ColdOpen';
 import { Grain } from './Grain';
@@ -92,6 +93,7 @@ export function Episode(props: EpisodeProps) {
           i,
         ),
       )}
+      <Captions manifest={manifest} />
       <Grain reducedMotion={reducedMotion} />
       <Narration narration={manifest.narration} />
       <Music manifest={manifest} />
