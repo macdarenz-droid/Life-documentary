@@ -1,6 +1,6 @@
 import { words } from '@life/story';
 import * as documentaries from '../data/repositories/documentaries';
-import { afterSignIn, requestAccountDeletion, signInAndLink } from './account';
+import { afterSignIn, refreshPushToken, requestAccountDeletion, signInAndLink } from './account';
 import { todayHarness } from './testing/todayHarness';
 
 type Harness = Awaited<ReturnType<typeof todayHarness>>;
@@ -123,5 +123,67 @@ describe('requestAccountDeletion', () => {
     expect(h.services.api.deletionRequests).toBe(1);
     expect(h.services.account.signedIn).toBeNull();
     expect(result).toEqual({ ok: true, line: words.account.deleted('14 April 2027') });
+  });
+});
+
+describe('the push token', () => {
+  const TOKEN = 'ExponentPushToken[abc]';
+  const withToken = (h: Harness, token: () => Promise<string | null>) => ({
+    ...device(h),
+    pushTokens: { current: token },
+  });
+  const refresh = (h: Harness, dev: ReturnType<typeof withToken>) =>
+    refreshPushToken({
+      store: h.store,
+      clock: h.ctx.clock,
+      account: h.services.account,
+      api: h.services.api,
+      device: dev,
+      timeZone: h.ctx.documentary.timeZone,
+    });
+
+  it('goes up with the registration after sign-in', async () => {
+    const h = await todayHarness();
+    await afterSignIn(
+      h.store,
+      h.ctx.clock,
+      h.services.api,
+      h.ctx.documentary,
+      withToken(h, async () => TOKEN),
+    );
+    expect(h.services.api.devices[0]?.pushToken).toBe(TOKEN);
+  });
+
+  it('goes up on a foreground at most once a day, and only when signed in', async () => {
+    const h = await todayHarness();
+    setClock(h, '2027-03-15T10:00:00Z');
+    const dev = withToken(h, async () => TOKEN);
+    expect(await refresh(h, dev)).toBe(false);
+    h.services.account.signedIn = h.services.account.person;
+    expect(await refresh(h, dev)).toBe(true);
+    expect(await refresh(h, dev)).toBe(false);
+    setClock(h, '2027-03-16T10:00:00Z');
+    expect(await refresh(h, dev)).toBe(true);
+    expect(h.services.api.devices.map((d) => d.pushToken)).toEqual([TOKEN, TOKEN]);
+  });
+
+  it('counts the day only after a registration with a token worked', async () => {
+    const h = await todayHarness();
+    setClock(h, '2027-03-15T10:00:00Z');
+    h.services.account.signedIn = h.services.account.person;
+    // No token yet: nothing is sent and the day does not count.
+    let token: string | null = null;
+    const dev = withToken(h, async () => token);
+    await afterSignIn(h.store, h.ctx.clock, h.services.api, h.ctx.documentary, dev);
+    expect(h.services.api.devices[0]?.pushToken).toBeUndefined();
+    expect(await refresh(h, dev)).toBe(false);
+    // A registration that fails does not count either.
+    token = TOKEN;
+    const registerDevice = h.services.api.registerDevice;
+    h.services.api.registerDevice = () => Promise.reject(new Error('No network'));
+    await expect(refresh(h, dev)).rejects.toThrow('No network');
+    h.services.api.registerDevice = registerDevice;
+    expect(await refresh(h, dev)).toBe(true);
+    expect(await refresh(h, dev)).toBe(false);
   });
 });

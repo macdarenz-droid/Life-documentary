@@ -7,6 +7,7 @@
     "studio": "remotion studio",
     "fixtures": "tsx scripts/make-fixtures.mts",
     "render:fixture": "pnpm fixtures && tsx scripts/render-fixture.mts",
+    "lambda:deploy": "tsx scripts/lambda-deploy.mts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
@@ -27,6 +28,7 @@
     "remotion": "4.0.529"
   },
   "devDependencies": {
+    "@remotion/lambda": "4.0.529",
     "@types/node": "^22",
     "@types/react": "~19.2.2",
     "tsx": "^4.23.15",

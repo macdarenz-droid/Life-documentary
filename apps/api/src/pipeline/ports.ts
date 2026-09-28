@@ -1,5 +1,6 @@
 // The model ports of the episode pipeline (P12, D38). The pipeline passes every model id, prompt and
 // limit in; adapters in providers/ make the call, report what came back and decide nothing.
+import type { RenderManifestV2 } from '@life/contracts';
 
 export type TranscribeInput = {
   model: string;
@@ -101,9 +102,62 @@ export interface Narrator {
   speak(request: SpeakRequest): Promise<Speech>;
 }
 
+/** What the renderer is asked for; the values live in `pipeline/render/settings.ts`. */
+export type RenderOptions = {
+  codec: 'h264';
+  imageFormat: 'jpeg';
+  privacy: 'no-acl';
+  maxRetries: number;
+  timeoutInMilliseconds: number;
+  logLevel: 'warn';
+  deleteAfter: '1-day';
+};
+
+export type RenderStart = {
+  manifest: RenderManifestV2;
+  composition: string;
+  /** The R2 key the finished MP4 is written to. */
+  outKey: string;
+  options: RenderOptions;
+};
+
+/** The few reasons a render reports; never a vendor's message. */
+export type RenderFailure = 'render failed' | 'render timed out';
+
+export type RenderProgress =
+  | { state: 'rendering'; fraction: number }
+  | { state: 'done'; costUsd?: number; bytes?: number }
+  | { state: 'failed'; reason: RenderFailure };
+
+/** Renders an episode's manifest to an MP4 in R2 (P15, D41), started once and then asked for progress. */
+export interface Renderer {
+  start(input: RenderStart): Promise<{ renderId: string; bucketName: string }>;
+  progress(input: { renderId: string; bucketName: string }): Promise<RenderProgress>;
+}
+
+/** One push: visible with a title, or silent (data only). `data` holds ids and fixed words only. */
+export type PushMessage = {
+  to: string;
+  title?: string;
+  data: Record<string, string>;
+  silent: boolean;
+};
+
+export type PushOutcome = 'sent' | 'deviceNotRegistered' | 'failed';
+
+/** What became of one message; `error` is our own words and never holds a token. */
+export type PushResult = { to: string; outcome: PushOutcome; error?: string };
+
+/** Sends pushes to phones (P16, D42), in the order given; one result per message. */
+export interface Pusher {
+  send(messages: PushMessage[]): Promise<PushResult[]>;
+}
+
 export type PipelineProviders = {
   transcriber: Transcriber;
   captioner: Captioner;
   planner: Planner;
   narrator: Narrator;
+  renderer: Renderer;
+  pusher: Pusher;
 };
