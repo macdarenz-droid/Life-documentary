@@ -1,38 +1,46 @@
-import type { RenderManifestV1 } from '@life/contracts';
+import type { RenderManifestV2 } from '@life/contracts';
 import { tokens } from '@life/design';
 import { AbsoluteFill } from 'remotion';
 import { px } from '../scale';
+import { DimmedBackground } from './Media';
 
+type Closing = Extract<RenderManifestV2['segments'][number], { kind: 'closing' }>;
+
+/** The closing line and the "AI-narrated" credit over the dimmed closing moment. */
 export function ClosingCard({
   closing,
-  credit,
+  reducedMotion,
 }: {
-  closing: RenderManifestV1['closing'];
-  credit: RenderManifestV1['credit'];
+  closing: Closing;
+  reducedMotion: boolean;
 }) {
   return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: tokens.color.background,
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: tokens.type.body.family,
-        textAlign: 'center',
-      }}
-    >
-      <div style={{ color: tokens.color.text, fontSize: px(tokens.type.body.size) }}>
-        {closing.text}
-      </div>
-      <div
+    <AbsoluteFill style={{ backgroundColor: tokens.color.background }}>
+      {closing.background ? (
+        <DimmedBackground background={closing.background} reducedMotion={reducedMotion} />
+      ) : null}
+      <AbsoluteFill
         style={{
-          position: 'absolute',
-          bottom: px(tokens.space[8]),
-          color: tokens.color.text,
-          fontSize: px(tokens.type.caption.size),
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: tokens.type.body.family,
+          textAlign: 'center',
         }}
       >
-        {credit}
-      </div>
+        <div style={{ color: tokens.color.text, fontSize: px(tokens.type.body.size) }}>
+          {closing.text}
+        </div>
+        <div
+          style={{
+            position: 'absolute',
+            bottom: px(tokens.space[8]),
+            color: tokens.color.text,
+            fontSize: px(tokens.type.caption.size),
+          }}
+        >
+          {closing.credit}
+        </div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 }

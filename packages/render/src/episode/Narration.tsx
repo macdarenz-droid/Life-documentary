@@ -1,9 +1,9 @@
-import type { RenderManifestV1 } from '@life/contracts';
+import type { RenderManifestV2 } from '@life/contracts';
 import { msToFrames } from '@life/story';
-import { Audio, Sequence, useVideoConfig } from 'remotion';
+import { Html5Audio, Sequence, useVideoConfig } from 'remotion';
 import { resolveSrc } from '../resolveSrc';
 
-export function Narration({ narration }: { narration: RenderManifestV1['narration'] }) {
+export function Narration({ narration }: { narration: RenderManifestV2['narration'] }) {
   const { fps } = useVideoConfig();
   return (
     <>
@@ -15,7 +15,7 @@ export function Narration({ narration }: { narration: RenderManifestV1['narratio
           name={`Narration ${i + 1}`}
           layout="none"
         >
-          <Audio src={resolveSrc(item.src)} />
+          <Html5Audio src={resolveSrc(item.src)} volume={1} />
         </Sequence>
       ))}
     </>
