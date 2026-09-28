@@ -47,7 +47,7 @@ If P-A fails, the render moves to plain FFmpeg templates on Containers. If P-B f
 | Phase | Scope | Needs |
 |---|---|---|
 | **P17 Edits** | Five one-tap edits; `editOps` pure functions; edit sheets; re-narrate only when needed; re-render; version replacement; 10-per-day limit. | P16 |
-| **P18 Monthly recap** | Free-tier monthly 60 s recap (no narrator, music and titles) from the `recapPlan`; recap card (storylines moved, people seen most, best line). | P16 |
+| **P18 The month** | A month card on the phone from the 1st of the next month: numbers, storylines that moved, people tagged most, the weeks' best lines (the planner's cold opens, via `EpisodeSummary.coldOpenMomentId`); Today link and Episodes row (D44, T-019a–c). The free tier's monthly 60 s video moves to P23. | P16 |
 | **P19 Crew** | Shared documentary; invite link with one-time code; roles; crew moments in the week brief; leaving with takeout; consent screen per shared documentary. | P16, P10 |
 | **P20 Widgets** | iOS home-screen widget and Live Activity (`expo-widgets`); Android widget (`react-native-android-widget`): today's question, last still, one year ago. | P9, P10, owner: device |
 | **P21 Export and deletion** | `ExportJob` zip to a 7-day link; `DeleteJob` at day 30; R2 lifecycle backstop; public web page for export and deletion; survivability text. | P6, P16 |
@@ -57,7 +57,7 @@ If P-A fails, the render moves to plain FFmpeg templates on Containers. If P-B f
 | Phase | Scope | Needs |
 |---|---|---|
 | **P22 Season** | `SeasonPlan v1` with Opus 5.5; chapters over storylines; trailer in week 51; premiere date and poster; share clip; Season screen. | P17, P18 |
-| **P23 Monetisation** | RevenueCat SDK and webhooks; tiers Free, Documentary, Family; storage quotas and crew limits enforced in `policy`; paywall copy that never gates what was free. | P16, P19, P21, owner: RevenueCat, store products |
+| **P23 Monetisation** | RevenueCat SDK and webhooks; tiers Free, Documentary, Family; storage quotas and crew limits enforced in `policy`; paywall copy that never gates what was free; the free tier's weekly run that only understands, and its monthly 60 s video with music and titles, no narrator (moved from P18, D44). | P16, P19, P21, owner: RevenueCat, store products |
 | **P24 Privacy and compliance** | Privacy Nutrition Label; `PrivacyInfo.xcprivacy`; Play Data safety; permission strings; AI-narrated credit and metadata on exports; privacy policy and terms with sub-processors; no-training clauses checked against vendor terms. | P21 |
 | **P25 Observability and cost** | Structured logs; error tracking on device and Workers; per-episode cost ledger totals and alerts; delivery SLO dashboard; provider outage behaviour verified. | P16 |
 
