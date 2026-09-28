@@ -8,6 +8,7 @@ import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import { database } from '../data/db';
 import * as deletionRequests from '../data/repositories/deletionRequests';
+import * as devicesRepo from '../data/repositories/devices';
 import * as pageLimits from '../data/repositories/pageLimits';
 import * as users from '../data/repositories/users';
 import type { AppEnv } from './middleware/session';
@@ -174,11 +175,11 @@ export const deletePage = new Hono<AppEnv>()
     const auth = c.var.auth();
     const found = await auth.api.getSession({ headers: c.req.raw.headers });
     if (!found) return html(c, emailForm(), 401);
-    const request = await deletionRequests.request(
-      database(c.env.DB),
-      Uuid.parse(found.user.id),
-      new Date().toISOString(),
-    );
+    const db = database(c.env.DB);
+    const userId = Uuid.parse(found.user.id);
+    const request = await deletionRequests.request(db, userId, new Date().toISOString());
+    // Nothing is pushed to an account being deleted (D42).
+    await devicesRepo.clearTokens(db, userId);
     await auth.api.revokeSessions({ headers: c.req.raw.headers });
     return html(c, doneText(request.purgeAfter));
   });

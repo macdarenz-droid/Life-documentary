@@ -121,6 +121,8 @@ export const devices = sqliteTable(
     appVersion: text('app_version').notNull(),
     createdAt: text('created_at').notNull(),
     lastSeenAt: text('last_seen_at').notNull(),
+    /** The Expo push token (P16); a token lives on one device row only. */
+    pushToken: text('push_token'),
   },
   (t) => [index('devices_user_idx').on(t.userId)],
 );
@@ -380,5 +382,31 @@ export const narrationClips = sqliteTable(
       t.index,
     ),
     index('narration_clips_episode_hash_idx').on(t.episodeId, t.hash),
+  ],
+);
+
+/** One render of an episode (P15, D41): a plan version in one shape, its file, its state and its cost. */
+export const renders = sqliteTable(
+  'renders',
+  {
+    id: text('id').primaryKey(),
+    episodeId: text('episode_id')
+      .notNull()
+      .references(() => episodes.id, { onDelete: 'cascade' }),
+    planVersion: integer('plan_version').notNull(),
+    renderVersion: integer('render_version').notNull(),
+    format: text('format').notNull(),
+    vendorRenderId: text('vendor_render_id'),
+    bucket: text('bucket'),
+    outKey: text('out_key').notNull(),
+    durationMs: integer('duration_ms').notNull(),
+    state: text('state').notNull(),
+    reason: text('reason'),
+    costMicroUsd: integer('cost_micro_usd'),
+    startedAt: text('started_at').notNull(),
+    finishedAt: text('finished_at'),
+  },
+  (t) => [
+    uniqueIndex('renders_episode_version_format_idx').on(t.episodeId, t.renderVersion, t.format),
   ],
 );

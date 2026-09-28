@@ -212,18 +212,18 @@ Text: `tasks/p15/T-016.md`.
 ### T-016c · P15.3 · Word-level captions · done · needs: T-016b
 Text: `tasks/p15/T-016.md`.
 
-### T-016d · P15.4 · The render input and the renderer port · todo · needs: T-014c, T-015c, T-016a
-Text: `tasks/p15/T-016.md`.
+### T-016d · P15.4 · The render input and the renderer port · done · needs: T-014c, T-015c, T-016a
+Text: `tasks/p15/T-016.md`. Fix r1 approved (`af2d9a8`).
 
-### T-016e · P15.5 · Remotion Lambda · todo · needs: T-016b, T-016d
-Text: `tasks/p15/T-016.md`.
+### T-016e · P15.5 · Remotion Lambda · done · needs: T-016b, T-016d
+Text: `tasks/p15/T-016.md`. Fix r1 approved (`0eefa8e`).
 
 ## P16 — Delivery (the weekly run, push, the Episode screens)
 
-### T-017a · P16.1 · The week and the schedule · todo · needs: T-016a
+### T-017a · P16.1 · The week and the schedule · done · needs: T-016a
 Text: `tasks/p16/T-017.md`.
 
-### T-017b · P16.2 · Push · todo · needs: T-016d
+### T-017b · P16.2 · Push · done · needs: T-016d
 Text: `tasks/p16/T-017.md`.
 
 ### T-017c · P16.3 · Asking for originals, on the server · todo · needs: T-014c, T-016d, T-017b
@@ -240,6 +240,23 @@ Text: `tasks/p16/T-017.md`.
 
 ### T-017g · P16.7 · The Episode screens · todo · needs: T-003e, T-017a, T-017f
 Text: `tasks/p16/T-017.md`.
+
+## P17 — Edits (five one-tap changes, the re-cut run, the edit sheets)
+
+### T-018a · P17.1 · Edit rules · todo · needs: T-016a
+Text: `tasks/p17/T-018.md`.
+
+### T-018b · P17.2 · The re-cut run · todo · needs: T-017c, T-017e, T-017f, T-018a
+Text: `tasks/p17/T-018.md`.
+
+### T-018c · P17.3 · Edits on the server · todo · needs: T-018b
+Text: `tasks/p17/T-018.md`.
+
+### T-018d · P17.4 · Edits on the phone · todo · needs: T-017d, T-017g, T-018c
+Text: `tasks/p17/T-018.md`.
+
+### T-018e · P17.5 · The edit sheets · todo · needs: T-018d
+Text: `tasks/p17/T-018.md`.
 
 ## Blocked on the owner
 

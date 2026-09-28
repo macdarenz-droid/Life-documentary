@@ -19,6 +19,8 @@ import { useExpoVoiceRecorder } from '../src/services/audio/expoVoiceRecorder';
 import { expoHaptics } from '../src/services/haptics/expoHaptics';
 import { expoPermissions } from '../src/services/permissions/expoPermissions';
 import { expoReminders } from '../src/services/notifications/expoReminders';
+import { expoPushTokens } from '../src/services/notifications/pushToken';
+import { EpisodeTaps } from '../src/services/notifications/taps';
 import { expoLibraryPicker } from '../src/services/picker/expoLibraryPicker';
 import { expoPlaceFinder } from '../src/services/place/expoPlaceFinder';
 import { CameraRecorderView } from '../src/services/camera/CameraRecorderView';
@@ -52,6 +54,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       device,
       network: expoNetwork,
       background: expoBackgroundUploads,
+      pushTokens: expoPushTokens,
     }),
     [voice],
   );
@@ -62,6 +65,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       CameraView={CameraRecorderView}
       Playback={expoPlayback}
       AppleButton={AppleSignInButton}
+      NotificationTaps={EpisodeTaps}
     >
       {children}
     </CaptureRoot>

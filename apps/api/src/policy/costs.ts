@@ -78,6 +78,15 @@ export function narrateMicroUsd(characters: number): number {
   return wholeUnits(characters) * NARRATE_MICRO_USD_PER_CHARACTER;
 }
 
+const MICRO_USD_PER_USD = 1_000_000;
+
+/** ⌈costUsd × 1,000,000⌉ µUSD: a render's accrued cost as Remotion estimates it. */
+export function renderMicroUsd(costUsd: number): number {
+  if (!Number.isFinite(costUsd) || costUsd < 0) throw new Error('A cost is a number of dollars.');
+  // toFixed drops float noise (0.0123 × 10⁶ is 12300.000000000002), so only a real fraction rounds up.
+  return Math.ceil(Number((costUsd * MICRO_USD_PER_USD).toFixed(6)));
+}
+
 /** ⌈Σ µUSD / 10,000⌉ cents. */
 export function episodeCostCents(rows: readonly Pick<CostLedgerRow, 'microUsd'>[]): number {
   return ceilDiv(

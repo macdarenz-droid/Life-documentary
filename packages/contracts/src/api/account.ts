@@ -15,6 +15,13 @@ export const RegisterDevice = z.object({
   id: Uuid,
   platform: DevicePlatform,
   appVersion: z.string().min(1).max(40),
+  /** The Expo push token (P16), sent once notifications are allowed and the app has a project id. */
+  pushToken: z
+    .string()
+    .min(1)
+    .max(200)
+    .regex(/^Expo(nent)?PushToken\[.+\]$/)
+    .optional(),
 });
 export type RegisterDevice = z.infer<typeof RegisterDevice>;
 

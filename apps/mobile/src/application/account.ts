@@ -5,12 +5,21 @@ import { ACCOUNT_PURGE_DAYS, Documentary, Me, Uuid } from '@life/contracts';
 import { addDays, dayAndMonth, words } from '@life/story';
 import * as documentaries from '../data/repositories/documentaries';
 import * as settings from '../data/repositories/settings';
-import type { Account, AccountUser, Api, DeviceInfo, SignInResult } from '../domain/capturePorts';
+import type {
+  Account,
+  AccountUser,
+  Api,
+  DeviceInfo,
+  PushTokens,
+  SignInResult,
+} from '../domain/capturePorts';
 import type { Clock, Store } from './ports';
 
 const DEVICE_ID_KEY = 'device_id';
+/** The local day a registration that carried a push token last worked (P16). */
+const PUSH_DAY_KEY = 'push_registered_on';
 
-export type ThisDevice = DeviceInfo & { newId(): Uuid };
+export type ThisDevice = DeviceInfo & { newId(): Uuid; pushTokens?: PushTokens };
 
 export type LinkResult = { ok: true; documentary: Documentary } | { ok: false; line: string };
 
@@ -21,6 +30,56 @@ export async function deviceId(store: Store, newId: () => Uuid): Promise<Uuid> {
   const id = newId();
   await settings.put(store.driver, DEVICE_ID_KEY, id);
   return id;
+}
+
+/** The push token, or null when there is none or it could not be read (never invented, rule 10). */
+async function currentToken(device: ThisDevice): Promise<string | null> {
+  if (!device.pushTokens) return null;
+  return device.pushTokens.current().catch((error: unknown) => {
+    console.error('The push token could not be read.', error);
+    return null;
+  });
+}
+
+/** Registers the phone, with its push token when it has one; the day counts only after that worked. */
+async function register(
+  store: Store,
+  clock: Clock,
+  api: Api,
+  device: ThisDevice,
+  timeZone: string,
+  token: string | null,
+): Promise<void> {
+  const id = await deviceId(store, () => device.newId());
+  await api.registerDevice({
+    id,
+    platform: device.platform,
+    appVersion: device.appVersion,
+    ...(token ? { pushToken: token } : {}),
+  });
+  if (token) await settings.put(store.driver, PUSH_DAY_KEY, clock.today(timeZone));
+}
+
+/**
+ * On a return to the foreground: registers the push token at most once a local day, only when signed in
+ * and when there is a token. Returns whether it registered.
+ */
+export async function refreshPushToken(deps: {
+  store: Store;
+  clock: Clock;
+  account: Account;
+  api: Api;
+  device: ThisDevice;
+  timeZone: string;
+}): Promise<boolean> {
+  const { store, clock, account, api, device, timeZone } = deps;
+  if (!device.pushTokens) return false;
+  if ((await settings.get(store.driver, PUSH_DAY_KEY)) === clock.today(timeZone)) return false;
+  if (!(await account.session().catch(() => null))) return false;
+  const token = await currentToken(device);
+  if (!token) return false;
+  await register(store, clock, api, device, timeZone, token);
+  return true;
 }
 
 /**
@@ -38,8 +97,7 @@ export async function afterSignIn(
 ): Promise<LinkResult> {
   try {
     const local = (await documentaries.get(store.driver, documentary.id)) ?? documentary;
-    const id = await deviceId(store, () => device.newId());
-    await api.registerDevice({ id, platform: device.platform, appVersion: device.appVersion });
+    await register(store, clock, api, device, local.timeZone, await currentToken(device));
     const { documentary: linked } = await api.linkDocumentary(local);
     if (linked.ownerUserId === local.ownerUserId) return { ok: true, documentary: local };
     const updated = Documentary.parse({

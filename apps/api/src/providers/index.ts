@@ -6,9 +6,13 @@ import type { Env } from '../shared/env';
 import { anthropicBatches, anthropicCaptioner } from './anthropic/captioner';
 import { anthropicMessages, anthropicPlanner } from './anthropic/planner';
 import { elevenlabsNarrator } from './elevenlabs/narrator';
+import { expoPusher } from './expoPush/pusher';
 import { fixtures } from './fixture';
+import { RENDERING_NOT_SET_UP } from './r2/presign';
+import { remotionLambdaRenderer } from './remotionLambda/renderer';
 import { workersAiTranscriber } from './workersAi/transcriber';
 
+export { RENDERING_NOT_SET_UP };
 export const CAPTIONING_NOT_SET_UP = 'Captioning is not set up';
 export const PLANNING_NOT_SET_UP = 'Planning is not set up';
 export const NARRATION_NOT_SET_UP = 'Narration is not set up';
@@ -33,7 +37,10 @@ function notSetUp(): Captioner {
 }
 
 export function pipelineProviders(env: Env): PipelineProviders {
-  if (env.PROVIDERS === 'fixture') return fixtures;
+  if (env.PROVIDERS === 'fixture') {
+    fixtures.renderer.media = env.MEDIA;
+    return fixtures;
+  }
   return {
     transcriber: workersAiTranscriber(env.AI),
     captioner: env.ANTHROPIC_API_KEY
@@ -45,5 +52,8 @@ export function pipelineProviders(env: Env): PipelineProviders {
     narrator: env.ELEVENLABS_API_KEY
       ? elevenlabsNarrator(env.ELEVENLABS_API_KEY)
       : narrationNotSetUp,
+    // Without its secrets the renderer fails at its first call with `Rendering is not set up`.
+    renderer: remotionLambdaRenderer(env),
+    pusher: expoPusher(env.EXPO_ACCESS_TOKEN),
   };
 }

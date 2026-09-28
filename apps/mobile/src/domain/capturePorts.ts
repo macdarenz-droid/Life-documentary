@@ -170,6 +170,11 @@ export interface BackgroundUploads {
   register(): Promise<void>;
 }
 
+/** This phone's Expo push token (P16): null unless notifications are allowed and the app has a project id. */
+export interface PushTokens {
+  current(): Promise<string | null>;
+}
+
 /** What the phone says about itself when it registers. */
 export type DeviceInfo = { platform: 'ios' | 'android'; appVersion: string };
 
@@ -192,4 +197,6 @@ export type CaptureServices = {
   network: Network;
   /** Absent where there is no background task (tests, the Design Lab). */
   background?: BackgroundUploads;
+  /** Absent where there is no push (tests, the Design Lab, the web preview). */
+  pushTokens?: PushTokens;
 };

@@ -22,3 +22,18 @@ export function narrationKey(
 ): string {
   return `u/${userId}/${documentaryId}/narration/${episodeId}/${hash}.mp3`;
 }
+
+/**
+ * The R2 key of an episode's MP4 (P15, D41): `v{n}.mp4` for the 9:16 episode and `v{n}-wide.mp4` for its
+ * 16:9 export, under `u/` so the `tmp/` rule never deletes it and account deletion finds it by prefix.
+ */
+export function episodeKey(
+  userId: string,
+  documentaryId: string,
+  episodeId: string,
+  renderVersion: number,
+  format: 'portrait' | 'landscape',
+): string {
+  const suffix = format === 'landscape' ? '-wide' : '';
+  return `u/${userId}/${documentaryId}/episodes/${episodeId}/v${renderVersion}${suffix}.mp4`;
+}

@@ -7,7 +7,7 @@ import {
   type Timestamp,
   type Uuid,
 } from '@life/contracts';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, lt, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import { costLedger, episodePlans, episodes } from '../schema';
 
@@ -84,6 +84,21 @@ export async function setPlan(
     .update(episodes)
     .set({ planVersion: plan.version, summary: plan.summary, state: plan.state, updatedAt: now })
     .where(eq(episodes.id, id));
+}
+
+/** Points the episode at a finished 9:16 render; an older render version never replaces a newer one. */
+export async function setRender(
+  db: Db,
+  id: Uuid,
+  renderVersion: number,
+  mp4Key: string,
+  durationMs: number,
+  now: Timestamp,
+): Promise<void> {
+  await db
+    .update(episodes)
+    .set({ renderVersion, mp4Key, durationMs, updatedAt: now })
+    .where(and(eq(episodes.id, id), lt(episodes.renderVersion, renderVersion)));
 }
 
 /** Removes the episode with its plans and its ledger rows (a week with nothing to show, D2). */

@@ -39,7 +39,11 @@ export function accountActions(ctx: CaptureContextValue): AccountActions {
     account,
     api,
     documentary,
-    device: { ...services.device, newId: () => ids.newId() },
+    device: {
+      ...services.device,
+      newId: () => ids.newId(),
+      ...(services.pushTokens ? { pushTokens: services.pushTokens } : {}),
+    },
   });
   const signIn = async (how: Parameters<typeof signInAndLink>[1]): Promise<AccountStep> => {
     const outcome = await signInAndLink(deps(), how);

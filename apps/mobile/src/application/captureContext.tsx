@@ -21,6 +21,7 @@ import type {
   CaptureServices,
   VideoPlaybackProps,
 } from '../domain/capturePorts';
+import { refreshPushToken } from './account';
 import { openLocalDocumentary } from './bootstrap';
 import { enqueueExisting } from './enqueueUploads';
 import { clearPlaybackCache } from './playback';
@@ -78,6 +79,8 @@ type Props = {
   CameraView: ComponentType<CameraViewProps>;
   Playback?: PlaybackViews;
   AppleButton?: ComponentType<AppleButtonProps>;
+  /** Opens the screen a tapped notification points to (P16); rendered once the store is open, native only. */
+  NotificationTaps?: ComponentType;
   children: ReactNode;
 };
 
@@ -88,6 +91,7 @@ export function CaptureRoot({
   CameraView,
   Playback,
   AppleButton,
+  NotificationTaps,
   children,
 }: Props) {
   const [state, setState] = useState<
@@ -128,8 +132,25 @@ export function CaptureRoot({
         });
       };
       const requestSync = () => run({});
-      // Jobs that failed 8 times are tried again only when the app comes to the foreground.
-      const onForeground = () => run({ retryFailed: true });
+      // Jobs that failed 8 times are tried again only when the app comes to the foreground. The push
+      // token goes up at most once a day (P16).
+      const onForeground = () => {
+        run({ retryFailed: true });
+        void refreshPushToken({
+          store,
+          clock,
+          account: services.account,
+          api: services.api,
+          device: {
+            ...services.device,
+            newId: () => ids.newId(),
+            ...(services.pushTokens ? { pushTokens: services.pushTokens } : {}),
+          },
+          timeZone: current.timeZone,
+        }).catch((error: unknown) => {
+          console.error('The push token was not registered.', error);
+        });
+      };
       services.background?.setRunner((budgetMs) => syncAndUpload({ budgetMs }));
       if (active) sync.current = onForeground;
       if (active)
@@ -180,7 +201,12 @@ export function CaptureRoot({
       </View>
     );
   }
-  return <CaptureContext.Provider value={state.value}>{children}</CaptureContext.Provider>;
+  return (
+    <CaptureContext.Provider value={state.value}>
+      {NotificationTaps ? <NotificationTaps /> : null}
+      {children}
+    </CaptureContext.Provider>
+  );
 }
 
 const styles = StyleSheet.create({
