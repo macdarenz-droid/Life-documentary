@@ -206,6 +206,7 @@ Yearly: Claude Opus 5.5 reads the year's episode summaries and plans and writes 
 | Apple Developer Program, Google Play Console, EAS account | Owner | Before the first device build (Prove) |
 | Anthropic API key, ElevenLabs API key | Owner | Before P12 and P14 |
 | AWS account for Remotion Lambda: region, deploy user and role, an invoke-only user for the Worker, the Lambda concurrency quota; an R2 API token scoped to the media bucket (`docs/ops/RENDER.md`, D41) | Owner | Before real renders (T-016e) |
+| Expo account and `eas init` (the push project id), an APNs key and an FCM V1 service account uploaded to EAS, optionally `EXPO_ACCESS_TOKEN` as a Worker secret (D42) | Owner | Before real pushes (T-017b) |
 | RevenueCat project and store products | Owner | Before P23 |
 | Music licence for the mood library | Owner | Before public release; CC0 fixtures until then |
 | A real iPhone and Android phone for capture and upload checks | Owner | Prove, P5, P6, P20 |
