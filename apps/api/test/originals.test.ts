@@ -378,6 +378,46 @@ describe('deleting a moment', () => {
     expect(await bindings.MEDIA.head(key)).toBeNull();
   });
 
+  it('leaves the tombstone uncommitted when the R2 delete fails, and the retry deletes and commits', async () => {
+    let failNext = true;
+    const flaky = new Proxy(bindings.MEDIA, {
+      get(target, prop) {
+        if (prop === 'delete' && failNext) {
+          failNext = false;
+          return () => Promise.reject(new Error('R2 is unavailable'));
+        }
+        const value: unknown = Reflect.get(target, prop);
+        return typeof value === 'function' ? (value as () => unknown).bind(target) : value;
+      },
+    });
+    const p = await personWithPhoto('orig.delete.retry@example.com', { MEDIA: flaky }, 'answer');
+    const key = mediaKey(p.me.userId, p.documentary.id, p.assetId, 'original');
+    await bindings.MEDIA.put(key, new Uint8Array(10));
+    const deletedAt = () =>
+      bindings.DB.prepare('SELECT deleted_at AS d FROM moments WHERE id = ?')
+        .bind(p.moment.id)
+        .first<{ d: string | null }>();
+
+    expect((await tombstone(p)).status).toBe(500);
+    expect((await deletedAt())?.d).toBeNull();
+    expect(await bindings.MEDIA.head(key)).not.toBeNull();
+
+    expect(SyncResponse.parse(await (await tombstone(p)).json()).refused).toEqual([]);
+    expect((await deletedAt())?.d).toBe(T);
+    expect(await bindings.MEDIA.head(key)).toBeNull();
+  });
+
+  it('deletes a stray original when a tombstone comes again for a deleted moment', async () => {
+    const p = await personWithPhoto('orig.delete.again@example.com', {}, 'answer');
+    expect(SyncResponse.parse(await (await tombstone(p)).json()).refused).toEqual([]);
+    const key = mediaKey(p.me.userId, p.documentary.id, p.assetId, 'original');
+    await bindings.MEDIA.put(key, new Uint8Array(10));
+
+    const again = SyncResponse.parse(await (await tombstone(p)).json());
+    expect(again.refused).toEqual([{ entity: 'moment', id: p.moment.id, reason: 'stale' }]);
+    expect(await bindings.MEDIA.head(key)).toBeNull();
+  });
+
   it("closes the moment's open requests", async () => {
     const p = await personWithPhoto('orig.delete.photo@example.com');
     await originalRequests.open(

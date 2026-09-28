@@ -4,7 +4,7 @@
 // one change-log row each in a single batch. Rows this request wrote are not sent back to it. A pull
 // also carries the text the server derived (P12) and its requests for originals (P16); an accepted moment
 // tombstone removes that moment's derived rows and closes its asset's open requests in the same batch,
-// then deletes the asset's original from R2.
+// after the asset's original is deleted from R2 (a repeated tombstone deletes it again).
 import {
   SyncRequest,
   SyncResponse,
@@ -160,6 +160,18 @@ export const sync = new Hono<AppEnv>().post('/sync', requireSession, async (c) =
       continue;
     }
     if (isStale(change, prior?.change, momentDeleted)) {
+      // A tombstone repeated for a moment already deleted takes a stray original with it.
+      const priorRow = prior?.change.entity === 'moment' ? prior.change.row : undefined;
+      if (
+        change.entity === 'moment' &&
+        change.row.deletedAt !== undefined &&
+        priorRow?.deletedAt !== undefined
+      ) {
+        const assetId = priorRow.mediaAssetId ?? change.row.mediaAssetId;
+        if (assetId !== undefined) {
+          deletedOriginals.push(mediaKey(userId, body.documentaryId, assetId, 'original'));
+        }
+      }
       refuse('stale');
       continue;
     }
@@ -179,11 +191,12 @@ export const sync = new Hono<AppEnv>().post('/sync', requireSession, async (c) =
     known.set(id, { documentaryId: body.documentaryId, change: merged(change, prior?.change) });
     written.add(key(entity, id));
   }
+  // A deleted moment's original leaves the cloud with it (VISION §8). It goes before the tombstone is
+  // committed: if the delete fails, nothing is written and the phone's retry deletes it again.
+  if (deletedOriginals.length > 0) await c.env.MEDIA.delete(deletedOriginals);
   if (statements.length > 0) {
     await db.batch(statements as [BatchItem<'sqlite'>, ...BatchItem<'sqlite'>[]]);
   }
-  // A deleted moment's original leaves the cloud with it (VISION §8).
-  if (deletedOriginals.length > 0) await c.env.MEDIA.delete(deletedOriginals);
 
   const pulled = await changes.since(
     db,
