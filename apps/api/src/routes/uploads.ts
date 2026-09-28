@@ -1,6 +1,7 @@
 // Uploads through the Worker (P6, D34): a phone starts a multipart upload for one of its assets, sends it
 // in 5 MiB parts that stream into R2, then completes it. Every step checks that the asset belongs to the
-// person's documentary and that `leavesDevice` lists this purpose for its moment (rule 8).
+// person's documentary and that `leavesDevice` lists this purpose for its moment (rule 8). An original is
+// let in for an asset an episode asked for (P16); the last one an episode waited for wakes its run.
 import {
   CompleteUpload,
   CreateUpload,
@@ -18,8 +19,12 @@ import { database, type Db } from '../data/db';
 import { mediaKey } from '../data/mediaKeys';
 import * as changes from '../data/repositories/changes';
 import * as documentariesRepo from '../data/repositories/documentaries';
+import * as episodesRepo from '../data/repositories/episodes';
+import * as originalRequests from '../data/repositories/originalRequests';
 import * as uploadsRepo from '../data/repositories/uploads';
+import { ORIGINALS_READY_EVENT, episodeInstanceId } from '../pipeline/EpisodePipeline';
 import { uploadsAllowed } from '../policy/leavesDevice';
+import type { Env } from '../shared/env';
 import { apiError } from '../shared/errors';
 import { parseBody } from './body';
 import { requireSession, type AppEnv } from './middleware/session';
@@ -40,8 +45,32 @@ async function mayUpload(
   if (!documentary || documentary.ownerUserId !== userId || asset.ownerUserId !== userId) {
     return null;
   }
-  if (!uploadsAllowed(asset.moment, asset.kind).includes(purpose)) return null;
+  const requested =
+    purpose === 'original' && (await originalRequests.openForAsset(db, assetId)).length > 0;
+  if (!uploadsAllowed(asset.moment, asset.kind, { requested }).includes(purpose)) return null;
   return { documentaryId: asset.documentaryId };
+}
+
+/** The Workflow event that tells a run every original it asked for has arrived (P16, D42). */
+export const ORIGINALS_READY = ORIGINALS_READY_EVENT;
+
+/**
+ * Marks the asset's requests met and wakes each episode run that now has every original it asked for.
+ * A run that no longer exists is left alone.
+ */
+async function originalArrived(env: Env, db: Db, assetId: Uuid, now: string): Promise<void> {
+  for (const episodeId of await originalRequests.meet(db, assetId, now)) {
+    const episode = await episodesRepo.get(db, episodeId);
+    if (!episode) continue;
+    try {
+      const instance = await env.EPISODE_PIPELINE.get(
+        episodeInstanceId(episode.documentaryId, episode.weekStart),
+      );
+      await instance.sendEvent({ type: ORIGINALS_READY, payload: { episodeId } });
+    } catch (error) {
+      console.error('The episode run was not told its originals arrived.', error);
+    }
+  }
 }
 
 /** The open upload named by the path, when the person may still send it. */
@@ -171,6 +200,7 @@ export const uploads = new Hono<AppEnv>()
         changes.record(db, upload.documentaryId as Uuid, 'mediaAsset', assetId, now),
         uploadsRepo.remove(db, assetId, purpose),
       ]);
+      await originalArrived(c.env, db, assetId, now);
     } else {
       await db.batch([uploadsRepo.remove(db, assetId, purpose)]);
     }

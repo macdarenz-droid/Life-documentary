@@ -5,6 +5,7 @@ import { account } from './routes/account';
 import { deletePage } from './routes/deletePage';
 import { devices } from './routes/devices';
 import { documentaries } from './routes/documentaries';
+import { episodes } from './routes/episodes';
 import { health } from './routes/health';
 import { sync } from './routes/sync';
 import { uploads } from './routes/uploads';
@@ -27,6 +28,7 @@ export function createApp({ mail = defaultMail }: { mail?: MailSender } = {}) {
   app.route('/', account);
   app.route('/', devices);
   app.route('/', documentaries);
+  app.route('/', episodes);
   app.route('/', sync);
   app.route('/', uploads);
   app.notFound((c) => apiError(c, 404, 'not_found', 'Not found.'));

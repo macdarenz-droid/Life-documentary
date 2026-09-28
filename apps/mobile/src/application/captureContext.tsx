@@ -17,13 +17,16 @@ import { Text } from '../design-system';
 import type {
   AppleButtonProps,
   AudioPlaybackProps,
+  BackgroundReport,
   CameraViewProps,
   CaptureServices,
+  Deadline,
   VideoPlaybackProps,
 } from '../domain/capturePorts';
 import { refreshPushToken } from './account';
 import { openLocalDocumentary } from './bootstrap';
 import { enqueueExisting } from './enqueueUploads';
+import { queueRequestedOriginals } from './originals';
 import { clearPlaybackCache } from './playback';
 import type { Clock, Ids, Store } from './ports';
 import { syncIfSignedIn } from './sync';
@@ -116,20 +119,54 @@ export function CaptureRoot({
             : state,
         );
       };
-      // Uploads follow a round that worked: the server needs the rows before it takes their files.
-      const syncAndUpload = async (options: { budgetMs?: number; retryFailed?: boolean }) => {
+      // Uploads follow a round that worked: the server needs the rows before it takes their files. The
+      // originals an episode asked for are queued after every round (P16); a photo's JPEG copy is made
+      // only in the foreground.
+      const syncAndUpload = async (options: {
+        budgetMs?: number;
+        retryFailed?: boolean;
+        minDrainMs?: number;
+        deadline?: Deadline;
+        foreground: boolean;
+      }): Promise<BackgroundReport> => {
+        const report: BackgroundReport = { queued: 0, uploaded: 0 };
+        const started = Date.parse(clock.now());
         const outcome = await syncIfSignedIn(store, clock, services.account, services.api, current);
-        if (outcome?.status !== 'synced') return;
+        if (outcome?.status !== 'synced') return report;
         if (outcome.documentary) setDocumentary(outcome.documentary);
         await services.background?.register().catch((error: unknown) => {
           console.error('The background upload task was not registered.', error);
         });
-        await drainUploads(store, clock, services.api, services.network, options);
+        report.queued = (
+          await queueRequestedOriginals(store, clock, services.api, {
+            foreground: options.foreground,
+            posters: services.posters,
+          })
+        ).queued;
+        const { budgetMs, retryFailed, minDrainMs, deadline } = options;
+        const left =
+          budgetMs === undefined
+            ? undefined
+            : Math.min(
+                budgetMs - (Date.parse(clock.now()) - started),
+                deadline ? deadline.at - deadline.now() : Infinity,
+              );
+        if (left !== undefined && (left <= 0 || left < (minDrainMs ?? 0))) return report;
+        report.uploaded = (
+          await drainUploads(store, clock, services.api, services.network, {
+            ...(left !== undefined ? { budgetMs: left } : {}),
+            ...(retryFailed ? { retryFailed } : {}),
+          })
+        ).uploaded;
+        return report;
       };
       const run = (options: { retryFailed?: boolean }) => {
-        void syncAndUpload(options).catch((error: unknown) => {
-          console.error('The uploads did not run.', error);
-        });
+        // A silent push can mount the screens with the app in the background: no photo is re-encoded then.
+        void syncAndUpload({ ...options, foreground: AppState.currentState === 'active' }).catch(
+          (error: unknown) => {
+            console.error('The uploads did not run.', error);
+          },
+        );
       };
       const requestSync = () => run({});
       // Jobs that failed 8 times are tried again only when the app comes to the foreground. The push
@@ -151,7 +188,15 @@ export function CaptureRoot({
           console.error('The push token was not registered.', error);
         });
       };
-      services.background?.setRunner((budgetMs) => syncAndUpload({ budgetMs }));
+      // A background run while the screens are up: a photo is re-encoded only if the app is in front.
+      services.background?.setRunner((budgetMs, options) =>
+        syncAndUpload({
+          budgetMs,
+          ...(options?.minDrainMs !== undefined ? { minDrainMs: options.minDrainMs } : {}),
+          ...(options?.deadline ? { deadline: options.deadline } : {}),
+          foreground: AppState.currentState === 'active',
+        }),
+      );
       if (active) sync.current = onForeground;
       if (active)
         setState({

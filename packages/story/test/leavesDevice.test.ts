@@ -60,7 +60,7 @@ describe('leavesDevice', () => {
     ({ kind, assetKind, localOnly, cloudBackup }) => {
       const result = leavesDevice(
         { ...moment(kind, localOnly), ...(assetKind ? { assetKind } : {}) },
-        { cloudBackup },
+        { cloudBackup, requested: false },
       );
       if (localOnly) expect(result).toEqual({ row: false, uploads: [] });
       else expect(result).toEqual({ row: true, uploads: expected(kind, assetKind, cloudBackup) });
@@ -78,7 +78,7 @@ describe('leavesDevice', () => {
         ([kind, assetKind]) =>
           leavesDevice(
             { ...moment(kind as MomentKind, false), assetKind: assetKind as MediaAsset['kind'] },
-            { cloudBackup },
+            { cloudBackup, requested: false },
           ).uploads,
       );
     expect(lists(false)).toEqual([['answer', 'keyframe'], ['answer'], ['preview'], ['keyframe']]);
@@ -95,8 +95,26 @@ describe('leavesDevice', () => {
     expect(cases.filter((c) => c.localOnly)).toHaveLength(cases.length / 2);
   });
 
+  it('lets an open request add the original to a photo or clip, never to a local-only one', () => {
+    const requested = { cloudBackup: false, requested: true };
+    expect(leavesDevice({ ...moment('photo', false), assetKind: 'photo' }, requested)).toEqual({
+      row: true,
+      uploads: ['preview', 'original'],
+    });
+    expect(
+      leavesDevice({ ...moment('clip', false), assetKind: 'video' }, requested).uploads,
+    ).toEqual(['keyframe', 'original']);
+    expect(
+      leavesDevice({ ...moment('answer', false), assetKind: 'audio' }, requested).uploads,
+    ).toEqual(['answer']);
+    expect(leavesDevice({ ...moment('photo', true), assetKind: 'photo' }, requested)).toEqual({
+      row: false,
+      uploads: [],
+    });
+  });
+
   it('sends no media for a moment whose asset kind is not known', () => {
-    expect(leavesDevice(moment('photo', false), { cloudBackup: false })).toEqual({
+    expect(leavesDevice(moment('photo', false), { cloudBackup: false, requested: false })).toEqual({
       row: true,
       uploads: [],
     });

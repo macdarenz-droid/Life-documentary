@@ -63,7 +63,7 @@ export async function inventory(ctx: UnderstandContext, episode: EpisodeRef): Pr
   )) {
     if (!asset) continue;
     // The server applies the rule again (rule 8): a local-only moment gives nothing.
-    for (const purpose of uploadsAllowed(moment, asset.kind)) {
+    for (const purpose of uploadsAllowed(moment, asset.kind, { requested: false })) {
       if (purpose === 'original') continue;
       const key = mediaKey(asset.ownerUserId, episode.documentaryId, asset.id, purpose);
       const head = await ctx.media.head(key);

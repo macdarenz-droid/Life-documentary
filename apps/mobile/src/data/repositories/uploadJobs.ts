@@ -63,6 +63,20 @@ export async function put(driver: SqlDriver, job: UploadJob): Promise<UploadJob>
 }
 
 /** The asset's job for `purpose`, or its first job when no purpose is given. */
+/** Adds a new job (no parts yet) only when the asset has none for its purpose; whether it was added. */
+export async function addIfAbsent(driver: SqlDriver, job: UploadJob): Promise<boolean> {
+  const parsed = UploadJob.parse(job);
+  if (parsed.purpose === undefined) throw new Error('An upload job needs its purpose');
+  if (parsed.parts.length > 0) throw new Error('A new upload job has no parts');
+  const { cols, vals } = toValues(uploadJobSpec, parsed);
+  const { changes } = await driver.run(
+    `INSERT INTO upload_jobs (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})
+     ON CONFLICT (asset_id, purpose) DO NOTHING`,
+    vals,
+  );
+  return changes > 0;
+}
+
 export async function get(
   driver: SqlDriver,
   assetId: string,

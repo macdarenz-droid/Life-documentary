@@ -5,6 +5,7 @@ import {
   CastMember,
   Documentary,
   Moment,
+  OriginalRequest,
   Question,
   Storyline,
   SyncedMediaAsset,
@@ -23,10 +24,12 @@ import {
   documentaries,
   mediaAssets,
   moments,
+  originalRequests,
   questions,
   storylines,
 } from '../schema';
 import { toDerived } from './derived';
+import { summaries } from './episodes';
 
 const ID_CHUNK = 90;
 
@@ -113,6 +116,20 @@ async function readRows(db: Db, entity: PulledEntity, ids: string[]): Promise<St
           const { documentaryId, row } = toDerived(r);
           out.push({ documentaryId, change: { entity, row } });
         }
+        break;
+      case 'originalRequest':
+        for (const r of await db
+          .select()
+          .from(originalRequests)
+          .where(inArray(originalRequests.id, part)))
+          out.push({
+            documentaryId: r.documentaryId,
+            change: { entity, row: OriginalRequest.parse(r) },
+          });
+        break;
+      case 'episode':
+        for (const row of await summaries(db, part))
+          out.push({ documentaryId: row.documentaryId, change: { entity, row } });
         break;
     }
   }

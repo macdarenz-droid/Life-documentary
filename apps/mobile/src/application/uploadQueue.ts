@@ -3,14 +3,15 @@
 // created or resumed, only the parts not yet recorded go up (each etag recorded as it succeeds), then
 // it completes. A failure waits min(2^attempts minutes, 6 hours); after 8 attempts the job is failed
 // and kept, tried again only by a foreground drain. The plain copy never outlives the attempt. A job
-// removed while it is sent (its moment was deleted) stops the send and is never written back.
+// removed while it is sent (its moment was deleted) stops the send and is never written back. A 403 for
+// an original (P16) is final: the request was closed or never there, so the job and its copy go.
 import { UploadJob, type MediaAsset, type Timestamp } from '@life/contracts';
 import { decryptFile } from '../data/fileStore/fileStore';
 import { CONTAINER_HEAD_BYTES, containerOf, type Container } from '../data/fileStore/container';
 import * as mediaAssets from '../data/repositories/mediaAssets';
 import * as moments from '../data/repositories/moments';
 import * as uploadJobs from '../data/repositories/uploadJobs';
-import type { Api, Network } from '../domain/capturePorts';
+import { ApiRefused, type Api, type Network } from '../domain/capturePorts';
 import type { Clock, Store } from './ports';
 
 /** After this many failed attempts a job is failed and waits for the next foreground. */
@@ -106,15 +107,15 @@ async function runDrain(
     }
     const result = await sendJob(store, clock, api, job, asset, outOfTime);
     if (result === 'done') outcome.uploaded += 1;
-    else if (result === 'failed') outcome.failed += 1;
+    else if (result === 'failed' || result === 'refused') outcome.failed += 1;
     else if (result === 'stopped') break;
   }
   return outcome;
 }
 
 /**
- * Sends one job: 'done', 'failed' (the wait is recorded), 'stopped' (out of time, nothing lost) or
- * 'gone' (the job was removed meanwhile).
+ * Sends one job: 'done', 'failed' (the wait is recorded), 'stopped' (out of time, nothing lost), 'gone'
+ * (the job was removed meanwhile) or 'refused' (an original the server no longer takes; the job is gone).
  */
 async function sendJob(
   store: Store,
@@ -123,7 +124,7 @@ async function sendJob(
   job: UploadJob,
   asset: MediaAsset,
   outOfTime: () => boolean,
-): Promise<'done' | 'failed' | 'stopped' | 'gone'> {
+): Promise<'done' | 'failed' | 'stopped' | 'gone' | 'refused'> {
   const { io } = store;
   const purpose = job.purpose ?? 'answer';
   const dir = uploadsDir(store);
@@ -201,6 +202,11 @@ async function sendJob(
     return 'done';
   } catch (error) {
     if (error instanceof JobGone) return 'gone';
+    if (purpose === 'original' && error instanceof ApiRefused && error.status === 403) {
+      await uploadJobs.remove(store.driver, job.assetId, purpose);
+      await removeIfThere(store, job.sourcePath);
+      return 'refused';
+    }
     console.error('An upload failed.', error);
     const attempts = current.attempts + 1;
     const failed = attempts >= MAX_ATTEMPTS;

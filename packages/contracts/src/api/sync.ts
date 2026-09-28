@@ -3,10 +3,12 @@
 // carries one fails to parse instead of being quietly trimmed.
 import { z } from 'zod';
 import { Documentary } from '../domain/documentary';
+import { EpisodeSummary } from '../domain/episode';
 import { MediaAsset } from '../domain/mediaAsset';
 import { Moment } from '../domain/moment';
 import { Question } from '../domain/question';
 import { Derived } from '../episode/derived';
+import { OriginalRequest } from '../episode/originalRequest';
 import { CastMember, Storyline } from '../domain/storyline';
 import { Uuid } from '../ids';
 
@@ -60,15 +62,22 @@ export const SyncChange = z.discriminatedUnion('entity', [
 export type SyncChange = z.infer<typeof SyncChange>;
 
 /**
- * What a pull may carry: every pushed kind, and rows only the server writes (P12's derived text). A phone
- * never pushes a derived row, so `SyncRequest` refuses one.
+ * What a pull may carry: every pushed kind, and rows only the server writes (P12's derived text, P16's
+ * requests for originals and episode summaries). A phone never pushes one, so `SyncRequest` refuses them.
  */
-export const PulledEntity = z.enum([...SyncEntity.options, 'derived']);
+export const PulledEntity = z.enum([
+  ...SyncEntity.options,
+  'derived',
+  'originalRequest',
+  'episode',
+]);
 export type PulledEntity = z.infer<typeof PulledEntity>;
 
 export const PulledChange = z.discriminatedUnion('entity', [
   ...SyncChange.options,
   z.object({ entity: z.literal('derived'), row: Derived }),
+  z.object({ entity: z.literal('originalRequest'), row: OriginalRequest }),
+  z.object({ entity: z.literal('episode'), row: EpisodeSummary }),
 ]);
 export type PulledChange = z.infer<typeof PulledChange>;
 

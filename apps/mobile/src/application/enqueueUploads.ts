@@ -38,8 +38,10 @@ export function uploadsFor(
   moment: Moment,
   assetKind: MediaAsset['kind'] | undefined,
 ): UploadPurpose[] {
-  return leavesDevice({ ...moment, ...(assetKind ? { assetKind } : {}) }, { cloudBackup: false })
-    .uploads;
+  return leavesDevice(
+    { ...moment, ...(assetKind ? { assetKind } : {}) },
+    { cloudBackup: false, requested: false },
+  ).uploads;
 }
 
 function newJob(assetId: string, purpose: UploadPurpose, now: Timestamp) {
