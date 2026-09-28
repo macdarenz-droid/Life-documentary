@@ -244,11 +244,23 @@ Text: `tasks/p16/T-017.md`.
 Tests: a push that arrives while another run holds the lock ends within 25 s of its own start (advancing clock). A mount with AppState `background` queues no photo copy. Two overlapping `queueRequestedOriginals` calls leave one job whose copy decrypts.
 Checks: mobile typecheck, tests, lint, format, boundaries.
 
-### T-017e · P16.5 · The weekly run · todo · needs: T-015c, T-016d, T-017a, T-017c
+### T-017e · P16.5 · The weekly run · changes r1 · needs: T-015c, T-016d, T-017a, T-017c
 Text: `tasks/p16/T-017.md`.
 
-### T-017f · P16.6 · Episodes to the phone · todo · needs: T-016d, T-017e
+**Fix list r1** (review of 62ef64d, confirmed by two skeptics; everything else approved: the cron and `startDueWeeks`, the params and times read inside steps, the new order, keeping answers before the working copies go, the originals wait, the render rounds and the recap fallback, the conditional publish and its single push, the `episode_runs` table, the allowed test changes).
+1. `run-record` and `cost-check` run after `publish`, outside the inner try. If one of them fails after its retries, the top-level catch runs `markFailed`, an unconditional `setState`, so an episode that was published and pushed ends `failed` and the app says it couldn't be made. Make `markFailed` apply only `WHERE state <> 'ready'`, and give the bookkeeping after `publish` its own try/catch that logs (ids only) instead of failing the week.
+2. When the first step (`episode`) fails after its retries, no `episode_runs` row exists, and `finish` is an UPDATE, so the week leaves no record and later crons skip it. In `run-failed`, insert the row when it is missing (`startedAt` now, `dueAt` from `params.deliverAt`), then set the outcome.
+3. A week whose model and recap renders both fail ends `failed` with nothing logged, though the text says "failed, logged". Log the episode id and the last render outcome (`nothing`, `failed`, `gone` or the round limit), with no content.
+4. If anything throws in `publish` after `setDelivered` has moved the episode, the retried step finds nothing to move and `episode_runs.delivered_at` stays empty forever. In `run-record`, copy the episode's stored `deliveredAt` into the run row whatever `publish` returned (safe to repeat).
+Tests: `mockStepError` on `run-record` leaves the episode `ready` with one push. `mockStepError` on `episode` leaves a `failed` run row. Both renders failing logs one line with the episode id and no content. A `publish` that throws once after `setDelivered` still ends with `delivered_at` on the run row.
+Checks: API typecheck, tests, lint, format, boundaries, `deploy:dry`.
+
+### T-017f · P16.6 · Episodes to the phone · changes r1 · needs: T-016d, T-017e
 Text: `tasks/p16/T-017.md`.
+
+**Fix list r1** (review of aed4a57, confirmed by two skeptics; everything else approved: the summary and its pulled entity, the change-log rows from `setPlan` on, the video route with 200, 206 and 416 and its 404s, the device table rebuild and landing newer rows with the local fields kept).
+1. The test "a week that ended empty is never pulled" pulls only after `episodes.remove`, when no row is left, so it would pass even without the `planVersion > 0` guard or the plan join. Also pull after `setState('understanding')` and `setState('planning')`, before `remove`, and check that no `episode` change comes back. Keep the pull after `remove`.
+Checks: API typecheck, tests, lint, format, boundaries.
 
 ### T-017g · P16.7 · The Episode screens · todo · needs: T-003e, T-017a, T-017f
 Text: `tasks/p16/T-017.md`.
