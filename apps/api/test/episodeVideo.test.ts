@@ -122,13 +122,16 @@ describe('episodes to the phone', () => {
   it('a week that ended empty is never pulled', async () => {
     const bo = await person('bo-episodes@example.com');
     const db = database(bindings.DB);
+    const episodeChanges = async () =>
+      (await bo.pull()).changes.filter((c) => c.entity === 'episode');
     const episode = await episodes.getOrCreate(db, bo.documentary.id, WEEK.weekStart, at(0));
     await episodes.setState(db, episode.id, 'understanding', at(0));
+    // Before its plan, the episode is not pulled, though its row exists.
+    expect(await episodeChanges()).toEqual([]);
     await episodes.setState(db, episode.id, 'planning', at(1));
+    expect(await episodeChanges()).toEqual([]);
     await episodes.remove(db, episode.id);
-
-    const pulled = await bo.pull();
-    expect(pulled.changes.filter((c) => c.entity === 'episode')).toEqual([]);
+    expect(await episodeChanges()).toEqual([]);
   });
 
   it('sends the whole file, a byte range, and refuses a range past the end', async () => {
