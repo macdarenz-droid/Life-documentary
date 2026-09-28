@@ -4,8 +4,14 @@ import { msToFrames } from '@life/story';
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import { px } from '../scale';
 
-/** The lower third sits this share of the height above the bottom, in both shapes. */
-const LOWER_BAND = 0.4;
+/** In 9:16 the lower third sits well clear of the caption box; in 16:9 in the lower quarter, above the captions. */
+const PORTRAIT_BOTTOM = 0.4;
+const LANDSCAPE_BOTTOM = 0.25;
+
+/** Pixels from the bottom of the frame to the bottom of the lower third. */
+export function lowerThirdBottomPx(width: number, height: number): number {
+  return height * (height > width ? PORTRAIT_BOTTOM : LANDSCAPE_BOTTOM);
+}
 
 type Item = RenderManifestV2['lowerThirds'][number];
 
@@ -29,7 +35,7 @@ export function LowerThird({ item, reducedMotion }: { item: Item; reducedMotion:
           transform: `translateX(${offset}px)`,
           alignSelf: 'flex-start',
           marginLeft: px(tokens.space[4]),
-          marginBottom: height * LOWER_BAND,
+          marginBottom: lowerThirdBottomPx(width, height),
           padding: `${px(tokens.space[2])}px ${px(tokens.space[4])}px`,
           backgroundColor: tokens.color.surface,
           borderLeft: `${px(tokens.space[1])}px solid ${tokens.color.accent}`,

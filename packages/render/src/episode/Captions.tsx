@@ -11,9 +11,23 @@ const caption = tokens.type.bodyStrong;
 export const CAPTION_BOX_OPACITY = 0.85;
 /** Captions sit above the bottom safe area in 9:16 and in the lower band in 16:9. */
 const PORTRAIT_BOTTOM = 0.2;
-const LANDSCAPE_BOTTOM = 0.1;
+const LANDSCAPE_BOTTOM = 0.05;
 const LANDSCAPE_MAX_WIDTH = 0.6;
 const MAX_LINES = 2;
+const fontSize = px(caption.size);
+const lineHeight = caption.lineHeight / caption.size;
+const padding = px(tokens.space[2]);
+const MAX_BOX_PX = fontSize * lineHeight * MAX_LINES + padding * 2;
+
+/** Pixels from the bottom of the frame to the bottom of the caption box. */
+export function captionBottomPx(width: number, height: number): number {
+  return height * (height > width ? PORTRAIT_BOTTOM : LANDSCAPE_BOTTOM);
+}
+
+/** Pixels from the bottom of the frame to the top of the tallest caption box (two lines). */
+export function captionTopPx(width: number, height: number): number {
+  return captionBottomPx(width, height) + MAX_BOX_PX;
+}
 
 type Page = CaptionPage & { approximate: boolean };
 
@@ -35,14 +49,11 @@ export function Captions({ manifest }: { manifest: RenderManifestV2 }) {
   if (!page) return null;
 
   const portrait = height > width;
-  const fontSize = px(caption.size);
-  const lineHeight = caption.lineHeight / caption.size;
-  const padding = px(tokens.space[2]);
   return (
     <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center' }}>
       <div
         style={{
-          marginBottom: height * (portrait ? PORTRAIT_BOTTOM : LANDSCAPE_BOTTOM),
+          marginBottom: captionBottomPx(width, height),
           marginLeft: px(tokens.space[4]),
           marginRight: px(tokens.space[4]),
           maxWidth: portrait ? undefined : width * LANDSCAPE_MAX_WIDTH,
@@ -54,7 +65,7 @@ export function Captions({ manifest }: { manifest: RenderManifestV2 }) {
           lineHeight,
           textAlign: 'center',
           whiteSpace: 'pre-wrap',
-          maxHeight: fontSize * lineHeight * MAX_LINES + padding * 2,
+          maxHeight: MAX_BOX_PX,
           overflow: 'hidden',
           display: '-webkit-box',
           WebkitLineClamp: MAX_LINES,
