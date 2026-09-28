@@ -3,6 +3,7 @@ export * from './render/timeline';
 export * from './render/episodeTimeline';
 export * from './render/fixtureManifest';
 export * from './dates';
+export * from './schedule';
 export * from './words';
 export * from './words/questions';
 export * from './questionEngine';

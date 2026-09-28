@@ -103,6 +103,19 @@ function episodeSample(): [string, string][] {
     ['episodeWords.dates across months', episodeWords.dates('2026-09-29', '2026-10-05')],
     ['episodeWords.closing', episodeWords.closing],
     ['episodeWords.next', episodeWords.next],
+    ['episodeWords.ready', episodeWords.ready(12)],
+    ['episodeWords.making 6pm', episodeWords.making(18)],
+    ['episodeWords.making noon', episodeWords.making(12)],
+    ['episodeWords.making midnight', episodeWords.making(0)],
+    ['episodeWords.making 9am', episodeWords.making(9)],
+    ['episodeWords.late', episodeWords.late],
+    ['episodeWords.failed', episodeWords.failed],
+    ['episodeWords.quiet', episodeWords.quiet],
+    ['episodeWords.offline', episodeWords.offline],
+    ['episodeWords.makingLabel', episodeWords.makingLabel],
+    ['episodeWords.lateLabel', episodeWords.lateLabel],
+    ['episodeWords.failedLabel', episodeWords.failedLabel],
+    ['episodeWords.channel', episodeWords.channel],
   ];
 }
 
