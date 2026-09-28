@@ -116,6 +116,12 @@ function episodeSample(): [string, string][] {
     ['episodeWords.lateLabel', episodeWords.lateLabel],
     ['episodeWords.failedLabel', episodeWords.failedLabel],
     ['episodeWords.channel', episodeWords.channel],
+    ['episodeWords.title', episodeWords.title],
+    ['episodeWords.empty', episodeWords.empty],
+    ['episodeWords.back', episodeWords.back],
+    ['episodeWords.close', episodeWords.close],
+    ['episodeWords.playing', episodeWords.playing('Rain on the tram')],
+    ['episodeWords.openError', episodeWords.openError],
   ];
 }
 

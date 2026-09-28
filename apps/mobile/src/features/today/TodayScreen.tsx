@@ -44,6 +44,9 @@ export type TodayScreenProps = {
   oneYearAgo?: OneYearAgoActions;
   /** Opens the viewer on these moments, the first one shown. */
   onOpenMoments?: (ids: Uuid[]) => void;
+  /** This week's episode line (P16); a link to the Episodes screen when there is a line to show. */
+  episodeLine?: { load(): Promise<string | null> };
+  onOpenEpisodes?: () => void;
   /** Changes when the screen comes into focus, so the question is loaded again. */
   reloadKey?: number;
 };
@@ -98,6 +101,8 @@ export function TodayScreen({
   oneYearAgo,
   onOpenMoments,
   reminderOffer,
+  episodeLine,
+  onOpenEpisodes,
   reloadKey = 0,
 }: TodayScreenProps) {
   const { reduced } = useMotionPreference();
@@ -127,6 +132,19 @@ export function TodayScreen({
   const [lastMomentId, setLastMomentId] = useState<Uuid | null>(null);
   const [tagOpen, setTagOpen] = useState(false);
   const [offer, setOffer] = useState(false);
+  const [weekText, setWeekText] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!episodeLine) return;
+    let active = true;
+    episodeLine
+      .load()
+      .then((line) => active && setWeekText(line))
+      .catch((error: unknown) => console.error("This week's line could not be loaded.", error));
+    return () => {
+      active = false;
+    };
+  }, [episodeLine, reloadKey]);
 
   /** Mood, place and keep-on-phone apply to the next capture only. */
   const extras = () => ({
@@ -611,6 +629,20 @@ export function TodayScreen({
           ))}
         </View>
       ) : null}
+      {weekText && onOpenEpisodes ? (
+        <View
+          style={[styles.weekRow, recording && styles.hidden]}
+          pointerEvents={recording ? 'none' : 'auto'}
+          accessibilityElementsHidden={recording}
+          importantForAccessibility={recording ? 'no-hide-descendants' : 'auto'}
+        >
+          <Pressable accessibilityRole="link" onPress={onOpenEpisodes} style={styles.topLink}>
+            <Text variant="label" tone="secondary" accessibilityRole="none">
+              {weekText}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
       <Record
         recording={recording}
         elapsedMs={elapsedMs}
@@ -678,6 +710,7 @@ const styles = StyleSheet.create({
     paddingTop: tokens.space[3],
   },
   topLink: { minHeight: tokens.space[7], justifyContent: 'center' },
+  weekRow: { paddingHorizontal: tokens.space[5] },
   hidden: { opacity: 0 },
   offer: { alignSelf: 'stretch', alignItems: 'center', gap: tokens.space[2] },
 });

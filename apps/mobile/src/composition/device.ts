@@ -11,6 +11,7 @@ import { openExpoDriver } from '../data/sqlite/expoDriver';
 import { apiBaseUrl, appVersion } from '../services/api/config';
 import { createApiClient } from '../services/api/apiClient';
 import { createLifeAuthClient } from '../services/auth/authClient';
+import { expoEpisodeFiles } from '../services/episodes/expoEpisodeFiles';
 import { betterAuthAccount } from '../services/auth/betterAuthAccount';
 import { systemClock } from '../services/clock/systemClock';
 import { expoCipher } from '../services/crypto/expoCipher';
@@ -26,6 +27,8 @@ export const api = createApiClient(
   fetch,
   expoFetch as unknown as typeof fetch,
 );
+/** Episode videos from the Worker with the same session (P16). */
+export const episodeFiles = expoEpisodeFiles(apiBaseUrl(), () => account.cookie());
 export const device = {
   platform: Platform.OS === 'ios' ? 'ios' : 'android',
   appVersion: appVersion(),

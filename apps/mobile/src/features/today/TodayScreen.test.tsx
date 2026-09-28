@@ -1,4 +1,4 @@
-import { words } from '@life/story';
+import { episodeWords, words } from '@life/story';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -286,5 +286,24 @@ describe('TodayScreen', () => {
       fireEvent.press(screen.getByRole('link', { name: words.nav.cast }));
     });
     expect(onNavigate.mock.calls).toEqual([['storylines'], ['cast']]);
+  });
+
+  it("links to Episodes with this week's line", async () => {
+    const h = await todayHarness();
+    // A Sunday after the first full week, after 06:00 and before the 18:00 delivery in Berlin.
+    (h.ctx.clock as ReturnType<typeof fixedClock>).set('2027-03-28T10:00:00Z');
+    const onOpenEpisodes = jest.fn();
+    await render(
+      <TodayScreen
+        {...todayScreenProps(h.ctx)}
+        onNavigate={jest.fn()}
+        onOpenEpisodes={onOpenEpisodes}
+      />,
+    );
+    const link = await screen.findByRole('link', { name: episodeWords.making(18) });
+    await act(async () => {
+      fireEvent.press(link);
+    });
+    expect(onOpenEpisodes).toHaveBeenCalledTimes(1);
   });
 });

@@ -21,11 +21,13 @@ import type {
   CameraViewProps,
   CaptureServices,
   Deadline,
+  EpisodePlaybackProps,
   VideoPlaybackProps,
 } from '../domain/capturePorts';
 import { refreshPushToken } from './account';
 import { openLocalDocumentary } from './bootstrap';
 import { enqueueExisting } from './enqueueUploads';
+import { downloadReady } from './episodes';
 import { queueRequestedOriginals } from './originals';
 import { clearPlaybackCache } from './playback';
 import type { Clock, Ids, Store } from './ports';
@@ -57,6 +59,7 @@ export type CaptureContextValue = {
 export type PlaybackViews = {
   Video: ComponentType<VideoPlaybackProps>;
   Audio: ComponentType<AudioPlaybackProps>;
+  Episode: ComponentType<EpisodePlaybackProps>;
 };
 
 const CaptureContext = createContext<CaptureContextValue | null>(null);
@@ -143,6 +146,14 @@ export function CaptureRoot({
             posters: services.posters,
           })
         ).queued;
+        // Ready episodes are saved for offline viewing on Wi-Fi, in the foreground only (P16).
+        if (options.foreground && services.episodes) {
+          await downloadReady(store, current, services.network, services.episodes).catch(
+            (error: unknown) => {
+              console.error('The episodes were not saved for offline viewing.', error);
+            },
+          );
+        }
         const { budgetMs, retryFailed, minDrainMs, deadline } = options;
         const left =
           budgetMs === undefined
