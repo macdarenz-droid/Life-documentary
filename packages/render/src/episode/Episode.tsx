@@ -1,65 +1,98 @@
-import type { RenderManifestV1 } from '@life/contracts';
+import type { RenderManifestV2 } from '@life/contracts';
 import { tokens } from '@life/design';
-import { msToFrames, shotStartsMs } from '@life/story';
+import { msToFrames } from '@life/story';
+import type { ReactNode } from 'react';
 import { AbsoluteFill, Sequence, useVideoConfig } from 'remotion';
 import { loadFonts } from '../fonts';
-import { Captions } from './Captions';
 import { ClosingCard } from './ClosingCard';
+import { ColdOpen } from './ColdOpen';
 import { Grain } from './Grain';
 import { LowerThird } from './LowerThird';
+import { Media } from './Media';
 import { Music } from './Music';
 import { Narration } from './Narration';
-import { PhotoShot } from './PhotoShot';
+import { SceneLabel } from './SceneLabel';
+import { SceneOpen } from './SceneOpen';
+import { Tease } from './Tease';
 import { TitleCard } from './TitleCard';
-import { VideoShot } from './VideoShot';
 
-export type EpisodeProps = RenderManifestV1 & { reducedMotion?: boolean };
+export type EpisodeProps = RenderManifestV2 & { reducedMotion?: boolean };
+type Segment = RenderManifestV2['segments'][number];
 
 loadFonts();
 
+function SegmentView({ segment, reducedMotion }: { segment: Segment; reducedMotion: boolean }) {
+  switch (segment.kind) {
+    case 'coldOpen':
+      return <ColdOpen media={segment.media} reducedMotion={reducedMotion} />;
+    case 'title':
+      return (
+        <TitleCard
+          label={segment.label}
+          text={segment.text}
+          subtitle={segment.subtitle}
+          reducedMotion={reducedMotion}
+        />
+      );
+    case 'sceneOpen':
+      return <SceneOpen segment={segment} reducedMotion={reducedMotion} />;
+    case 'shot':
+      return <Media media={segment.media} reducedMotion={reducedMotion} />;
+    case 'closing':
+      return <ClosingCard closing={segment} reducedMotion={reducedMotion} />;
+    case 'tease':
+      return <Tease segment={segment} />;
+  }
+}
+
+/** Draws a v2 manifest: the segments back to back, then the overlays, the narration and the music. */
 export function Episode(props: EpisodeProps) {
   const { fps } = useVideoConfig();
   const manifest = props;
+  const reducedMotion = props.reducedMotion ?? false;
   const frames = (ms: number) => msToFrames(ms, fps);
-  const starts = shotStartsMs(manifest);
-  const lastShot = manifest.shots.length - 1;
-  const closingAt =
-    (starts[lastShot] ?? manifest.title.durationMs) + (manifest.shots[lastShot]?.durationMs ?? 0);
+  // Frames from each span's own rounded ends, so rounding never opens a gap between segments.
+  const span = (fromMs: number, toMs: number, name: string, child: ReactNode, key: number) => (
+    <Sequence
+      key={key}
+      from={frames(fromMs)}
+      durationInFrames={Math.max(1, frames(toMs) - frames(fromMs))}
+      name={name}
+    >
+      {child}
+    </Sequence>
+  );
 
   return (
     <AbsoluteFill style={{ backgroundColor: tokens.color.background }}>
-      <Sequence durationInFrames={frames(manifest.title.durationMs)} name="Title">
-        <TitleCard title={manifest.title} reducedMotion={props.reducedMotion ?? false} />
-      </Sequence>
-      {manifest.shots.map((shot, i) => (
-        <Sequence
-          key={i}
-          from={frames(starts[i] ?? 0)}
-          durationInFrames={frames(shot.durationMs)}
-          name={`Shot ${i + 1}`}
-        >
-          {shot.kind === 'video' ? <VideoShot shot={shot} /> : <PhotoShot shot={shot} />}
-        </Sequence>
-      ))}
-      <Sequence
-        from={frames(closingAt)}
-        durationInFrames={frames(manifest.closing.durationMs)}
-        name="Closing"
-      >
-        <ClosingCard closing={manifest.closing} credit={manifest.credit} />
-      </Sequence>
-      {manifest.lowerThirds.map((item, i) => (
-        <Sequence
-          key={i}
-          from={frames(item.atMs)}
-          durationInFrames={frames(item.durationMs)}
-          name={`Lower third ${i + 1}`}
-        >
-          <LowerThird item={item} reducedMotion={props.reducedMotion ?? false} />
-        </Sequence>
-      ))}
-      <Captions captions={manifest.captions} />
-      <Grain reducedMotion={props.reducedMotion ?? false} />
+      {manifest.segments.map((segment, i) =>
+        span(
+          segment.fromMs,
+          segment.toMs,
+          `${segment.kind} ${i + 1}`,
+          <SegmentView segment={segment} reducedMotion={reducedMotion} />,
+          i,
+        ),
+      )}
+      {manifest.sceneLabels.map((label, i) =>
+        span(
+          label.atMs,
+          label.atMs + label.durationMs,
+          `Scene label ${i + 1}`,
+          <SceneLabel text={label.text} />,
+          i,
+        ),
+      )}
+      {manifest.lowerThirds.map((item, i) =>
+        span(
+          item.atMs,
+          item.atMs + item.durationMs,
+          `Lower third ${i + 1}`,
+          <LowerThird item={item} reducedMotion={reducedMotion} />,
+          i,
+        ),
+      )}
+      <Grain reducedMotion={reducedMotion} />
       <Narration narration={manifest.narration} />
       <Music manifest={manifest} />
     </AbsoluteFill>

@@ -6,6 +6,8 @@ import process from 'node:process';
 import { browserExecutable, bundleProject, fixturesDir } from './shared.mjs';
 
 const SAMPLE_RATE = 48_000;
+/** A fixture answer, video or voice, lasts 4 s. */
+const ANSWER_SECONDS = 4;
 const force = process.argv.includes('--force');
 
 /** 16-bit PCM WAV from per-channel sample functions returning values in [-1, 1]. */
@@ -59,6 +61,12 @@ if (needs(voiceFile)) {
   process.stdout.write('wrote voice.wav\n');
 }
 
+const answerVoiceFile = path.join(fixturesDir, 'answer-voice.wav');
+if (needs(answerVoiceFile)) {
+  writeFileSync(answerVoiceFile, wav(ANSWER_SECONDS, [voice]));
+  process.stdout.write('wrote answer-voice.wav\n');
+}
+
 const musicFile = path.join(fixturesDir, 'music.wav');
 if (needs(musicFile)) {
   writeFileSync(musicFile, wav(32, [chord, chord]));
@@ -68,9 +76,11 @@ if (needs(musicFile)) {
 const clipFile = path.join(fixturesDir, 'clip.mp4');
 const photoFile = path.join(fixturesDir, 'photo.jpg');
 const renderClip = needs(clipFile);
+const answerFile = path.join(fixturesDir, 'answer.mp4');
 const renderPhoto = needs(photoFile);
+const renderAnswer = needs(answerFile);
 
-if (renderClip || renderPhoto) {
+if (renderClip || renderPhoto || renderAnswer) {
   const serveUrl = await bundleProject();
   if (renderClip) {
     const composition = await selectComposition({ serveUrl, id: 'FixtureClip', browserExecutable });
@@ -82,6 +92,21 @@ if (renderClip || renderPhoto) {
       browserExecutable,
     });
     process.stdout.write('wrote clip.mp4\n');
+  }
+  if (renderAnswer) {
+    const composition = await selectComposition({
+      serveUrl,
+      id: 'FixtureAnswer',
+      browserExecutable,
+    });
+    await renderMedia({
+      serveUrl,
+      composition,
+      codec: 'h264',
+      outputLocation: answerFile,
+      browserExecutable,
+    });
+    process.stdout.write('wrote answer.mp4\n');
   }
   if (renderPhoto) {
     const composition = await selectComposition({

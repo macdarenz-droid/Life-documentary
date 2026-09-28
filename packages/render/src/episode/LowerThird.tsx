@@ -1,14 +1,17 @@
-import type { RenderManifestV1 } from '@life/contracts';
+import type { RenderManifestV2 } from '@life/contracts';
 import { tokens } from '@life/design';
 import { msToFrames } from '@life/story';
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import { px } from '../scale';
 
-type Item = RenderManifestV1['lowerThirds'][number];
+/** The lower third sits this share of the height above the bottom, in both shapes. */
+const LOWER_BAND = 0.4;
+
+type Item = RenderManifestV2['lowerThirds'][number];
 
 export function LowerThird({ item, reducedMotion }: { item: Item; reducedMotion: boolean }) {
   const frame = useCurrentFrame();
-  const { fps, durationInFrames, width } = useVideoConfig();
+  const { fps, durationInFrames, width, height } = useVideoConfig();
   const slide = Math.max(1, msToFrames(tokens.motion.duration.ui, fps));
   const offset = reducedMotion
     ? 0
@@ -26,7 +29,7 @@ export function LowerThird({ item, reducedMotion }: { item: Item; reducedMotion:
           transform: `translateX(${offset}px)`,
           alignSelf: 'flex-start',
           marginLeft: px(tokens.space[4]),
-          marginBottom: px(tokens.space[8]) * 4,
+          marginBottom: height * LOWER_BAND,
           padding: `${px(tokens.space[2])}px ${px(tokens.space[4])}px`,
           backgroundColor: tokens.color.surface,
           borderLeft: `${px(tokens.space[1])}px solid ${tokens.color.accent}`,
