@@ -206,11 +206,12 @@ Text: `tasks/p14/T-015.md`.
 ### T-016a · P15.1 · The episode timeline · done · needs: T-014a, T-015a
 Text: `tasks/p15/T-016.md`.
 
-### T-016b · P15.2 · The episode, drawn · todo · needs: T-016a
+### T-016b · P15.2 · The episode, drawn · done · needs: T-016a
 Text: `tasks/p15/T-016.md`.
 
 ### T-016c · P15.3 · Word-level captions · todo · needs: T-016b
 Text: `tasks/p15/T-016.md`.
+Note (2026-09-28, from the T-016b stills): in 16:9 the lower third sits at 40% of the height above the bottom, so it reads as mid-screen. With the captions in place, set the lower third's bottom margin per shape: in 9:16 keep it clear of the caption box, and in 16:9 put it in the lower quarter, above the caption band. `LowerThird.tsx` may change for this. Add the caption stills with a lower third showing in both shapes.
 
 ### T-016d · P15.4 · The render input and the renderer port · todo · needs: T-014c, T-015c, T-016a
 Text: `tasks/p15/T-016.md`.
