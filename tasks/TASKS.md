@@ -226,11 +226,23 @@ Text: `tasks/p16/T-017.md`.
 ### T-017b · P16.2 · Push · done · needs: T-016d
 Text: `tasks/p16/T-017.md`.
 
-### T-017c · P16.3 · Asking for originals, on the server · todo · needs: T-014c, T-016d, T-017b
+### T-017c · P16.3 · Asking for originals, on the server · changes r1 · needs: T-014c, T-016d, T-017b
 Text: `tasks/p16/T-017.md`.
 
-### T-017d · P16.4 · Asking for originals, on the phone · todo · needs: T-017b, T-017c
+**Fix list r1** (review of 0f344a2, confirmed by two skeptics; everything else approved: the contract and pulled entity, `leavesDevice` with `requested` on both sides, the table and repository, `keepAnswers`, `requestOriginals` and its silent push, the upload rule and the `originals-ready` event, `closeAll`).
+1. In `/sync`, a moment tombstone is committed first and the R2 delete of its `original` runs after it. If that delete fails, a retried tombstone finds the row already deleted and never deletes the file, so the full recording of a deleted moment stays in the cloud (VISION §8). Delete the `original` before the tombstone is committed. A tombstone for a row that is already deleted also deletes it again (the delete is safe to repeat).
+Tests: an R2 delete that throws once leaves the tombstone uncommitted, and the retried push deletes the original and commits. A second tombstone for an already-deleted moment deletes a stray original.
+Checks: API typecheck, tests, lint, format, boundaries, `deploy:dry`.
+
+### T-017d · P16.4 · Asking for originals, on the phone · changes r1 · needs: T-017b, T-017c
 Text: `tasks/p16/T-017.md`.
+
+**Fix list r1** (review of d874edd, confirmed by two skeptics; everything else approved: the migration and cursor reset, landing pulled requests, the upload rules, closed requests, the push payload parsing, the plugin option).
+1. The silent-push run gets a fresh 25 s once it holds the lock, so a push that arrives during the P6 task can run for 40 s or more after iOS woke the app (iOS allows about 30 s). Take a deadline when the task starts (in `handleOriginalsPush`, before `runInBackground`) and pass it through. Once the lock is held, the runner gets only what is left, measured from before the store opens. Skip the drain when under 5 s are left, and skip the whole run when nothing is left.
+2. `run` in `captureContext.tsx` always passes `foreground: true`, and the mount-time `onForeground()` runs even when iOS launched the app in the background (a silent push renders the root too). That re-encodes a full-size photo in the background. Pass `foreground: AppState.currentState === 'active'` there as well, or skip the mount-time run unless the app is active.
+3. `queueRequestedOriginals` can run twice at once (a foreground run and a sync after a capture), and both write the same JPEG path. One attempt can delete the copy the surviving job points at, or leave a key that doesn't match the file, and the photo then never reaches the episode. Make it single-flight per store, as `drainUploads` is, give each attempt its own temporary name, and set the job only when none exists (removing the copy when it loses).
+Tests: a push that arrives while another run holds the lock ends within 25 s of its own start (advancing clock). A mount with AppState `background` queues no photo copy. Two overlapping `queueRequestedOriginals` calls leave one job whose copy decrypts.
+Checks: mobile typecheck, tests, lint, format, boundaries.
 
 ### T-017e · P16.5 · The weekly run · todo · needs: T-015c, T-016d, T-017a, T-017c
 Text: `tasks/p16/T-017.md`.
