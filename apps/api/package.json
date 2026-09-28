@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p eval/tsconfig.json",
-    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p eval/tsconfig.json && tsc --noEmit -p test-node/tsconfig.json",
+    "test": "vitest run && vitest run --config vitest.node.config.ts",
     "deploy:dry": "wrangler deploy --dry-run --outdir dist",
     "build": "wrangler deploy --dry-run --outdir dist",
     "db:generate": "drizzle-kit generate",
@@ -26,6 +26,7 @@
   "devDependencies": {
     "@better-auth/core": "~1.7.6",
     "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@remotion/lambda-client": "4.0.529",
     "drizzle-kit": "~0.31.11",
     "vitest": "~4.1.11",
     "wrangler": "^4.141.0"

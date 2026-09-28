@@ -26,6 +26,15 @@ export type Env = {
   R2_ACCOUNT_ID?: string;
   R2_ACCESS_KEY_ID?: string;
   R2_SECRET_ACCESS_KEY?: string;
+  /**
+   * Worker secrets (set with `wrangler secret put`; dashboard variables are wiped by the next deploy): the
+   * AWS user that may only invoke the render function, its region, the function and the deployed site (P15).
+   */
+  REMOTION_AWS_ACCESS_KEY_ID?: string;
+  REMOTION_AWS_SECRET_ACCESS_KEY?: string;
+  REMOTION_REGION?: string;
+  REMOTION_FUNCTION_NAME?: string;
+  REMOTION_SERVE_URL?: string;
   /** `fixture` makes the pipeline use fixture providers; set only by the test pool and local dev. */
   PROVIDERS?: string;
   /** The episode pipeline Workflow (P12). */

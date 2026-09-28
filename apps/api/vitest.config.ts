@@ -1,5 +1,5 @@
 import { cloudflareTest, readD1Migrations } from '@cloudflare/vitest-pool-workers';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 // The test pool applies the D1 migrations (test/setup.ts), gets a throwaway auth secret and uses the
 // fixture model providers.
@@ -32,5 +32,6 @@ export default defineConfig({
       },
     }),
   ],
-  test: { setupFiles: ['./test/setup.ts'] },
+  // The Node project (vitest.node.config.ts) runs test-node.
+  test: { setupFiles: ['./test/setup.ts'], exclude: [...configDefaults.exclude, 'test-node/**'] },
 });
