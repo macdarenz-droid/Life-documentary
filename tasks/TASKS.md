@@ -241,6 +241,23 @@ Text: `tasks/p16/T-017.md`.
 ### T-017g · P16.7 · The Episode screens · todo · needs: T-003e, T-017a, T-017f
 Text: `tasks/p16/T-017.md`.
 
+## P17 — Edits (five one-tap changes, the re-cut run, the edit sheets)
+
+### T-018a · P17.1 · Edit rules · todo · needs: T-016a
+Text: `tasks/p17/T-018.md`.
+
+### T-018b · P17.2 · The re-cut run · todo · needs: T-017c, T-017e, T-017f, T-018a
+Text: `tasks/p17/T-018.md`.
+
+### T-018c · P17.3 · Edits on the server · todo · needs: T-018b
+Text: `tasks/p17/T-018.md`.
+
+### T-018d · P17.4 · Edits on the phone · todo · needs: T-017d, T-017g, T-018c
+Text: `tasks/p17/T-018.md`.
+
+### T-018e · P17.5 · The edit sheets · todo · needs: T-018d
+Text: `tasks/p17/T-018.md`.
+
 ## Blocked on the owner
 
 ### P-B · Capture and upload proof on real devices · blocked · needs: P3, P5, P6 tasks (not yet written)
