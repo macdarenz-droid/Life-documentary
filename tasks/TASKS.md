@@ -212,29 +212,18 @@ Text: `tasks/p15/T-016.md`.
 ### T-016c · P15.3 · Word-level captions · done · needs: T-016b
 Text: `tasks/p15/T-016.md`.
 
-### T-016d · P15.4 · The render input and the renderer port · changes r1 · needs: T-014c, T-015c, T-016a
-Text: `tasks/p15/T-016.md`.
+### T-016d · P15.4 · The render input and the renderer port · done · needs: T-014c, T-015c, T-016a
+Text: `tasks/p15/T-016.md`. Fix r1 approved (`af2d9a8`).
 
-**Fix list r1** (review of ba037a9, confirmed by two skeptics; everything else approved: the input, the presigned URLs and their prefix check, the renders table, the start and the versions).
-1. `checkRender` writes the row `done` first, then `episodes.setRender` and `recordRenderCosts` as separate statements, and a `done` row returns at once. If a later write fails, a retried check answers `done` and the episode never gets its `renderVersion`, `mp4Key`, `durationMs` or cost. For a portrait `done` row, apply `setRender` again (it only moves forward) and `recordRenderCosts` again (it rewrites the sum), without calling the renderer. The answer stays `done`. Or write the three in one `db.batch`, as long as a `done` row still repairs a row left by an older build.
-Tests: a check where `episodes.setRender` throws once after the row is `done` (a stub around the repository or a D1 trigger). The next check sets the episode's render and the ledger row, and does not call the renderer.
-Checks: API typecheck, tests, lint, format, boundaries, `deploy:dry`.
-
-### T-016e · P15.5 · Remotion Lambda · changes r1 · needs: T-016b, T-016d
-Text: `tasks/p15/T-016.md`.
-
-**Fix list r1** (review of ba9ab79, confirmed by two skeptics; everything else approved: the SigV4 invoke, the payloads and the Node comparison test, the R2 output, the deploy script and `docs/ops/RENDER.md`).
-1. `jsonObjects` counts every brace, including braces inside JSON strings. Remotion's status answer repeats the input props (`renderMetadata.inputProps`), so a cast name, a transcript word or a title with a lone `{` or `}` breaks every progress call. The row then stays `rendering` for good. Count braces only outside strings, tracking `"` and backslash escapes.
-2. `failure()` calls a render timed out when any error in the list mentions a timeout, including one that was retried. Classify only the fatal errors (`isFatal === true` and `willRetry !== true`), and fall back to `render failed`.
-Tests: a status answer whose `renderMetadata.inputProps.payload` holds a lone `}` and a lone `{` still maps to the right progress. A retried timeout beside a fatal out-of-memory error maps to `render failed`.
-Checks: API typecheck, tests, lint, format, boundaries, `deploy:dry`.
+### T-016e · P15.5 · Remotion Lambda · done · needs: T-016b, T-016d
+Text: `tasks/p15/T-016.md`. Fix r1 approved (`0eefa8e`).
 
 ## P16 — Delivery (the weekly run, push, the Episode screens)
 
-### T-017a · P16.1 · The week and the schedule · todo · needs: T-016a
-Text: `tasks/p16/T-017.md`. Approved (`737f402`); it merges with T-016d and T-016e, which it sits on.
+### T-017a · P16.1 · The week and the schedule · done · needs: T-016a
+Text: `tasks/p16/T-017.md`.
 
-### T-017b · P16.2 · Push · todo · needs: T-016d
+### T-017b · P16.2 · Push · done · needs: T-016d
 Text: `tasks/p16/T-017.md`.
 
 ### T-017c · P16.3 · Asking for originals, on the server · todo · needs: T-014c, T-016d, T-017b
