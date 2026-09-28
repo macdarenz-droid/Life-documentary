@@ -2,7 +2,8 @@
 // requires it) and this module is imported by the app's entry file through composition/background.ts,
 // so a launch with no views mounted still has it. It acts only on our own `{ type: 'originals' }` data:
 // through the shared background runner and lock it syncs and queues the requested originals, then drains
-// the upload queue with what is left of the budget, skipping the drain when under 5 s remain.
+// the upload queue with what is left of the budget, skipping the drain when under 5 s remain. The budget
+// is a deadline taken when the push arrives, so time spent waiting for another run's lock counts.
 import {
   BackgroundNotificationTaskResult,
   registerTaskAsync,
@@ -35,16 +36,22 @@ function isOriginalsPush(data: unknown): boolean {
   return !!data && typeof data === 'object' && (data as { type?: unknown }).type === 'originals';
 }
 
+/** `now` is the clock the push's deadline is taken on, from the moment iOS woke the app. */
 export async function handleOriginalsPush(
   payload: unknown,
+  now: () => number = Date.now,
 ): Promise<BackgroundNotificationTaskResult> {
+  const deadline = { at: now() + ORIGINALS_BUDGET_MS, now };
   // A tap on a notification is not a silent push.
   if (!payload || typeof payload !== 'object' || 'actionIdentifier' in payload) {
     return BackgroundNotificationTaskResult.NoData;
   }
   if (!isOriginalsPush(dataOf(payload))) return BackgroundNotificationTaskResult.NoData;
   try {
-    const report = await runInBackground(ORIGINALS_BUDGET_MS, { minDrainMs: MIN_DRAIN_MS });
+    const report = await runInBackground(ORIGINALS_BUDGET_MS, {
+      minDrainMs: MIN_DRAIN_MS,
+      deadline,
+    });
     return report && (report.queued > 0 || report.uploaded > 0)
       ? BackgroundNotificationTaskResult.NewData
       : BackgroundNotificationTaskResult.NoData;

@@ -179,13 +179,17 @@ export interface Network {
 /** What one background run did (P16): originals queued and files sent. */
 export type BackgroundReport = { queued: number; uploaded: number };
 
+/** A fixed end for a run, on the clock that set it (milliseconds since the epoch). */
+export type Deadline = { at: number; now: () => number };
+
 /**
  * One background run with its time budget in milliseconds. With `minDrainMs`, the drain after sync is
- * skipped when less than that is left of the budget.
+ * skipped when less than that is left of the budget. With `deadline`, what is left is also measured
+ * against it, so time spent opening the store counts.
  */
 export type BackgroundRunner = (
   budgetMs: number,
-  options?: { minDrainMs?: number },
+  options?: { minDrainMs?: number; deadline?: Deadline },
 ) => Promise<BackgroundReport | void>;
 
 /** The system's background task for uploads: registered after sign-in, it runs `run` when it fires. */

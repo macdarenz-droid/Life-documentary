@@ -20,6 +20,7 @@ import type {
   BackgroundReport,
   CameraViewProps,
   CaptureServices,
+  Deadline,
   VideoPlaybackProps,
 } from '../domain/capturePorts';
 import { refreshPushToken } from './account';
@@ -125,6 +126,7 @@ export function CaptureRoot({
         budgetMs?: number;
         retryFailed?: boolean;
         minDrainMs?: number;
+        deadline?: Deadline;
         foreground: boolean;
       }): Promise<BackgroundReport> => {
         const report: BackgroundReport = { queued: 0, uploaded: 0 };
@@ -141,9 +143,14 @@ export function CaptureRoot({
             posters: services.posters,
           })
         ).queued;
-        const { budgetMs, retryFailed, minDrainMs } = options;
+        const { budgetMs, retryFailed, minDrainMs, deadline } = options;
         const left =
-          budgetMs === undefined ? undefined : budgetMs - (Date.parse(clock.now()) - started);
+          budgetMs === undefined
+            ? undefined
+            : Math.min(
+                budgetMs - (Date.parse(clock.now()) - started),
+                deadline ? deadline.at - deadline.now() : Infinity,
+              );
         if (left !== undefined && (left <= 0 || left < (minDrainMs ?? 0))) return report;
         report.uploaded = (
           await drainUploads(store, clock, services.api, services.network, {
@@ -154,9 +161,12 @@ export function CaptureRoot({
         return report;
       };
       const run = (options: { retryFailed?: boolean }) => {
-        void syncAndUpload({ ...options, foreground: true }).catch((error: unknown) => {
-          console.error('The uploads did not run.', error);
-        });
+        // A silent push can mount the screens with the app in the background: no photo is re-encoded then.
+        void syncAndUpload({ ...options, foreground: AppState.currentState === 'active' }).catch(
+          (error: unknown) => {
+            console.error('The uploads did not run.', error);
+          },
+        );
       };
       const requestSync = () => run({});
       // Jobs that failed 8 times are tried again only when the app comes to the foreground. The push
@@ -183,6 +193,7 @@ export function CaptureRoot({
         syncAndUpload({
           budgetMs,
           ...(options?.minDrainMs !== undefined ? { minDrainMs: options.minDrainMs } : {}),
+          ...(options?.deadline ? { deadline: options.deadline } : {}),
           foreground: AppState.currentState === 'active',
         }),
       );

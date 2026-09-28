@@ -2,7 +2,8 @@
 // moment `leavesDevice` lets go with `requested` gets an `original` job in the P6 queue. A photo goes up
 // as a JPEG copy made in the foreground only (a full-size decode needs hundreds of MB, and re-encoding
 // drops EXIF, location included); in the background it waits. A clip goes up as recorded and keeps the
-// queue's Wi-Fi rule. A closed request takes its job and copy away, and gives up a started upload.
+// queue's Wi-Fi rule. A closed request takes its job and copy away, and gives up a started upload. One
+// pass runs at a time per store, each copy has its own name, and a job is only added when none exists.
 import { UploadJob, type MediaAsset, type OriginalRequest, type Timestamp } from '@life/contracts';
 import { leavesDevice } from '@life/story';
 import { encryptFile } from '../data/fileStore/fileStore';
@@ -46,13 +47,17 @@ async function removeIfThere(store: Store, path: string | null | undefined) {
   if (path && (await store.io.exists(path))) await store.io.remove(path);
 }
 
-/** The photo as a full-size JPEG, encrypted into the store; null when it could not be made. */
+let copies = 0;
+
+/** The photo as a full-size JPEG, encrypted into the store under its own name; null when it could not be made. */
 async function jpegCopy(
   store: Store,
+  clock: Clock,
   posters: PosterMaker,
   asset: MediaAsset,
 ): Promise<{ path: string; wrappedKey: string } | null> {
-  const path = `${store.storeDir}/${asset.id}.original.lde`;
+  copies += 1;
+  const path = `${store.storeDir}/${asset.id}.original-${Date.parse(clock.now())}-${copies}.lde`;
   let source: string | null = null;
   let jpeg: Poster | null = null;
   let kept = false;
@@ -104,13 +109,16 @@ async function queueOne(
   if (asset.cloudKey || (await uploadJobs.get(driver, asset.id, 'original'))) return 'skipped';
   if (asset.kind === 'photo') {
     if (!options.foreground || !options.posters) return 'waiting';
-    const copy = await jpegCopy(store, options.posters, asset);
+    const copy = await jpegCopy(store, clock, options.posters, asset);
     if (!copy) return 'skipped';
-    await uploadJobs.put(driver, newJob(asset.id, clock.now(), copy));
-    return 'queued';
+    if (await uploadJobs.addIfAbsent(driver, newJob(asset.id, clock.now(), copy))) return 'queued';
+    // Another pass queued it first: its copy stays and this one goes.
+    await removeIfThere(store, copy.path);
+    return 'skipped';
   }
-  await uploadJobs.put(driver, newJob(asset.id, clock.now()));
-  return 'queued';
+  return (await uploadJobs.addIfAbsent(driver, newJob(asset.id, clock.now())))
+    ? 'queued'
+    : 'skipped';
 }
 
 /** Takes away the asset's original job and copy; a started upload is given up on the server too. */
@@ -128,8 +136,26 @@ async function dropOne(store: Store, api: Api, assetId: string): Promise<boolean
   return true;
 }
 
-/** Runs after every sync and every background run: queues what open requests ask for, drops the rest. */
-export async function queueRequestedOriginals(
+const running = new WeakMap<Store, Promise<QueueOutcome>>();
+
+/**
+ * Runs after every sync and every background run: queues what open requests ask for, drops the rest.
+ * A call while a pass runs gets that pass.
+ */
+export function queueRequestedOriginals(
+  store: Store,
+  clock: Clock,
+  api: Api,
+  options: QueueOptions,
+): Promise<QueueOutcome> {
+  const current = running.get(store);
+  if (current) return current;
+  const pass = queuePass(store, clock, api, options).finally(() => running.delete(store));
+  running.set(store, pass);
+  return pass;
+}
+
+async function queuePass(
   store: Store,
   clock: Clock,
   api: Api,

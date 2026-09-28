@@ -3,7 +3,12 @@
 // at once. A standalone run opens the store the way the app does, syncs when signed in, queues what
 // open requests ask for (a photo waits for the foreground), drains the due uploads within what is left
 // of the budget after a round that worked, and closes the store again.
-import type { BackgroundReport, BackgroundRunner, CaptureServices } from '../domain/capturePorts';
+import type {
+  BackgroundReport,
+  BackgroundRunner,
+  CaptureServices,
+  Deadline,
+} from '../domain/capturePorts';
 import { openLocalDocumentary } from './bootstrap';
 import type { OpenedStore } from './captureContext';
 import { queueRequestedOriginals } from './originals';
@@ -26,18 +31,29 @@ export function setStandaloneRunner(run: BackgroundRunner): void {
   standalone = run;
 }
 
+export type RunOptions = { minDrainMs?: number; deadline?: Deadline };
+
+/** What is left of the budget: all of it, or less when a deadline comes first. */
+export function timeLeft(budgetMs: number, spentMs: number, deadline?: Deadline): number {
+  const left = budgetMs - spentMs;
+  return deadline ? Math.min(left, deadline.at - deadline.now()) : left;
+}
+
 /**
  * One background run, after any run already going: the mounted runner, else the standalone one. Null
- * when neither is set.
+ * when neither is set, or when the deadline passed while it waited. Once it holds the lock, the runner
+ * gets only what is left before the deadline.
  */
 export function runInBackground(
   budgetMs: number,
-  options?: { minDrainMs?: number },
+  options?: RunOptions,
 ): Promise<BackgroundReport | void | null> {
   const result = tail.then(() => {
     const run = mounted ?? standalone;
     if (!run) return null;
-    return options ? run(budgetMs, options) : run(budgetMs);
+    const left = timeLeft(budgetMs, 0, options?.deadline);
+    if (left <= 0) return null;
+    return options ? run(left, options) : run(left);
   });
   tail = result.catch(() => undefined);
   return result;
@@ -47,7 +63,7 @@ export async function runUploadsAlone(
   open: () => Promise<OpenedStore>,
   services: BackgroundServices,
   budgetMs: number,
-  options: { minDrainMs?: number } = {},
+  options: RunOptions = {},
 ): Promise<BackgroundReport> {
   const report: BackgroundReport = { queued: 0, uploaded: 0 };
   const { store, clock, ids, timeZone } = await open();
@@ -59,7 +75,7 @@ export async function runUploadsAlone(
     report.queued = (
       await queueRequestedOriginals(store, clock, services.api, { foreground: false })
     ).queued;
-    const left = budgetMs - (Date.parse(clock.now()) - started);
+    const left = timeLeft(budgetMs, Date.parse(clock.now()) - started, options.deadline);
     if (left <= 0 || left < (options.minDrainMs ?? 0)) return report;
     report.uploaded = (
       await drainUploads(store, clock, services.api, services.network, { budgetMs: left })

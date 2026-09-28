@@ -1,4 +1,5 @@
 import { OriginalRequest, Uuid, type Moment } from '@life/contracts';
+import { decryptFile } from '../data/fileStore/fileStore';
 import * as mediaAssets from '../data/repositories/mediaAssets';
 import * as originalRequests from '../data/repositories/originalRequests';
 import * as uploadJobs from '../data/repositories/uploadJobs';
@@ -69,6 +70,49 @@ const originalJob = (p: Awaited<ReturnType<typeof phone>>, moment: Moment) =>
   uploadJobs.get(p.store.driver, moment.mediaAssetId!, 'original');
 
 describe('queueRequestedOriginals', () => {
+  it('leaves one job whose copy decrypts when two calls overlap', async () => {
+    const p = await phone();
+    const photo = await p.capture('photo');
+    await p.request(photo);
+
+    // A second attempt that is slower and fails must not take the first one's copy with it.
+    let calls = 0;
+    const posters: PosterMaker = {
+      ...p.posters,
+      fromPhoto: async (uri, maxSide, quality) => {
+        calls += 1;
+        if (calls === 1) return p.posters.fromPhoto(uri, maxSide, quality);
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return null;
+      },
+    };
+    const options = { foreground: true, posters };
+    await Promise.all([
+      queueRequestedOriginals(p.store, p.clock, p.api, options),
+      queueRequestedOriginals(p.store, p.clock, p.api, options),
+    ]);
+
+    const jobs = (await uploadJobs.listForAsset(p.store.driver, photo.mediaAssetId!)).filter(
+      (j) => j.purpose === 'original',
+    );
+    expect(jobs).toHaveLength(1);
+    // One pass at a time: the second call shares the first.
+    expect(calls).toBe(1);
+    const job = jobs[0]!;
+    await decryptFile({
+      io: p.store.io,
+      cipher: p.store.cipher,
+      masterKey: p.store.masterKey,
+      sourcePath: job.sourcePath!,
+      destPath: 'tmp/original.jpg',
+      assetId: photo.mediaAssetId!,
+      wrappedKey: job.sourceWrappedKey!,
+    });
+    expect(p.store.io.files.get('tmp/original.jpg')).toEqual(JPEG);
+    const copies = [...p.store.io.files.keys()].filter((k) => k.includes('.original'));
+    expect(copies).toEqual([job.sourcePath]);
+  });
+
   it('enqueues a re-encoded photo and a clip in the foreground', async () => {
     const p = await phone();
     const photo = await p.capture('photo');

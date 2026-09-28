@@ -102,6 +102,74 @@ describe('the silent-push task for originals', () => {
     expect(p.uploads.calls).toEqual([]);
   });
 
+  it('counts the wait for the lock, so a push behind another run ends within 25 s of its own start', async () => {
+    const p = await phone();
+    let t = 1_000_000;
+    const now = () => t;
+    const budgets: number[] = [];
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    const open = async () => ({
+      store: p.store,
+      clock: p.clock,
+      ids: sequentialIds(),
+      timeZone: 'Europe/Berlin',
+    });
+    const account = { cookie: () => 'tok', session: async () => null } as unknown as Account;
+    const network: Network = { connection: async () => 'wifi' };
+    let first = true;
+    setStandaloneRunner(async (budgetMs, options) => {
+      budgets.push(budgetMs);
+      if (first) {
+        // The upload task holds the lock for 15 s.
+        first = false;
+        await held;
+        t += 15_000;
+        return { queued: 0, uploaded: 0 };
+      }
+      return runUploadsAlone(open, { account, api: p.api, network }, budgetMs, options);
+    });
+    const sync = p.api.sync;
+    let synced = false;
+    p.api.sync = async (request) => {
+      // Sync takes 6 s: with 10 s left at the lock, under 5 s remain for the drain.
+      if (!synced) t += 6_000;
+      synced = true;
+      return sync(request);
+    };
+    const uploadRun = taskBody('life-uploads')();
+    const pushRun = handleOriginalsPush(push({ type: 'originals' }), now);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    release();
+    await uploadRun;
+    expect(await pushRun).toBe(NEW_DATA);
+    expect(budgets[1]).toBe(ORIGINALS_BUDGET_MS - 15_000);
+    expect(p.uploads.calls).toEqual([]);
+    expect(t - 1_000_000).toBeLessThanOrEqual(ORIGINALS_BUDGET_MS);
+  });
+
+  it('skips the whole run when the lock is held past the deadline', async () => {
+    const p = await phone();
+    let t = 0;
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    const calls: number[] = [];
+    setStandaloneRunner(async (budgetMs) => {
+      calls.push(budgetMs);
+      await held;
+      t += ORIGINALS_BUDGET_MS;
+      return { queued: 0, uploaded: 0 };
+    });
+    const uploadRun = taskBody('life-uploads')();
+    const pushRun = handleOriginalsPush(push({ type: 'originals' }), () => t);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    release();
+    await uploadRun;
+    expect(await pushRun).toBe(NO_DATA);
+    expect(calls).toHaveLength(1);
+    expect(p.syncs.sent).toEqual([]);
+  });
+
   it('returns NoData for any other payload, and for a tapped notification', async () => {
     const p = await phone();
     expect(await handleOriginalsPush(push({ type: 'episode', episodeId: 'x' }))).toBe(NO_DATA);
