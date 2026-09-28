@@ -22,7 +22,7 @@ import * as documentariesRepo from '../data/repositories/documentaries';
 import * as episodesRepo from '../data/repositories/episodes';
 import * as originalRequests from '../data/repositories/originalRequests';
 import * as uploadsRepo from '../data/repositories/uploads';
-import { episodeInstanceId } from '../pipeline/EpisodePipeline';
+import { ORIGINALS_READY_EVENT, episodeInstanceId } from '../pipeline/EpisodePipeline';
 import { uploadsAllowed } from '../policy/leavesDevice';
 import type { Env } from '../shared/env';
 import { apiError } from '../shared/errors';
@@ -52,7 +52,7 @@ async function mayUpload(
 }
 
 /** The Workflow event that tells a run every original it asked for has arrived (P16, D42). */
-export const ORIGINALS_READY = 'originals-ready';
+export const ORIGINALS_READY = ORIGINALS_READY_EVENT;
 
 /**
  * Marks the asset's requests met and wakes each episode run that now has every original it asked for.

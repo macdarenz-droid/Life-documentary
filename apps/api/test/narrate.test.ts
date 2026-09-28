@@ -232,6 +232,9 @@ describe('the narrate steps', () => {
   });
 });
 
+/** The week's times, already past: nothing waits for originals or for the hour (T-017e). */
+const PAST = { renderAt: '2020-01-05T16:45:00.000Z', deliverAt: '2020-01-05T17:00:00.000Z' };
+
 /** Runs the week's pipeline with sleeps and retry delays off. */
 async function runWeek(documentaryId: Uuid) {
   const id = episodeInstanceId(documentaryId, WEEK);
@@ -241,7 +244,7 @@ async function runWeek(documentaryId: Uuid) {
       await m.disableSleeps();
       await m.disableRetryDelays();
     });
-    await startEpisodePipeline(bindings, documentaryId, WEEK);
+    await startEpisodePipeline(bindings, documentaryId, WEEK, PAST);
     await instance.waitForStatus('complete');
     return await instance.getOutput();
   } finally {
@@ -270,7 +273,7 @@ describe('EpisodePipeline narration', () => {
     const output = await runWeek(seed.documentaryId);
     expect(output).toMatchObject({ plan: 'model' });
     const episodeId = await episodeIdOf(seed.documentaryId);
-    expect(await episodes.get(seed.db, episodeId)).toMatchObject({ state: 'rendering' });
+    expect(await episodes.get(seed.db, episodeId)).toMatchObject({ state: 'ready' });
     expect((await narration.forEpisode(seed.db, episodeId, 1)).map((c) => c.index)).toEqual([
       0, 1, 2,
     ]);
@@ -303,7 +306,7 @@ describe('EpisodePipeline narration', () => {
     const episodeId = await episodeIdOf(seed.documentaryId);
     expect(fixtures.narrator.calls).toHaveLength(8);
     expect((await narration.forEpisode(seed.db, episodeId, 1)).map((c) => c.index)).toEqual([1, 2]);
-    expect(await episodes.get(seed.db, episodeId)).toMatchObject({ state: 'rendering' });
+    expect(await episodes.get(seed.db, episodeId)).toMatchObject({ state: 'ready' });
     expect(await narrateRows(episodeId)).toMatchObject([
       { units: BRIDGES[1]!.length + BRIDGES[2]!.length },
     ]);
@@ -319,7 +322,7 @@ describe('EpisodePipeline narration', () => {
     expect(fixtures.narrator.calls).toEqual([]);
     expect(await narration.forEpisode(seed.db, episodeId, 1)).toEqual([]);
     expect(await narrateRows(episodeId)).toEqual([]);
-    expect(await episodes.get(seed.db, episodeId)).toMatchObject({ state: 'rendering' });
+    expect(await episodes.get(seed.db, episodeId)).toMatchObject({ state: 'ready' });
   });
 });
 

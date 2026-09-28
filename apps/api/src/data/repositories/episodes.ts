@@ -7,7 +7,7 @@ import {
   type Timestamp,
   type Uuid,
 } from '@life/contracts';
-import { and, eq, lt, sql } from 'drizzle-orm';
+import { and, eq, lt, ne, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import { costLedger, episodePlans, episodes } from '../schema';
 
@@ -99,6 +99,33 @@ export async function setRender(
     .update(episodes)
     .set({ renderVersion, mp4Key, durationMs, updatedAt: now })
     .where(and(eq(episodes.id, id), lt(episodes.renderVersion, renderVersion)));
+}
+
+/**
+ * Publishes the episode: `ready` with its delivery time, only when it is not ready yet. Returns whether
+ * this call moved it, so a replay never delivers twice.
+ */
+export async function setDelivered(db: Db, id: Uuid, now: Timestamp): Promise<boolean> {
+  const moved = await db
+    .update(episodes)
+    .set({ state: 'ready', deliveredAt: now, updatedAt: now })
+    .where(and(eq(episodes.id, id), ne(episodes.state, 'ready')))
+    .returning({ id: episodes.id });
+  return moved.length > 0;
+}
+
+/** The documentary's episode for this week, if there is one. */
+export async function forWeek(
+  db: Db,
+  documentaryId: Uuid,
+  weekStart: LocalDate,
+): Promise<Episode | null> {
+  const [row] = await db
+    .select()
+    .from(episodes)
+    .where(and(eq(episodes.documentaryId, documentaryId), eq(episodes.weekStart, weekStart)))
+    .limit(1);
+  return row ? toEpisode(row) : null;
 }
 
 /** Removes the episode with its plans and its ledger rows (a week with nothing to show, D2). */

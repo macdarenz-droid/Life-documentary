@@ -13,6 +13,9 @@ import { WEEK, seedDocumentary } from './understandSeed';
 
 beforeEach(() => fixtures.reset());
 
+/** The week's times, already past: nothing waits for originals or for the hour (T-017e). */
+const PAST = { renderAt: '2020-01-05T16:45:00.000Z', deliverAt: '2020-01-05T17:00:00.000Z' };
+
 /** Runs the week's pipeline with sleeps and retry delays off; `extra` adds modifications. */
 async function runWeek(
   documentaryId: string,
@@ -30,7 +33,7 @@ async function runWeek(
       await m.disableRetryDelays();
       await extra(m);
     });
-    await startEpisodePipeline(bindings, documentaryId as never, WEEK);
+    await startEpisodePipeline(bindings, documentaryId as never, WEEK, PAST);
     await instance.waitForStatus('complete');
     return await instance.getOutput();
   } finally {
@@ -52,9 +55,15 @@ describe('EpisodePipeline', () => {
     const seed = await seedDocumentary();
     await seed.fullWeek();
     const output = await runWeek(seed.documentaryId);
-    expect(output).toMatchObject({ transcribed: 2, captioned: 3, costCents: 1 });
+    expect(output).toMatchObject({ transcribed: 2, captioned: 3 });
     // The fixture planner has no answer set, so it throws and the week gets the recap.
-    expect(await episodeOf(seed.documentaryId)).toMatchObject({ state: 'rendering', costCents: 1 });
+    const episode = await episodeOf(seed.documentaryId);
+    // The cost now includes the render's ledger row.
+    const ledger = await costLedger.forEpisode(database(bindings.DB), episode!.id);
+    expect(ledger.map((r) => r.step)).toContain('render');
+    const cents = Math.ceil(ledger.reduce((sum, r) => sum + r.microUsd, 0) / 10_000);
+    expect(episode).toMatchObject({ state: 'ready', costCents: cents });
+    expect(output).toMatchObject({ costCents: cents });
     expect(await seed.derivedRows()).toHaveLength(5);
     expect(await seed.workingCopies()).toEqual([]);
   });
@@ -73,7 +82,7 @@ describe('EpisodePipeline', () => {
     expect(output).toMatchObject({ transcribed: 2, captioned: 0 });
     const rows = await seed.derivedRows();
     expect(rows.map((r) => r.provider)).toEqual(['workersAi', 'workersAi']);
-    expect(await episodeOf(seed.documentaryId)).toMatchObject({ state: 'rendering' });
+    expect(await episodeOf(seed.documentaryId)).toMatchObject({ state: 'ready' });
   });
 
   it('leaves an answer whose transcription always fails without a transcript and does the rest', async () => {
@@ -102,7 +111,7 @@ describe('EpisodePipeline', () => {
     expect(output).toMatchObject({ transcribed: 2, captioned: 0 });
     expect((await seed.derivedRows()).map((r) => r.provider)).toEqual(['workersAi', 'workersAi']);
     expect(fixtures.captioner.calls).toEqual(['submit:failed']);
-    expect(await episodeOf(seed.documentaryId)).toMatchObject({ state: 'rendering' });
+    expect(await episodeOf(seed.documentaryId)).toMatchObject({ state: 'ready' });
   });
 
   it('makes one instance when the week is started twice', async () => {
@@ -115,8 +124,8 @@ describe('EpisodePipeline', () => {
       await instance.modify(async (m) => {
         await m.disableSleeps();
       });
-      const first = await startEpisodePipeline(bindings, seed.documentaryId, WEEK);
-      const second = await startEpisodePipeline(bindings, seed.documentaryId, WEEK);
+      const first = await startEpisodePipeline(bindings, seed.documentaryId, WEEK, PAST);
+      const second = await startEpisodePipeline(bindings, seed.documentaryId, WEEK, PAST);
       expect(first.id).toBe(id);
       expect(second.id).toBe(id);
       await instance.waitForStatus('complete');
@@ -177,7 +186,7 @@ describe('EpisodePipeline planning', () => {
     expect(episode).toMatchObject({
       planVersion: 1,
       summary: 'They rode the tram and took a photo.',
-      state: 'rendering',
+      state: 'ready',
     });
     expect(await plans.current(database(bindings.DB), episode!.id)).toMatchObject({
       createdBy: 'model',
