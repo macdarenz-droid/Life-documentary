@@ -17,3 +17,4 @@ export * from './capture';
 export * from './footage';
 export * from './plan';
 export * from './narration';
+export * from './editOps';

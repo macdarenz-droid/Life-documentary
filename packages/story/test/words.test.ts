@@ -3,6 +3,7 @@ import {
   bannedWords,
   questionTemplates,
   recapWords,
+  editWords,
   episodeWords,
   voiceBannedCharacters,
   voiceBannedPhrases,
@@ -125,6 +126,34 @@ function episodeSample(): [string, string][] {
   ];
 }
 
+function editSample(): [string, string][] {
+  const reasons = [
+    'noScene',
+    'noShot',
+    'noLine',
+    'notAnAnswer',
+    'alreadyIn',
+    'notInCut',
+    'unchanged',
+    'sceneFull',
+    'lastShot',
+    'tooShort',
+    'tooLong',
+    'narratorTooLong',
+    'noNarrator',
+    'hasNumbers',
+    'doesNotFit',
+  ] as const;
+  return [
+    ...allStrings(editWords, 'editWords'),
+    ['editWords.shotLabel photo', editWords.shotLabel('photo', '2026-10-14')],
+    ['editWords.shotLabel answer', editWords.shotLabel('answer', '2026-10-14')],
+    ['editWords.shotLabel clip', editWords.shotLabel('clip', '2026-10-14')],
+    ['editWords.limit', editWords.limit(10)],
+    ...reasons.map((r): [string, string] => [`editWords.refusal ${r}`, editWords.refusal(r)]),
+  ];
+}
+
 function hasPhrase(text: string, phrase: string): boolean {
   if (phrase.includes("'")) return text.toLowerCase().includes(phrase);
   return new RegExp(`\\b${escape(phrase)}\\b`, 'i').test(text);
@@ -136,6 +165,7 @@ describe('the voice (DESIGN §8)', () => {
     ...questionTemplates.map((q): [string, string] => [`question ${q.id}`, q.text]),
     ...recapSample(),
     ...episodeSample(),
+    ...editSample(),
   ];
 
   it('calls every function in words with sample arguments', () => {
