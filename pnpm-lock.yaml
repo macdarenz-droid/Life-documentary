@@ -287,6 +287,9 @@ importers:
       '@remotion/bundler':
         specifier: 4.0.529
         version: 4.0.529(postcss@8.5.28)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@remotion/captions':
+        specifier: 4.0.529
+        version: 4.0.529
       '@remotion/cli':
         specifier: 4.0.529
         version: 4.0.529(postcss@8.5.28)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
@@ -9216,7 +9219,9 @@ snapshots:
       metro-runtime: 0.84.6
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 

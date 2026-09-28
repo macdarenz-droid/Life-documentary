@@ -100,7 +100,21 @@ function middleOf(m: RenderManifestV2, match: (s: Segment) => boolean): number {
   return (s.fromMs + s.toMs) / 2;
 }
 
-/** Stills of the cold open, a bridge slot, a voice answer, a lower third and the closing. */
+/** The middle of the second word of the first captioned answer inside a shot. */
+function captionMs(m: RenderManifestV2): number {
+  const shots = m.segments.filter((s) => s.kind === 'shot');
+  const unit = m.speech.find(
+    (u) =>
+      u.kind === 'person' &&
+      u.captions &&
+      shots.some((s) => u.fromMs >= s.fromMs && u.toMs <= s.toMs),
+  );
+  const word = unit?.words[1];
+  if (!word) return fail('The fixture manifest has no captioned answer');
+  return (word.fromMs + word.toMs) / 2;
+}
+
+/** Stills of the cold open, a bridge slot, a voice answer, a lower third, the closing and a caption. */
 function stillsOf(m: RenderManifestV2): [string, number][] {
   const third = m.lowerThirds[0];
   if (!third) return fail('The fixture manifest has no lower third');
@@ -110,6 +124,7 @@ function stillsOf(m: RenderManifestV2): [string, number][] {
     ['voice-answer', middleOf(m, (s) => s.kind === 'shot' && s.media.type === 'voice')],
     ['lower-third', third.atMs + third.durationMs / 2],
     ['closing', middleOf(m, (s) => s.kind === 'closing')],
+    ['captions', captionMs(m)],
   ];
 }
 
