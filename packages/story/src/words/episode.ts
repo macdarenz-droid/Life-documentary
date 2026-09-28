@@ -1,5 +1,6 @@
 // Words on an episode's cards (P15, D41): the title card's label and dates, the closing card and the tease.
-// Delivery (P16, D42): the push title, where this week's episode stands, and the notification channel.
+// Delivery (P16, D42): the push title, where this week's episode stands, the notification channel, and
+// the Episodes list and player.
 import { dayAndMonth } from './recap';
 
 /** "6pm", "9am", "noon" or "midnight" for an hour from 0 to 23. */
@@ -30,4 +31,11 @@ export const episodeWords = {
   lateLabel: 'Running late',
   failedLabel: "Couldn't be made",
   channel: 'Episodes',
+  title: 'Episodes',
+  empty: 'Your first episode comes at the end of your first week.',
+  back: 'Back',
+  close: 'Close',
+  /** The player's accessible label. */
+  playing: (title: string) => `Playing ${title}`,
+  openError: "This episode couldn't be opened. Try again when you're online.",
 };

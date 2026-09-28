@@ -107,6 +107,17 @@ export type VideoPlaybackProps = {
   style?: unknown;
 };
 
+/** Where the episode player reads from: a local plain file, or the route with the session header. */
+export type EpisodeSource = { uri: string; headers?: Record<string, string> };
+
+/** The full-screen episode player (P16): native controls, no picture in picture. */
+export type EpisodePlaybackProps = {
+  source: EpisodeSource;
+  /** The accessible label. */
+  label: string;
+  style?: unknown;
+};
+
 /** An audio player with no picture: plays `uri` while `playing` and reports its position. */
 export type AudioPlaybackProps = {
   uri: string;
@@ -211,6 +222,16 @@ export type DeviceInfo = { platform: 'ios' | 'android'; appVersion: string };
 export type AppleButtonProps = { onPress: () => void };
 
 /** The services a capture screen uses, except the video recorder that comes from a mounted camera view. */
+/**
+ * An episode's video from the service (P16, D42): `GET /episodes/:id/video` with the session cookie.
+ * `download` writes `<dest>.part` and moves it to `dest` only when it worked; on failure it deletes the
+ * part and throws. `stream` is null when signed out.
+ */
+export interface EpisodeFiles {
+  download(episodeId: string, dest: string): Promise<void>;
+  stream(episodeId: string): EpisodeSource | null;
+}
+
 export type CaptureServices = {
   voice: VoiceRecorder;
   picker: LibraryPicker;
@@ -228,4 +249,6 @@ export type CaptureServices = {
   background?: BackgroundUploads;
   /** Absent where there is no push (tests, the Design Lab, the web preview). */
   pushTokens?: PushTokens;
+  /** Absent where episodes cannot be fetched (the Design Lab, the web preview). */
+  episodes?: EpisodeFiles;
 };

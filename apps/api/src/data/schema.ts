@@ -298,6 +298,10 @@ export const episodes = sqliteTable(
     summary: text('summary'),
     deliveredAt: text('delivered_at'),
     updatedAt: text('updated_at').notNull(),
+    /** Where a re-cut stands (P17, D43): `working`, `waiting` or `failed`. */
+    recutState: text('recut_state', { enum: ['working', 'waiting', 'failed'] }),
+    /** The id of the re-cut run that holds the claim, while one does. */
+    recutRun: text('recut_run'),
   },
   (t) => [uniqueIndex('episodes_documentary_week_idx').on(t.documentaryId, t.weekStart)],
 );
@@ -456,4 +460,41 @@ export const episodeRuns = sqliteTable(
     originalsReceived: integer('originals_received'),
   },
   (t) => [primaryKey({ columns: [t.documentaryId, t.weekStart] })],
+);
+
+// The characters each re-cut round spoke (P17, D43): one row per episode and plan version, so the
+// `renarrate` ledger row is their sum and a replayed round never counts twice. They go with their episode.
+export const recutNarration = sqliteTable(
+  'recut_narration',
+  {
+    episodeId: text('episode_id')
+      .notNull()
+      .references(() => episodes.id, { onDelete: 'cascade' }),
+    planVersion: integer('plan_version').notNull(),
+    characters: integer('characters').notNull(),
+  },
+  (t) => [uniqueIndex('recut_narration_episode_version_idx').on(t.episodeId, t.planVersion)],
+);
+
+// The changes a person applied to an episode (P17, D43): one append-only row per applied edit, numbered by
+// `seq` within the episode, with the plan version it was made on and the one it made, the change as JSON
+// and the documentary's local day it counts against. They go with their episode.
+export const episodeEdits = sqliteTable(
+  'episode_edits',
+  {
+    id: text('id').primaryKey(),
+    episodeId: text('episode_id')
+      .notNull()
+      .references(() => episodes.id, { onDelete: 'cascade' }),
+    seq: integer('seq').notNull(),
+    appliedToVersion: integer('applied_to_version').notNull(),
+    resultVersion: integer('result_version').notNull(),
+    change: text('change').notNull(),
+    localDay: text('local_day').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [
+    uniqueIndex('episode_edits_episode_seq_idx').on(t.episodeId, t.seq),
+    index('episode_edits_episode_day_idx').on(t.episodeId, t.localDay),
+  ],
 );

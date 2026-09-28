@@ -3,6 +3,7 @@ export * from './plan';
 export * from './brief';
 export * from './derived';
 export * from './costLedger';
+export * from './edit';
 export * from './editOp';
 export * from './plannerOutput';
 export * from './storedPlan';

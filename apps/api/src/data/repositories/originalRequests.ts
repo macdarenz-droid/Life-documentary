@@ -1,11 +1,12 @@
 // Requests for the originals an episode's plan uses (P16, D42): one row per episode and asset, pulled by
 // the phone. Each write adds a change-log row. A met row stays met; closing ends every open one and
-// aborts the multipart original uploads still open for those assets.
+// aborts the multipart original uploads still open for those assets. A re-cut (P17, D43) reopens rows
+// whatever their state.
 import { OriginalRequest, type Timestamp, type Uuid } from '@life/contracts';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { BatchItem } from 'drizzle-orm/batch';
 import type { Db } from '../db';
-import { originalRequests } from '../schema';
+import { changeLog, episodes, originalRequests } from '../schema';
 import * as changes from './changes';
 import * as uploads from './uploads';
 
@@ -165,4 +166,83 @@ export async function closeAll(
   }
   await batch(db, statements);
   return opened.map((r) => ({ ...r, state: 'closed', updatedAt: now }));
+}
+
+/** The change-log rows of the episode's requests that match `where`, written by the batch itself. */
+function recordWhere(db: Db, at: Timestamp, where: ReturnType<typeof and>): BatchItem<'sqlite'> {
+  return db.insert(changeLog).select(
+    db
+      .select({
+        // NULL takes the next `seq`.
+        seq: sql<number>`NULL`.as('seq'),
+        documentaryId: originalRequests.documentaryId,
+        entity: sql<'originalRequest'>`'originalRequest'`.as('entity'),
+        entityId: originalRequests.id,
+        updatedAt: sql<string>`${at}`.as('updated_at'),
+      })
+      .from(originalRequests)
+      .where(where),
+  );
+}
+
+/** Batch items that set a request open for each asset, whatever its state, with its change-log row. */
+export function reopenStatements(
+  db: Db,
+  episodeId: Uuid,
+  rows: RequestedAsset[],
+  now: Timestamp,
+): BatchItem<'sqlite'>[] {
+  return rows.flatMap((a) => [
+    db
+      .insert(originalRequests)
+      .values({
+        id: crypto.randomUUID(),
+        episodeId,
+        ...a,
+        state: 'open',
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [originalRequests.episodeId, originalRequests.assetId],
+        set: { state: 'open', updatedAt: now },
+      }),
+    recordWhere(
+      db,
+      now,
+      and(eq(originalRequests.episodeId, episodeId), eq(originalRequests.assetId, a.assetId)),
+    ),
+  ]);
+}
+
+/** Sets a request open for each asset, whatever its state (P17). */
+export async function reopen(
+  db: Db,
+  episodeId: Uuid,
+  rows: RequestedAsset[],
+  now: Timestamp,
+): Promise<void> {
+  await batch(db, reopenStatements(db, episodeId, rows, now));
+}
+
+/**
+ * Batch items that close the episode's open requests, with their change-log rows, only while the re-cut
+ * run `runId` holds the episode's claim.
+ */
+export function closeAllWhileRun(
+  db: Db,
+  episodeId: Uuid,
+  runId: string,
+  now: Timestamp,
+): BatchItem<'sqlite'>[] {
+  const held = sql`EXISTS (SELECT 1 FROM ${episodes} WHERE ${episodes.id} = ${episodeId} AND ${episodes.recutRun} = ${runId})`;
+  const where = and(
+    eq(originalRequests.episodeId, episodeId),
+    eq(originalRequests.state, 'open'),
+    held,
+  );
+  return [
+    recordWhere(db, now, where),
+    db.update(originalRequests).set({ state: 'closed', updatedAt: now }).where(where),
+  ];
 }

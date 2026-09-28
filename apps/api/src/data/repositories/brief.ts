@@ -1,9 +1,10 @@
 // What the planner's brief is built from (P13, D39): the week's moments that may leave the phone (rule 8),
 // their assets' durations and derived text, the week's questions, the documentary's storylines and cast,
-// and the summaries of the last three earlier episodes whose plan is the model's (recaps carry no story).
+// and the summaries of the last three earlier episodes whose plan came from the model (recaps carry no
+// story). An edit or a revert keeps the origin of the plan it came from (P17, D43).
 import type { CastMember, Episode, PulledChange, Question, Storyline } from '@life/contracts';
 import { addDays, leavesDevice, type WeekBriefInput } from '@life/story';
-import { and, between, desc, eq, isNull, lt } from 'drizzle-orm';
+import { and, between, desc, eq, exists, isNull, lt, notExists, sql } from 'drizzle-orm';
 import type { Db } from '../db';
 import { castMembers, episodePlans, episodes, questions, storylines } from '../schema';
 import * as derived from './derived';
@@ -30,20 +31,25 @@ async function stored(
   });
 }
 
-/** The summaries of the last three earlier episodes whose plan in use is a model plan, oldest first. */
+/**
+ * The summaries of the last three earlier episodes whose plan versions include a model plan and no recap,
+ * oldest first.
+ */
 export async function previousSummaries(db: Db, episode: Episode): Promise<string[]> {
+  const madeBy = (createdBy: 'model' | 'recap') =>
+    db
+      .select({ one: sql`1` })
+      .from(episodePlans)
+      .where(and(eq(episodePlans.episodeId, episodes.id), eq(episodePlans.createdBy, createdBy)));
   const found = await db
     .select({ summary: episodes.summary })
     .from(episodes)
-    .innerJoin(
-      episodePlans,
-      and(eq(episodePlans.episodeId, episodes.id), eq(episodePlans.version, episodes.planVersion)),
-    )
     .where(
       and(
         eq(episodes.documentaryId, episode.documentaryId),
         lt(episodes.number, episode.number),
-        eq(episodePlans.createdBy, 'model'),
+        exists(madeBy('model')),
+        notExists(madeBy('recap')),
       ),
     )
     .orderBy(desc(episodes.number))

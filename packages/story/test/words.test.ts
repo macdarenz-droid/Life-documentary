@@ -3,6 +3,7 @@ import {
   bannedWords,
   questionTemplates,
   recapWords,
+  editWords,
   episodeWords,
   voiceBannedCharacters,
   voiceBannedPhrases,
@@ -116,6 +117,40 @@ function episodeSample(): [string, string][] {
     ['episodeWords.lateLabel', episodeWords.lateLabel],
     ['episodeWords.failedLabel', episodeWords.failedLabel],
     ['episodeWords.channel', episodeWords.channel],
+    ['episodeWords.title', episodeWords.title],
+    ['episodeWords.empty', episodeWords.empty],
+    ['episodeWords.back', episodeWords.back],
+    ['episodeWords.close', episodeWords.close],
+    ['episodeWords.playing', episodeWords.playing('Rain on the tram')],
+    ['episodeWords.openError', episodeWords.openError],
+  ];
+}
+
+function editSample(): [string, string][] {
+  const reasons = [
+    'noScene',
+    'noShot',
+    'noLine',
+    'notAnAnswer',
+    'alreadyIn',
+    'notInCut',
+    'unchanged',
+    'sceneFull',
+    'lastShot',
+    'tooShort',
+    'tooLong',
+    'narratorTooLong',
+    'noNarrator',
+    'hasNumbers',
+    'doesNotFit',
+  ] as const;
+  return [
+    ...allStrings(editWords, 'editWords'),
+    ['editWords.shotLabel photo', editWords.shotLabel('photo', '2026-10-14')],
+    ['editWords.shotLabel answer', editWords.shotLabel('answer', '2026-10-14')],
+    ['editWords.shotLabel clip', editWords.shotLabel('clip', '2026-10-14')],
+    ['editWords.limit', editWords.limit(10)],
+    ...reasons.map((r): [string, string] => [`editWords.refusal ${r}`, editWords.refusal(r)]),
   ];
 }
 
@@ -130,6 +165,7 @@ describe('the voice (DESIGN §8)', () => {
     ...questionTemplates.map((q): [string, string] => [`question ${q.id}`, q.text]),
     ...recapSample(),
     ...episodeSample(),
+    ...editSample(),
   ];
 
   it('calls every function in words with sample arguments', () => {

@@ -106,11 +106,34 @@ describe('leavesDevice', () => {
     ).toEqual(['keyframe', 'original']);
     expect(
       leavesDevice({ ...moment('answer', false), assetKind: 'audio' }, requested).uploads,
-    ).toEqual(['answer']);
+    ).toEqual(['answer', 'original']);
     expect(leavesDevice({ ...moment('photo', true), assetKind: 'photo' }, requested)).toEqual({
       row: false,
       uploads: [],
     });
+  });
+
+  it("lets an open request add a voice or video answer's original, never without one or when local-only", () => {
+    for (const cloudBackup of [false, true]) {
+      const asked = { cloudBackup, requested: true };
+      const unasked = { cloudBackup, requested: false };
+      expect(
+        leavesDevice({ ...moment('answer', false), assetKind: 'audio' }, asked).uploads,
+      ).toEqual(['answer', 'original']);
+      expect(
+        leavesDevice({ ...moment('answer', false), assetKind: 'video' }, asked).uploads,
+      ).toEqual(['answer', 'keyframe', 'original']);
+      expect(
+        leavesDevice({ ...moment('answer', false), assetKind: 'audio' }, unasked).uploads,
+      ).toEqual(['answer']);
+      expect(
+        leavesDevice({ ...moment('answer', false), assetKind: 'video' }, unasked).uploads,
+      ).toEqual(['answer', 'keyframe']);
+      expect(leavesDevice({ ...moment('answer', true), assetKind: 'video' }, asked)).toEqual({
+        row: false,
+        uploads: [],
+      });
+    }
   });
 
   it('sends no media for a moment whose asset kind is not known', () => {

@@ -55,8 +55,9 @@ async function mayUpload(
 export const ORIGINALS_READY = ORIGINALS_READY_EVENT;
 
 /**
- * Marks the asset's requests met and wakes each episode run that now has every original it asked for.
- * A run that no longer exists is left alone.
+ * Marks the asset's requests met and wakes each episode run that now has every original it asked for:
+ * the weekly run and, while one holds the claim, the re-cut run (P17). Each is told separately and any
+ * error is ignored: a run that no longer exists or has ended is left alone, and the cron recovers a claim.
  */
 async function originalArrived(env: Env, db: Db, assetId: Uuid, now: string): Promise<void> {
   for (const episodeId of await originalRequests.meet(db, assetId, now)) {
@@ -69,6 +70,15 @@ async function originalArrived(env: Env, db: Db, assetId: Uuid, now: string): Pr
       await instance.sendEvent({ type: ORIGINALS_READY, payload: { episodeId } });
     } catch (error) {
       console.error('The episode run was not told its originals arrived.', error);
+    }
+    try {
+      const run = (await episodesRepo.recutOf(db, episodeId))?.run;
+      if (run) {
+        const instance = await env.RECUT_PIPELINE.get(run);
+        await instance.sendEvent({ type: ORIGINALS_READY, payload: { episodeId } });
+      }
+    } catch (error) {
+      console.error('The re-cut run was not told its originals arrived.', error);
     }
   }
 }

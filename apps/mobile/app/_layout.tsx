@@ -13,7 +13,7 @@ import { useEffect, useMemo, type ReactNode } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { CaptureRoot } from '../src/application';
-import { account, api, device, openDeviceStore } from '../src/composition/device';
+import { account, api, device, episodeFiles, openDeviceStore } from '../src/composition/device';
 import type { CaptureServices } from '../src/domain/capturePorts';
 import { useExpoVoiceRecorder } from '../src/services/audio/expoVoiceRecorder';
 import { expoHaptics } from '../src/services/haptics/expoHaptics';
@@ -55,6 +55,7 @@ export function CaptureProvider({ children }: { children: ReactNode }) {
       network: expoNetwork,
       background: expoBackgroundUploads,
       pushTokens: expoPushTokens,
+      episodes: episodeFiles,
     }),
     [voice],
   );

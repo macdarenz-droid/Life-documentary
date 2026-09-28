@@ -11,6 +11,7 @@ import {
   shouldOfferReminder,
 } from '../../application/reminders';
 import { useOptionalCapture, type CaptureContextValue } from '../../application/captureContext';
+import { thisWeek, weekLine } from '../../application/episodes';
 import { oneYearAgo } from '../../application/footage';
 import { openPoster } from '../../application/playback';
 import { ensurePoster } from '../../application/posters';
@@ -53,6 +54,9 @@ export function todayScreenProps(ctx: CaptureContextValue): Omit<TodayScreenProp
         return uri ? { uri } : null;
       },
     },
+    episodeLine: {
+      load: async () => weekLine(await thisWeek(store, clock, documentary)),
+    },
     tags: {
       load: async () => ({
         storylines: await listOpenStorylines(store, documentary),
@@ -78,6 +82,7 @@ function ConnectedToday({ ctx }: { ctx: CaptureContextValue }) {
       {...props}
       reloadKey={reloadKey}
       onNavigate={(to) => router.push(`/${to}`)}
+      onOpenEpisodes={() => router.push('/episodes')}
       onOpenMoments={([id, ...rest]) =>
         router.push({ pathname: '/moment/[id]', params: { id: id!, next: rest.join(',') } })
       }
