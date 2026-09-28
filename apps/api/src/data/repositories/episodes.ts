@@ -134,6 +134,17 @@ export async function setRender(
   ]);
 }
 
+/** Sets the episode `failed` unless it is already `ready`: a published episode is never taken back. */
+export async function setFailedUnlessReady(db: Db, id: Uuid, now: Timestamp): Promise<void> {
+  await db.batch([
+    db
+      .update(episodes)
+      .set({ state: 'failed', updatedAt: now })
+      .where(and(eq(episodes.id, id), ne(episodes.state, 'ready'))),
+    recordChange(db, id, now),
+  ]);
+}
+
 /**
  * Publishes the episode: `ready` with its delivery time, only when it is not ready yet. Returns whether
  * this call moved it, so a replay never delivers twice.

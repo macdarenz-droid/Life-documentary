@@ -7,7 +7,7 @@ import {
 } from 'cloudflare:test';
 import { env } from 'cloudflare:workers';
 import { PlannerOutput, Uuid } from '@life/contracts';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import worker from '../src';
 import { mediaKey } from '../src/data/mediaKeys';
 import * as deletionRequests from '../src/data/repositories/deletionRequests';
@@ -227,6 +227,74 @@ describe('the weekly run', () => {
     expect(await episodeOf(seed)).toMatchObject({ state: 'failed' });
     expect(visible()).toEqual([]);
     expect((await runOf(seed))?.outcome).toBe('failed');
+  });
+
+  it('logs one line with the episode id and no content when both renders fail', async () => {
+    const seed = await seedDocumentary();
+    const week = await seed.fullWeek();
+    fixtures.planner.answers.push(modelAnswer(week));
+    fixtures.renderer.outcomes.push(
+      { state: 'failed', reason: 'render failed' },
+      { state: 'failed', reason: 'render timed out' },
+    );
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      expect(await runWeek(seed)).toMatchObject({ outcome: 'failed' });
+      const episode = (await episodeOf(seed))!;
+      const lines = logged.mock.calls.filter((call) => JSON.stringify(call).includes(episode.id));
+      expect(lines).toEqual([
+        ['The week has no episode.', { episodeId: episode.id, render: 'failed' }],
+      ]);
+    } finally {
+      logged.mockRestore();
+    }
+  });
+
+  it('keeps a published episode ready with one push when run-record fails', async () => {
+    const seed = await seedDocumentary();
+    const week = await seed.fullWeek();
+    await withPhone(seed);
+    fixtures.planner.answers.push(modelAnswer(week));
+    const output = await runWeek(seed, PAST, async (m) => {
+      await m.mockStepError({ name: 'run-record' }, new Error('D1 is busy'));
+    });
+    expect(output).toMatchObject({ outcome: 'model' });
+    expect(await episodeOf(seed)).toMatchObject({ state: 'ready' });
+    expect(visible()).toHaveLength(1);
+  });
+
+  it('leaves a failed run row when the first step fails', async () => {
+    const seed = await seedDocumentary();
+    await seed.add('note');
+    const output = await runWeek(seed, PAST, async (m) => {
+      await m.mockStepError({ name: 'episode' }, new Error('D1 is busy'));
+    });
+    expect(output).toMatchObject({ outcome: 'failed' });
+    expect(await runOf(seed)).toMatchObject({
+      outcome: 'failed',
+      episodeId: null,
+      dueAt: PAST.deliverAt,
+    });
+  });
+
+  it('records the delivery time when publish throws once after the episode moved', async () => {
+    const seed = await seedDocumentary();
+    const week = await seed.fullWeek();
+    await withPhone(seed);
+    for (const seeded of [week.photo, week.clip]) {
+      await bindings.MEDIA.put(
+        mediaKey(seed.userId, seed.documentaryId, seeded.assetId!, 'original'),
+        new Uint8Array(100).fill(1),
+        { httpMetadata: { contentType: seeded === week.photo ? 'image/jpeg' : 'video/mp4' } },
+      );
+    }
+    fixtures.planner.answers.push(modelAnswer(week));
+    // The push throws after setDelivered moved the episode; the retried publish moves nothing.
+    fixtures.pusher.failures.push(new Error('Expo did not answer'));
+    expect(await runWeek(seed)).toMatchObject({ outcome: 'model' });
+    const episode = (await episodeOf(seed))!;
+    expect(episode.deliveredAt).toBeDefined();
+    expect((await runOf(seed))?.deliveredAt).toBe(episode.deliveredAt);
   });
 
   it('ends failed with no push when there is nothing to render, twice', async () => {

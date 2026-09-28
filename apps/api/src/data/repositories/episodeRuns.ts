@@ -27,6 +27,18 @@ export async function start(
     });
 }
 
+/** Opens the week's row when it has none, as a run that failed before its first step ended does. */
+export async function ensure(
+  db: Db,
+  key: RunKey,
+  input: { episodeId: Uuid | null; startedAt: Timestamp; dueAt: Timestamp },
+): Promise<void> {
+  await db
+    .insert(episodeRuns)
+    .values({ ...key, ...input })
+    .onConflictDoNothing({ target: [episodeRuns.documentaryId, episodeRuns.weekStart] });
+}
+
 /** Writes when a stage ended. */
 export async function mark(
   db: Db,

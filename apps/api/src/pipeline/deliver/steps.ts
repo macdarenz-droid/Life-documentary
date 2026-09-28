@@ -42,12 +42,12 @@ export async function storeRecap(
 /**
  * Sets the episode `ready` with its delivery time and, only when this call moved it, sends one visible
  * push: our fixed title "Episode n is ready" and the episode id, nothing else. Returns whether it moved.
+ * The run row's delivery time is copied by `recordRun`, so a throw here after the move loses nothing.
  */
 export async function publish(ctx: DeliverContext, episodeId: Uuid, key: RunKey): Promise<boolean> {
   const now = ctx.clock.now();
   const moved = await episodes.setDelivered(ctx.db, episodeId, now);
   if (moved) {
-    await episodeRuns.mark(ctx.db, key, { deliveredAt: now });
     const episode = await episodes.get(ctx.db, episodeId);
     const documentary = await documentaries.get(ctx.db, key.documentaryId);
     if (episode && documentary) {
@@ -61,17 +61,20 @@ export async function publish(ctx: DeliverContext, episodeId: Uuid, key: RunKey)
   return moved;
 }
 
-/** The episode could not be made: `failed`, no push. */
+/** The episode could not be made: `failed`, no push. An episode already `ready` stays ready. */
 export async function markFailed(
   ctx: Pick<DeliverContext, 'db' | 'clock'>,
   episodeId: Uuid,
 ): Promise<void> {
   if (await episodes.get(ctx.db, episodeId)) {
-    await episodes.setState(ctx.db, episodeId, 'failed', ctx.clock.now());
+    await episodes.setFailedUnlessReady(ctx.db, episodeId, ctx.clock.now());
   }
 }
 
-/** Records how the run ended, with the originals asked for and received. */
+/**
+ * Records how the run ended, with the originals asked for and received, and copies the episode's stored
+ * delivery time into the row (safe to repeat).
+ */
 export async function recordRun(
   ctx: Pick<DeliverContext, 'db'>,
   key: RunKey,
@@ -84,6 +87,9 @@ export async function recordRun(
           (r) => r.state === 'met',
         ).length;
   await episodeRuns.finish(ctx.db, key, { ...input, originalsReceived: received });
+  const delivered =
+    input.episodeId === null ? null : (await episodes.get(ctx.db, input.episodeId))?.deliveredAt;
+  if (delivered) await episodeRuns.mark(ctx.db, key, { deliveredAt: delivered });
   return input.outcome;
 }
 

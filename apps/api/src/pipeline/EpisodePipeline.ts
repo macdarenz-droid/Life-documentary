@@ -79,6 +79,9 @@ const NO_PLAN_USAGE: PlanUsage = {
   cacheReadTokens: 0,
 };
 
+/** How one render ended. */
+type RenderEnd = 'done' | 'nothing' | 'failed' | 'gone' | 'round-limit' | 'start-failed';
+
 export class EpisodePipeline extends WorkflowEntrypoint<Env, EpisodePipelineParams> {
   override async run(
     event: Readonly<WorkflowEvent<EpisodePipelineParams>>,
@@ -115,6 +118,12 @@ export class EpisodePipeline extends WorkflowEntrypoint<Env, EpisodePipelinePara
       const failedId = episodeId;
       await step.do('run-failed', async () => {
         if (failedId) await markFailed(ctx, failedId);
+        // A run that failed in its first step has no row yet; later crons then skip the week.
+        await episodeRuns.ensure(ctx.db, key, {
+          episodeId: failedId,
+          startedAt: ctx.clock.now(),
+          dueAt: params.deliverAt,
+        });
         return recordRun(ctx, key, { outcome: 'failed', episodeId: failedId, originalsAsked: 0 });
       });
       return {
@@ -236,6 +245,8 @@ export class EpisodePipeline extends WorkflowEntrypoint<Env, EpisodePipelinePara
     let asked = 0;
     let costCents = 0;
     let rendered = false;
+    // How the last render ended, for the log when the week has no episode.
+    let lastRender: RenderEnd = 'nothing';
 
     try {
       // Step 2: plan. A model plan when it passes the checks, else the recap (D20); a week with
@@ -322,7 +333,8 @@ export class EpisodePipeline extends WorkflowEntrypoint<Env, EpisodePipelinePara
         }
       }
       await this.closeRequests(step, 'close-requests', episode.id);
-      rendered = await this.render(step, episode.id, '');
+      lastRender = await this.render(step, episode.id, '');
+      rendered = lastRender === 'done';
     } catch (error) {
       console.error('The episode could not be made from its plan; it gets the recap.', error);
     }
@@ -337,13 +349,21 @@ export class EpisodePipeline extends WorkflowEntrypoint<Env, EpisodePipelinePara
         });
         if (recap === 'recap') {
           outcome = 'recap';
-          rendered = await this.render(step, episode.id, 'recap-');
+          lastRender = await this.render(step, episode.id, 'recap-');
+          rendered = lastRender === 'done';
+        } else {
+          lastRender = 'nothing';
         }
       } catch (error) {
         console.error('The recap could not be made either.', error);
       }
     }
     if (!rendered) {
+      // Ids and the render's last outcome only, no content.
+      console.error('The week has no episode.', {
+        episodeId: episode.id,
+        render: lastRender,
+      });
       const failedAsked = asked;
       await step.do('run-failed', async () => {
         await markFailed(deliverCtx, episode.id);
@@ -364,17 +384,26 @@ export class EpisodePipeline extends WorkflowEntrypoint<Env, EpisodePipelinePara
     await step.do('publish', () => publish(deliverCtx, episode.id, key));
     const finalOutcome = outcome;
     const finalAsked = asked;
-    await step.do('run-record', () =>
-      recordRun(deliverCtx, key, {
-        outcome: finalOutcome,
+    // The episode is out: bookkeeping that fails now is logged, never turns the week into `failed`.
+    try {
+      await step.do('run-record', () =>
+        recordRun(deliverCtx, key, {
+          outcome: finalOutcome,
+          episodeId: episode.id,
+          originalsAsked: finalAsked,
+        }),
+      );
+      const known = costCents;
+      costCents = await step.do('cost-check', async () => {
+        const stored = await episodes.get(ctx.db, episode.id);
+        return stored?.costCents ?? known;
+      });
+    } catch (error) {
+      console.error('The published week was not fully recorded.', {
         episodeId: episode.id,
-        originalsAsked: finalAsked,
-      }),
-    );
-    costCents = await step.do('cost-check', async () => {
-      const stored = await episodes.get(ctx.db, episode.id);
-      return stored?.costCents ?? costCents;
-    });
+        error: error instanceof Error ? error.name : 'unknown',
+      });
+    }
     return { ...result, costCents, plan, outcome };
   }
 
@@ -389,9 +418,10 @@ export class EpisodePipeline extends WorkflowEntrypoint<Env, EpisodePipelinePara
 
   /**
    * One 9:16 render: started with retries, then checked every 20 s at most 45 times. A throw after the
-   * retries, nothing to render, a failed render or the round limit all count as failed.
+   * retries, nothing to render, a failed render or the round limit all count as failed; the result says
+   * which.
    */
-  private async render(step: WorkflowStep, episodeId: Uuid, prefix: string): Promise<boolean> {
+  private async render(step: WorkflowStep, episodeId: Uuid, prefix: string): Promise<RenderEnd> {
     const ctx = renderContext(this.env);
     let started;
     try {
@@ -417,17 +447,22 @@ export class EpisodePipeline extends WorkflowEntrypoint<Env, EpisodePipelinePara
       );
     } catch (error) {
       console.error('The render could not be started.', error);
-      return false;
+      return 'start-failed';
     }
-    if (started.outcome !== 'started') return false;
+    if (started.outcome !== 'started') return 'nothing';
     const renderId = started.id;
     for (let n = 1; n <= RENDER_CHECKS; n += 1) {
       await step.sleep(`${prefix}render-sleep-${n}`, RENDER_CHECK_EVERY);
       const checked = await step.do(`${prefix}render-check-${n}`, () => checkRender(ctx, renderId));
-      if (checked.outcome === 'done') return true;
-      if (checked.outcome === 'failed' || checked.outcome === 'gone') return false;
+      if (
+        checked.outcome === 'done' ||
+        checked.outcome === 'failed' ||
+        checked.outcome === 'gone'
+      ) {
+        return checked.outcome;
+      }
     }
-    return false;
+    return 'round-limit';
   }
 }
 
