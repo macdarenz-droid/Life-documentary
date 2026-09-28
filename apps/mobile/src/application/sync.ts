@@ -3,6 +3,7 @@
 // device-only fields. Pulled rows land with the same last-write-wins rule the server uses. The cursor and
 // the push mark move only when the whole round worked, so a failed round is repeated as it was. Derived
 // text (P12) only comes down: it lands for this phone's live moments and goes with a moment's tombstone.
+// Requests for originals (P16) only come down too, and land only for moments on this phone.
 import {
   MediaAsset,
   Question,
@@ -12,6 +13,7 @@ import {
   type Derived,
   type Documentary,
   type Moment,
+  type OriginalRequest,
   type PulledChange,
   type PulledEntity,
 } from '@life/contracts';
@@ -21,6 +23,7 @@ import * as derived from '../data/repositories/derived';
 import * as documentaries from '../data/repositories/documentaries';
 import * as mediaAssets from '../data/repositories/mediaAssets';
 import * as moments from '../data/repositories/moments';
+import * as originalRequests from '../data/repositories/originalRequests';
 import * as questions from '../data/repositories/questions';
 import * as storylines from '../data/repositories/storylines';
 import * as syncState from '../data/repositories/syncState';
@@ -39,6 +42,7 @@ const ORDER: PulledEntity[] = [
   'question',
   'moment',
   'derived',
+  'originalRequest',
 ];
 
 export type SyncOutcome =
@@ -251,6 +255,7 @@ async function applyPulled(
   const candidateMoments = new Map<string, Moment>();
   const candidateQuestions = new Map<string, Question>();
   const candidateDerived: Derived[] = [];
+  const candidateRequests: OriginalRequest[] = [];
 
   for (const change of sorted) {
     switch (change.entity) {
@@ -309,6 +314,10 @@ async function applyPulled(
         candidateDerived.push(change.row);
         break;
       }
+      case 'originalRequest': {
+        candidateRequests.push(change.row);
+        break;
+      }
     }
   }
 
@@ -360,6 +369,14 @@ async function applyPulled(
     writes.push({ entity: 'derived', row });
   }
 
+  // A request lands only for a moment on this phone, last-write-wins; a closed one is kept as closed.
+  for (const row of candidateRequests) {
+    const moment = candidateMoments.get(row.momentId) ?? (await moments.get(driver, row.momentId));
+    if (!moment) continue;
+    if (!newer(row, await originalRequests.get(driver, row.id))) continue;
+    writes.push({ entity: 'originalRequest', row });
+  }
+
   await syncState.applyPulled(driver, async (tx) => {
     for (const change of writes) {
       switch (change.entity) {
@@ -385,6 +402,9 @@ async function applyPulled(
           break;
         case 'derived':
           await derived.put(tx, change.row);
+          break;
+        case 'originalRequest':
+          await originalRequests.put(tx, change.row);
           break;
       }
     }

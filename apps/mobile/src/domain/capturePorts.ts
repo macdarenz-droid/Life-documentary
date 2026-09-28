@@ -133,6 +133,17 @@ export interface Account {
   cookie(): string | null;
 }
 
+/** A request the server answered with an error status; `status` says which. */
+export class ApiRefused extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = 'ApiRefused';
+  }
+}
+
 /** The Worker's account API; every response is parsed with the contracts. */
 export interface Api {
   me(): Promise<Me>;
@@ -156,6 +167,8 @@ export interface Api {
     purpose: UploadPurpose,
     parts: UploadedPart[],
   ): Promise<UploadDone>;
+  /** DELETE /uploads/:assetId/:purpose: gives up an open upload; one that is not there is fine. */
+  abortUpload(assetId: string, purpose: UploadPurpose): Promise<void>;
 }
 
 /** How the phone is connected right now; uploads of video wait for Wi-Fi. */
@@ -163,10 +176,22 @@ export interface Network {
   connection(): Promise<'wifi' | 'cellular' | 'none'>;
 }
 
+/** What one background run did (P16): originals queued and files sent. */
+export type BackgroundReport = { queued: number; uploaded: number };
+
+/**
+ * One background run with its time budget in milliseconds. With `minDrainMs`, the drain after sync is
+ * skipped when less than that is left of the budget.
+ */
+export type BackgroundRunner = (
+  budgetMs: number,
+  options?: { minDrainMs?: number },
+) => Promise<BackgroundReport | void>;
+
 /** The system's background task for uploads: registered after sign-in, it runs `run` when it fires. */
 export interface BackgroundUploads {
-  /** What one background run does, with its time budget in milliseconds. */
-  setRunner(run: (budgetMs: number) => Promise<void>): void;
+  /** What one background run does. */
+  setRunner(run: BackgroundRunner): void;
   register(): Promise<void>;
 }
 

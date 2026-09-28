@@ -14,7 +14,7 @@ import {
   UploadDone,
   UploadedPart,
 } from '@life/contracts';
-import type { Api } from '../../domain/capturePorts';
+import { ApiRefused, type Api } from '../../domain/capturePorts';
 
 type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 
@@ -27,7 +27,10 @@ export function createApiClient(
 ): Api {
   const failed = async (path: string, res: Response): Promise<never> => {
     const parsed = ApiError.safeParse(await res.json().catch(() => null));
-    throw new Error(`${path}: ${res.status} ${parsed.success ? parsed.data.error.code : ''}`);
+    throw new ApiRefused(
+      `${path}: ${res.status} ${parsed.success ? parsed.data.error.code : ''}`,
+      res.status,
+    );
   };
 
   const call = async (path: string, body?: unknown): Promise<Response> => {
@@ -84,6 +87,15 @@ export function createApiClient(
       UploadedPart.parse(
         await (await put(`/uploads/${assetId}/${purpose}/parts/${partNumber}`, bytes)).json(),
       ),
+    abortUpload: async (assetId, purpose) => {
+      const path = `/uploads/${assetId}/${purpose}`;
+      const headers: Record<string, string> = { accept: 'application/json' };
+      const session = cookie();
+      if (session) headers.cookie = session;
+      const res = await fetchImpl(`${baseUrl}${path}`, { method: 'DELETE', headers });
+      // Nothing open is what was asked for.
+      if (!res.ok && res.status !== 404) await failed(path, res);
+    },
     completeUpload: async (assetId, purpose, parts) =>
       UploadDone.parse(
         await (

@@ -8,6 +8,7 @@ import * as episodes from './repositories/episodes';
 import { CorruptRowError } from './repositories/errors';
 import * as mediaAssets from './repositories/mediaAssets';
 import * as moments from './repositories/moments';
+import * as originalRequests from './repositories/originalRequests';
 import * as questions from './repositories/questions';
 import * as storylines from './repositories/storylines';
 import * as uploadJobs from './repositories/uploadJobs';
@@ -34,6 +35,7 @@ const ENTITIES: {
   { table: 'moments', key: 'id', get: moments.get },
   { table: 'episodes', key: 'id', get: episodes.get },
   { table: 'upload_jobs', key: 'asset_id', get: uploadJobs.get },
+  { table: 'original_requests', key: 'id', get: originalRequests.get },
 ];
 
 export async function checkDatabase(driver: SqlDriver): Promise<IntegrityReport> {
