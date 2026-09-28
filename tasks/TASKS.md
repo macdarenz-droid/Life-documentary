@@ -238,13 +238,21 @@ Text: `tasks/p16/T-017.md`. Fix r1 approved (`a92d0f3`).
 ### T-017f · P16.6 · Episodes to the phone · done · needs: T-016d, T-017e
 Text: `tasks/p16/T-017.md`. Fix r1 approved (`6559ef6`).
 
-### T-017g · P16.7 · The Episode screens · todo · needs: T-003e, T-017a, T-017f
+### T-017g · P16.7 · The Episode screens · changes r1 · needs: T-003e, T-017a, T-017f
 Text: `tasks/p16/T-017.md`.
+
+**Fix list r1** (review of 86d8c1e, confirmed by two skeptics; everything else approved: the list and this week's line, the Today link, the player with its label and no picture-in-picture, the four-newest and Wi-Fi rules, the words).
+1. The sweep at the end of `downloadReady` compares listed paths with built strings. On a device the listing's URIs don't match the stored `localPath` exactly (a doubled or missing `/`), so it deletes every copy it just saved. Offline playback then never works, and all four episodes download again on every Wi-Fi round. Match on the file name, as `findCopy` and `closeEpisode` do.
+2. `downloadReady` can run twice at once (a foreground round and a sync after a capture). Both write the same `.part`, `.lde` and `.key`, and one can record a broken copy as saved, which is then never downloaded again. Make it single-flight per store, as `syncNow`, `drainUploads` and `queueRequestedOriginals` are. Encrypt into `<localPath>.part` and move it into place only when done.
+3. A killed download or encryption leaves the plain MP4 (or `.part`) in `cache/downloads`, and nothing removes it (D14). Empty that folder at start, next to `clearPlaybackCache` and `clearUploadCache`.
+4. Tapping "Episode N is ready" usually opens the error, because the screen reads the local row once and it still says `rendering` until sync lands. When the row is missing or not ready, wait for the running sync round and load it again (with a waiting state), and only then decide. Online, streaming the route is also fine, since the server checks ownership and readiness.
+Tests: a sweep with store dirs that end in `/` (or an IO whose list returns normalised URIs) keeps the saved copy. Two concurrent `downloadReady` calls give one download per episode and a copy that decrypts. A leftover `downloads/*.mp4` and `*.part` are gone after the store opens. A screen whose row becomes `ready` after mount ends up playing.
+Checks: mobile typecheck, tests, lint, format, boundaries.
 
 ## P17 — Edits (five one-tap changes, the re-cut run, the edit sheets)
 
 ### T-018a · P17.1 · Edit rules · todo · needs: T-016a
-Text: `tasks/p17/T-018.md`.
+Text: `tasks/p17/T-018.md`. Approved (`3331ca1`); merges with T-017g after its review.
 
 ### T-018b · P17.2 · The re-cut run · todo · needs: T-017c, T-017e, T-017f, T-018a
 Text: `tasks/p17/T-018.md`.
