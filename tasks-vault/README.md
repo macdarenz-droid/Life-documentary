@@ -1,6 +1,6 @@
 # Tasks Vault — offline customization edition
 
-A personal GPLv3 Android fork of [Tasks.org](https://github.com/tasks/tasks), version **15.13-offline.1** (151307). Requires Android 8.0 or later; package `com.macdarenz.tasks.vault`.
+A personal GPLv3 Android fork of [Tasks.org](https://github.com/tasks/tasks), version **15.13-offline.2** (151308). Requires Android 8.0 or later; package `com.macdarenz.tasks.vault`.
 
 ## Download
 
@@ -36,4 +36,4 @@ Server features are unavailable in an offline build. The Android Compose target 
 
 The ZIP contains the complete modified source, GPLv3 `LICENSE`, build wrapper, tests, and `OFFLINE_FEATURES.md`. Upstream base revision: `4a5def5d51994758033bf79294ce268e59eee162`. Build with a full JDK 21 and Android SDK using `./gradlew :composeApp:assembleFdroidRelease`. JVM tests target Java 25. Private signing keys are excluded.
 
-APK SHA-256: `5bc8c2d40c0e8786581413f74f550d0dc3eee5630b8bfc817d4afee442045c6f`
+APK SHA-256: `2858ec32838721d095c64cca7fe608afe36cce7f79359cba2c506b8ccbb68978`
