@@ -1,26 +1,39 @@
-# Tasks Vault
+# Tasks Vault — offline customization edition
 
-A personal Android fork of [Tasks.org](https://github.com/tasks/tasks), based on upstream version 15.13. This branch contains the installable APK and the corresponding GPL-3.0 source archive.
+A personal GPLv3 Android fork of [Tasks.org](https://github.com/tasks/tasks), version **15.13-offline.1** (151307). Requires Android 8.0 or later; package `com.macdarenz.tasks.vault`.
 
 ## Download
 
-- [Tasks Vault APK](Tasks-Vault.apk)
-- [Full source archive](Tasks-Vault-source.zip)
+- **[Download APK](https://github.com/macdarenz-droid/Life-documentary/raw/refs/heads/tasks-vault-premium-offline/tasks-vault/Tasks-Vault.apk)**
+- [Corresponding source ZIP](Tasks-Vault-source.zip)
+- [Review and verification](REVIEW.md)
+- [SHA-256 checksums](SHA256SUMS.txt)
 
-APK SHA-256: `d96d39dc462a93b511a2eebb5be9f1343c6a1efd03b88912d46c6a55887f4f5a`
+Install over the earlier Tasks Vault build to retain local data. This sideload build uses the existing local test signing key.
 
-The APK installs as `com.macdarenz.tasks.vault` and supports Android 8.0 (API 26) and newer. It is a custom sideload build, separate from the official Tasks.org app.
+## Local features
 
-## Open the vault
+- All 41 preset colors, plus custom RGB sliders and six-digit hex colors for the app, lists, and tags.
+- Searchable bundled list/tag icons with saved selections.
+- Light, dark, black, system, wallpaper, and scheduled day/night themes.
+- Android 12+ device color palettes; manual colors remain available on older Android versions.
+- Twenty launcher icon colors, with reset to blue.
+- Hidden device-only Vault for account logins and API keys, with service icons.
 
-1. Open Tasks Vault and go to the task list.
-2. Tap the small blue checkmark in the top-left header five times quickly.
-3. Set a six-digit PIN, then add account logins or API keys. Choose a service icon for each entry.
+Pricing, upgrades, purchase restoration, sign-in, cloud migration, sharing, and desktop linking have no active UI. Local customization is available without a purchase. This APK has no Internet permission and disables automatic backup and device transfer. Tasks, lists, tags, and Vault entries stay on the device.
 
-The vault locks when the app goes to the background and after five minutes. Entries are encrypted with the device’s Android Keystore key and stored in a no-backup file, separate from Tasks.org sync. Clipboard copies are marked sensitive and cleared after 30 seconds when the app has focus again.
+## Open the Vault
 
-The vault is device-only. If you forget the PIN or lose the device, the entries cannot be recovered. This is a personal fork, not an audited password-manager release; avoid using it as the only copy of recovery-critical credentials.
+1. Go to the task list.
+2. Tap the small checkmark logo in the top-left header five times quickly.
+3. Set a six-digit PIN, then add credentials and choose their service icons.
 
-## Source and license
+The Vault uses Android Keystore encryption and separate no-backup storage. It locks on backgrounding, manual lock, and inactivity. Clipboard copies are marked sensitive and cleared after 30 seconds when the app next has focus. The PIN and entries have no cloud recovery.
 
-The source archive includes the full modified Tasks.org source tree and its `LICENSE` file. Upstream base revision: `4a5def5d51994758033bf79294ce268e59eee162`. The derivative is distributed under GPL-3.0, following Tasks.org’s license.
+## Scope and source
+
+Server features are unavailable in an offline build. The Android Compose target also retains upstream porting gaps: notification delivery, widgets, manual backup/import, custom-filter editing, and calendar/location integrations. The delivered APK is `:composeApp`, not the separate legacy `:app` target.
+
+The ZIP contains the complete modified source, GPLv3 `LICENSE`, build wrapper, tests, and `OFFLINE_FEATURES.md`. Upstream base revision: `4a5def5d51994758033bf79294ce268e59eee162`. Build with a full JDK 21 and Android SDK using `./gradlew :composeApp:assembleFdroidRelease`. JVM tests target Java 25. Private signing keys are excluded.
+
+APK SHA-256: `5bc8c2d40c0e8786581413f74f550d0dc3eee5630b8bfc817d4afee442045c6f`
