@@ -1,2 +1,2 @@
-d96d39dc462a93b511a2eebb5be9f1343c6a1efd03b88912d46c6a55887f4f5a  /workspace/github-delivery-life-documentary/tasks-vault/Tasks-Vault.apk
-f25ad9b6f0c7c72ad2758682db57b17869431ef55866c678ef4b7daeb3a8803d  /workspace/github-delivery-life-documentary/tasks-vault/Tasks-Vault-source.zip
+d96d39dc462a93b511a2eebb5be9f1343c6a1efd03b88912d46c6a55887f4f5a  Tasks-Vault.apk
+f25ad9b6f0c7c72ad2758682db57b17869431ef55866c678ef4b7daeb3a8803d  Tasks-Vault-source.zip
